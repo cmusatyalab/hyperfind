@@ -51,19 +51,25 @@ import javax.imageio.ImageIO;
 class SnapFindSearch implements HyperFindSearch {
 
     private final File pluginRunner;
+
     private final String displayName;
+
     private final String internalName;
-    private final String type;
+
+    private final SnapFindSearchType type;
 
     private final boolean isEditable;
 
     private byte[] config;
+
     private byte[] fspec;
+
     private byte[] blob;
+
     private List<BufferedImage> patches;
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, String type) throws IOException,
+            String internalName, SnapFindSearchType type) throws IOException,
             InterruptedException {
         this.pluginRunner = pluginRunner;
         this.displayName = displayName;
@@ -72,7 +78,7 @@ class SnapFindSearch implements HyperFindSearch {
 
         // populate the configs
         ProcessBuilder pb = new ProcessBuilder(pluginRunner.getPath(),
-                "get-plugin-initial-config", type, internalName);
+                "get-plugin-initial-config", type.toString(), internalName);
         System.out.println(pb.command());
         Process p = pb.start();
         System.out.println(p);
@@ -115,7 +121,7 @@ class SnapFindSearch implements HyperFindSearch {
         }
 
         Process p = new ProcessBuilder(pluginRunner.getPath(),
-                "edit-plugin-config", type, internalName).start();
+                "edit-plugin-config", type.toString(), internalName).start();
 
         OutputStream out = p.getOutputStream();
 

@@ -11,16 +11,32 @@ import java.util.Map;
 public class SnapFindSearchFactory {
 
     private final File pluginRunner;
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getInternalName() {
+        return internalName;
+    }
+
+    public SnapFindSearchType getType() {
+        return type;
+    }
+
     private final String displayName;
+
     private final String internalName;
-    private final String type;
+
+    private final SnapFindSearchType type;
 
     public SnapFindSearchFactory(File pluginRunner, Map<String, byte[]> map) {
         this.pluginRunner = pluginRunner;
 
         displayName = new String(getOrFail(map, "display-name"));
         internalName = new String(getOrFail(map, "internal-name"));
-        type = new String(getOrFail(map, "type"));
+        type = SnapFindSearchType
+                .fromString(new String(getOrFail(map, "type")));
     }
 
     public HyperFindSearch createHyperFindSearch() throws IOException,
@@ -37,7 +53,7 @@ public class SnapFindSearchFactory {
         return value;
     }
 
-    public static List<SnapFindSearchFactory> createSnapFindSearchFactorys(
+    public static List<SnapFindSearchFactory> createSnapFindSearchFactories(
             File pluginRunner) throws IOException, InterruptedException {
         List<SnapFindSearchFactory> result = new ArrayList<SnapFindSearchFactory>();
 
