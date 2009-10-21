@@ -41,6 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -51,11 +52,7 @@ import java.util.concurrent.Future;
 
 import javax.swing.*;
 
-import edu.cmu.cs.diamond.opendiamond.Result;
-import edu.cmu.cs.diamond.opendiamond.Search;
-import edu.cmu.cs.diamond.opendiamond.SearchClosedException;
-import edu.cmu.cs.diamond.opendiamond.SearchFactory;
-import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
+import edu.cmu.cs.diamond.opendiamond.*;
 
 public class ThumbnailBox extends JPanel {
     private Search search;
@@ -113,6 +110,8 @@ public class ThumbnailBox extends JPanel {
         add(new JScrollPane(list));
 
         add(stats, BorderLayout.SOUTH);
+
+        setPreferredSize(new Dimension(600, 600));
     }
 
     public void stop() throws InterruptedException {
