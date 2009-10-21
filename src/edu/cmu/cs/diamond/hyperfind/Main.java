@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.Dimension;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -71,19 +71,32 @@ public class Main {
         // search list
         SearchList searchList = new SearchList(factories);
 
-        // codecs
+        // codecs / menu
         // TODO
+        JButton addSearchButton = new JButton("+");
+        final JPopupMenu searches = new JPopupMenu();
+
+        addSearchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                searches.show((Component) e.getSource(), 0, 0);
+            }
+        });
+
         List<SnapFindSearchFactory> codecList = new ArrayList<SnapFindSearchFactory>();
         for (SnapFindSearchFactory f : factories) {
-            if (f.getType() == SnapFindSearchType.CODEC) {
+            SnapFindSearchType t = f.getType();
+            switch (t) {
+            case CODEC:
                 codecList.add(f);
+                break;
+            case FILTER:
+                searches.add(new JMenuItem(f.getDisplayName()));
+                break;
             }
         }
 
         JComboBox codecs = new JComboBox(codecList.toArray());
-
-        // menus
-        // TODO
 
         // buttons
         JButton startButton = new JButton("Start");
@@ -110,22 +123,24 @@ public class Main {
 
         // left side
         Box c1 = Box.createVerticalBox();
+
+        // codec
         JPanel codecPanel = new JPanel();
         codecPanel.add(new JLabel("Codec"));
         codecPanel.add(codecs);
         c1.add(codecPanel);
 
+        // filters
         JScrollPane jsp = new JScrollPane(searchList);
         jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
         c1.add(jsp);
 
-        Dimension minSize = new Dimension(100, 5);
-        Dimension prefSize = new Dimension(300, 5);
-        Dimension maxSize = new Dimension(450, 5);
+        Box h1 = Box.createHorizontalBox();
+        h1.add(Box.createHorizontalGlue());
+        h1.add(addSearchButton);
+        c1.add(h1);
 
-        JComponent filler = new Box.Filler(minSize, prefSize, maxSize);
-        c1.add(filler);
-
+        // start/stop/define
         Box v1 = Box.createVerticalBox();
         Box r2 = Box.createHorizontalBox();
         r2.add(defineScopeButton);
