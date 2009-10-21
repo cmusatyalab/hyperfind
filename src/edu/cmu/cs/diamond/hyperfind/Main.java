@@ -79,7 +79,8 @@ public class Main {
         addSearchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                searches.show((Component) e.getSource(), 0, 0);
+                Component c = (Component) e.getSource();
+                searches.show(c, 0, c.getHeight());
             }
         });
 
