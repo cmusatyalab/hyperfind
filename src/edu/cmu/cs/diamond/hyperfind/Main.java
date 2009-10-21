@@ -74,6 +74,7 @@ public class Main {
 
         // codecs / menu
         // TODO
+        JButton editCodecButton = new JButton("Edit");
         JButton addSearchButton = new JButton("+");
         final JPopupMenu searches = new JPopupMenu();
 
@@ -130,6 +131,7 @@ public class Main {
         JPanel codecPanel = new JPanel();
         codecPanel.add(new JLabel("Codec"));
         codecPanel.add(codecs);
+        codecPanel.add(editCodecButton);
         c1.add(codecPanel);
 
         // filters
