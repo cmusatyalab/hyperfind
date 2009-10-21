@@ -40,16 +40,15 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JList;
+import javax.swing.*;
 
 /**
  * The Main class.
@@ -61,20 +60,33 @@ public class Main {
         this.frame = frame;
     }
 
-    public static Main createMain() {
+    public static Main createMain(File pluginRunner,
+            List<SnapFindSearchFactory> factories) {
         JFrame frame = new JFrame("HyperFind");
+        Main m = new Main(frame);
 
-        JList list = new JList();
-        list.setCellRenderer(new SearchPanelCellRenderer());
-
+        // statistics
         StatisticsBar stats = new StatisticsBar();
 
-        JButton startButton = new JButton("Start");
-        JButton stopButton = new JButton("Stop");
-        frame.add(startButton, BorderLayout.NORTH);
-        frame.add(stopButton, BorderLayout.SOUTH);
+        // search list
+        SearchList searchList = new SearchList(factories);
 
-        Main m = new Main(frame);
+        // codecs
+        // TODO
+        List<SnapFindSearchFactory> codecList = new ArrayList<SnapFindSearchFactory>();
+        for (SnapFindSearchFactory f : factories) {
+            if (f.getType() == SnapFindSearchType.CODEC) {
+                codecList.add(f);
+            }
+        }
+
+        JComboBox codecs = new JComboBox(codecList.toArray());
+
+        // menus
+        // TODO
+
+        // buttons
+        JButton startButton = new JButton("Start");
 
         startButton.addActionListener(new ActionListener() {
             @Override
@@ -83,7 +95,61 @@ public class Main {
             }
         });
 
-        frame.add(new ThumbnailBox(stopButton, startButton, list, stats));
+        JButton stopButton = new JButton("Stop");
+        JButton defineScopeButton = new JButton("Define Scope");
+
+        // list of results
+        JList list = new JList();
+        list.setCellRenderer(new SearchPanelCellRenderer());
+        ThumbnailBox results = new ThumbnailBox(stopButton, startButton, list,
+                stats);
+
+        // layout
+        Box b = Box.createHorizontalBox();
+        frame.add(b);
+
+        // left side
+        Box c1 = Box.createVerticalBox();
+        JPanel codecPanel = new JPanel();
+        codecPanel.add(new JLabel("Codec"));
+        codecPanel.add(codecs);
+        c1.add(codecPanel);
+
+        JScrollPane jsp = new JScrollPane(searchList);
+        jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
+        c1.add(jsp);
+
+        Dimension minSize = new Dimension(100, 5);
+        Dimension prefSize = new Dimension(300, 5);
+        Dimension maxSize = new Dimension(450, 5);
+
+        JComponent filler = new Box.Filler(minSize, prefSize, maxSize);
+        c1.add(filler);
+
+        Box v1 = Box.createVerticalBox();
+        Box r2 = Box.createHorizontalBox();
+        r2.add(defineScopeButton);
+        v1.add(r2);
+        v1.add(Box.createVerticalStrut(4));
+
+        Box r1 = Box.createHorizontalBox();
+        r1.add(startButton);
+        r1.add(Box.createHorizontalStrut(20));
+        stopButton.setEnabled(false);
+        r1.add(stopButton);
+
+        v1.add(r1);
+
+        c1.add(v1);
+
+        b.add(c1);
+
+        // right side
+        Box c2 = Box.createVerticalBox();
+        c2.add(results);
+        b.add(c2);
+
+        frame.pack();
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
@@ -103,17 +169,21 @@ public class Main {
             System.exit(1);
         }
 
-        File pluginRunner = new File(args[0]);
+        final File pluginRunner = new File(args[0]);
         if (!pluginRunner.canExecute()) {
             throw new IOException(
                     "cannot execute given snapfind-plugin-runner: "
                             + pluginRunner);
         }
 
-        List<SnapFindSearchFactory> snapfindSearches = SnapFindSearchFactory
-                .createSnapFindSearchFactorys(pluginRunner);
-        snapfindSearches.get(1).createHyperFindSearch().edit();
+        final List<SnapFindSearchFactory> factories = SnapFindSearchFactory
+                .createSnapFindSearchFactories(pluginRunner);
 
-        createMain();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                createMain(pluginRunner, factories);
+            }
+        });
     }
 }
