@@ -41,6 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -170,6 +171,7 @@ public class Main {
 
         frame.pack();
 
+        frame.setMinimumSize(new Dimension(640, 480));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 
