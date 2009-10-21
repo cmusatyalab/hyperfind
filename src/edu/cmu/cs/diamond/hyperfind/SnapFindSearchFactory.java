@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SnapFindSearchFactory {
+public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> {
 
     private final File pluginRunner;
 
@@ -157,5 +157,10 @@ public class SnapFindSearchFactory {
     @Override
     public String toString() {
         return displayName;
+    }
+
+    @Override
+    public int compareTo(SnapFindSearchFactory o) {
+        return getDisplayName().compareTo(o.getDisplayName());
     }
 }

@@ -46,6 +46,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.*;
@@ -194,6 +195,7 @@ public class Main {
 
         final List<SnapFindSearchFactory> factories = SnapFindSearchFactory
                 .createSnapFindSearchFactories(pluginRunner);
+        Collections.sort(factories);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
