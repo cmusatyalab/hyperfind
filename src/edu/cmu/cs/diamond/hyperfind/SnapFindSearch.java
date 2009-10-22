@@ -98,9 +98,9 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     private void readConfigs(Map<String, byte[]> map) throws IOException {
-        config = SnapFindSearchFactory.getOrFail(map, "config");
+        config = map.get("config");
         fspec = SnapFindSearchFactory.getOrFail(map, "fspec");
-        blob = SnapFindSearchFactory.getOrFail(map, "blob");
+        blob = map.get("blob");
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
@@ -140,7 +140,9 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     private void writeConfig(OutputStream out) throws IOException {
-        writeKey(out, "config", config);
+        if (config != null) {
+            writeKey(out, "config", config);
+        }
         writeKey(out, "patch-count", Integer.toString(patches.size())
                 .getBytes());
 
