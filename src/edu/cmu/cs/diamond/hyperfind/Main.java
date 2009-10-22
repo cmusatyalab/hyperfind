@@ -49,33 +49,58 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.swing.*;
+
+import edu.cmu.cs.diamond.opendiamond.CookieMap;
+import edu.cmu.cs.diamond.opendiamond.Filter;
+import edu.cmu.cs.diamond.opendiamond.Search;
+import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 
 /**
  * The Main class.
  */
 public class Main {
+    private final ThumbnailBox results;
+
     private final JFrame frame;
 
-    private Main(JFrame frame) {
+    private CookieMap cookies;
+
+    private final ExecutorService executor;
+
+    private Main(JFrame frame, ThumbnailBox results, ExecutorService executor,
+            CookieMap initialCookieMap) {
         this.frame = frame;
+        this.results = results;
+        this.executor = executor;
+        this.cookies = initialCookieMap;
     }
 
     public static Main createMain(File pluginRunner,
-            List<SnapFindSearchFactory> factories) {
+            List<SnapFindSearchFactory> factories) throws IOException,
+            InterruptedException {
         JFrame frame = new JFrame("HyperFind");
-        Main m = new Main(frame);
-
-        // statistics
+        JButton startButton = new JButton("Start");
+        JButton stopButton = new JButton("Stop");
+        JButton defineScopeButton = new JButton("Define Scope");
+        JList resultsList = new JList();
         StatisticsBar stats = new StatisticsBar();
+
+        ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
+                resultsList, stats);
+
+        final Main m = new Main(frame, results,
+                Executors.newCachedThreadPool(), CookieMap
+                        .createDefaultCookieMap());
 
         // search list
         SearchList searchList = new SearchList(factories);
 
         // codecs / menu
         // TODO
-        JButton editCodecButton = new JButton("Edit");
         JButton addSearchButton = new JButton("+");
         final JPopupMenu searches = new JPopupMenu();
 
@@ -87,12 +112,12 @@ public class Main {
             }
         });
 
-        List<SnapFindSearchFactory> codecList = new ArrayList<SnapFindSearchFactory>();
+        final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         for (SnapFindSearchFactory f : factories) {
             SnapFindSearchType t = f.getType();
             switch (t) {
             case CODEC:
-                codecList.add(f);
+                codecList.add(f.createHyperFindSearch());
                 break;
             case FILTER:
                 searches.add(new JMenuItem(f.getDisplayName()));
@@ -100,28 +125,69 @@ public class Main {
             }
         }
 
-        JComboBox codecs = new JComboBox(codecList.toArray());
+        final JComboBox codecs = new JComboBox(codecList.toArray());
+
+        final JButton editCodecButton = new JButton("Edit");
+        editCodecButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                HyperFindSearch s = codecList.get(codecs.getSelectedIndex());
+                try {
+                    s.edit();
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+            }
+        });
+
+        updateEditCodecButton(editCodecButton, codecList, codecs);
+        codecs.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateEditCodecButton(editCodecButton, codecList, codecs);
+            }
+        });
 
         // buttons
-        JButton startButton = new JButton("Start");
 
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // TODO
+                try {
+                    m.startSearch();
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
             }
         });
 
-        JButton stopButton = new JButton("Stop");
-        JButton defineScopeButton = new JButton("Define Scope");
+        defineScopeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    m.cookies = CookieMap.createDefaultCookieMap();
+                    System.out.println(m.cookies);
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+            }
+        });
 
         // list of results
-        JList list = new JList();
-        list.setCellRenderer(new SearchPanelCellRenderer());
-        ThumbnailBox results = new ThumbnailBox(stopButton, startButton, list,
-                stats);
+        resultsList.setCellRenderer(new SearchPanelCellRenderer());
 
         // layout
+        // TODO make left side resizing not push huge ugly space in
+
         Box b = Box.createHorizontalBox();
         frame.add(b);
 
@@ -178,6 +244,28 @@ public class Main {
         return m;
     }
 
+    private void startSearch() throws IOException, InterruptedException {
+        // collect search info
+
+        List<Filter> filters = new ArrayList<Filter>();
+
+        List<String> appDepends = new ArrayList<String>();
+        appDepends.add("RGB");
+
+        SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
+
+        Search search = factory.createSearch(null);
+
+        // start
+        results.start(search, factory, executor);
+    }
+
+    private static void updateEditCodecButton(final JButton editCodecButton,
+            final List<HyperFindSearch> codecList, final JComboBox codecs) {
+        HyperFindSearch s = codecList.get(codecs.getSelectedIndex());
+        editCodecButton.setEnabled(s.isEditable());
+    }
+
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
                 + " snapfind-plugin-runner");
@@ -204,7 +292,16 @@ public class Main {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                createMain(pluginRunner, factories);
+                try {
+                    createMain(pluginRunner, factories);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
             }
         });
     }
