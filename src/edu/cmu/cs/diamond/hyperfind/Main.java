@@ -65,15 +65,12 @@ import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 public class Main {
     private final ThumbnailBox results;
 
-    private final JFrame frame;
-
     private CookieMap cookies;
 
     private final ExecutorService executor;
 
-    private Main(JFrame frame, ThumbnailBox results, ExecutorService executor,
+    private Main(ThumbnailBox results, ExecutorService executor,
             CookieMap initialCookieMap) {
-        this.frame = frame;
         this.results = results;
         this.executor = executor;
         this.cookies = initialCookieMap;
@@ -91,10 +88,6 @@ public class Main {
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
                 resultsList, stats);
-
-        final Main m = new Main(frame, results,
-                Executors.newCachedThreadPool(), CookieMap
-                        .createDefaultCookieMap());
 
         // search list
         SearchList searchList = new SearchList(factories);
@@ -127,6 +120,9 @@ public class Main {
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
+        final Main m = new Main(results, Executors.newCachedThreadPool(),
+                CookieMap.createDefaultCookieMap());
+
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
             @Override
@@ -158,7 +154,8 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    m.startSearch();
+                    m.startSearch(codecList.get(codecs.getSelectedIndex())
+                            .createFilters());
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -244,15 +241,20 @@ public class Main {
         return m;
     }
 
-    private void startSearch() throws IOException, InterruptedException {
-        // collect search info
+    private void startSearch(List<Filter> codec) throws IOException,
+            InterruptedException {
+        System.out.println(codec);
 
-        List<Filter> filters = new ArrayList<Filter>();
+        List<Filter> filters = new ArrayList<Filter>(codec);
+
+        // TODO collect more search info
 
         List<String> appDepends = new ArrayList<String>();
         appDepends.add("RGB");
 
         SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
+
+        System.out.println(factory);
 
         Search search = factory.createSearch(null);
 
