@@ -48,6 +48,9 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import edu.cmu.cs.diamond.opendiamond.Filter;
+import edu.cmu.cs.diamond.opendiamond.FilterCode;
+
 class SnapFindSearch implements HyperFindSearch {
 
     private final File pluginRunner;
@@ -62,11 +65,13 @@ class SnapFindSearch implements HyperFindSearch {
 
     private byte[] config;
 
-    private byte[] fspec;
+    private String fspec;
 
     private byte[] blob;
 
     private List<BufferedImage> patches;
+
+    private File searchletLib;
 
     public SnapFindSearch(File pluginRunner, String displayName,
             String internalName, SnapFindSearchType type) throws IOException,
@@ -106,8 +111,10 @@ class SnapFindSearch implements HyperFindSearch {
 
     private void readConfigs(Map<String, byte[]> map) throws IOException {
         config = map.get("config");
-        fspec = SnapFindSearchFactory.getOrFail(map, "fspec");
+        fspec = new String(SnapFindSearchFactory.getOrFail(map, "fspec"));
         blob = map.get("blob");
+        searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
+                "searchlet-lib-path")));
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
@@ -197,5 +204,81 @@ class SnapFindSearch implements HyperFindSearch {
     @Override
     public String toString() {
         return displayName;
+    }
+
+    @Override
+    public List<Filter> createFilters() throws IOException {
+        List<Filter> filters = new ArrayList<Filter>();
+
+        // get FilterCode
+        InputStream in = new BufferedInputStream(new FileInputStream(
+                searchletLib));
+        FilterCode fc = null;
+        try {
+            fc = new FilterCode(in);
+        } finally {
+            try {
+                in.close();
+            } catch (IOException e) {
+            }
+        }
+
+        // parse fspec (boo)
+        int threshold = -1;
+        String name = null;
+        String evalFunction = null;
+        String initFunction = null;
+        String finiFunction = null;
+        List<String> dependencies = null;
+        List<String> arguments = null;
+
+        for (String l : fspec.split("\n")) {
+            l = l.trim();
+            if (l.startsWith("#") || l.isEmpty()) {
+                continue;
+            }
+
+            String[] tokens = l.split("[ \\t]+");
+            String cmd = tokens[0];
+            String arg = tokens[1];
+
+            System.out.println(" " + cmd + " " + arg);
+
+            if (cmd.equals("FILTER")) {
+                if (name != null) {
+                    // commit last filter, if there is one
+                    filters.add(new Filter(name, fc, evalFunction,
+                            initFunction, finiFunction, threshold,
+                            dependencies, arguments));
+                }
+
+                // init anew
+                threshold = -1;
+                name = arg;
+                evalFunction = null;
+                initFunction = null;
+                finiFunction = null;
+                dependencies = new ArrayList<String>();
+                arguments = new ArrayList<String>();
+            } else if (cmd.equals("THRESHOLD") || cmd.equals("THRESHHOLD")) {
+                threshold = Integer.parseInt(arg);
+            } else if (cmd.equals("ARG")) {
+                arguments.add(arg);
+            } else if (cmd.equals("EVAL_FUNCTION")) {
+                evalFunction = arg;
+            } else if (cmd.equals("INIT_FUNCTION")) {
+                initFunction = arg;
+            } else if (cmd.equals("FINI_FUNCTION")) {
+                finiFunction = arg;
+            } else if (cmd.equals("REQUIRES")) {
+                dependencies.add(arg);
+            }
+        }
+
+        // finally, commit
+        filters.add(new Filter(name, fc, evalFunction, initFunction,
+                finiFunction, threshold, dependencies, arguments));
+
+        return filters;
     }
 }

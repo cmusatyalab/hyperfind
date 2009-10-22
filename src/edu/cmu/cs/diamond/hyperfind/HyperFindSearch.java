@@ -44,10 +44,14 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
 
+import edu.cmu.cs.diamond.opendiamond.Filter;
+
 public interface HyperFindSearch {
     boolean isEditable();
 
     void edit() throws IOException, InterruptedException;
 
     List<BoundingBox> runLocally(BufferedImage image);
+
+    List<Filter> createFilters() throws IOException;
 }
