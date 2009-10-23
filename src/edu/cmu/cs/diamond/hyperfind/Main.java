@@ -69,6 +69,8 @@ public class Main {
 
     private final ExecutorService executor;
 
+    private Search search;
+
     private Main(ThumbnailBox results, ExecutorService executor,
             CookieMap initialCookieMap) {
         this.results = results;
@@ -166,6 +168,18 @@ public class Main {
             }
         });
 
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    m.stopSearch();
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
         defineScopeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -181,6 +195,8 @@ public class Main {
 
         // list of results
         resultsList.setCellRenderer(new SearchPanelCellRenderer());
+        resultsList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+        resultsList.setVisibleRowCount(0);
 
         // layout
         // TODO make left side resizing not push huge ugly space in
@@ -200,6 +216,8 @@ public class Main {
 
         // filters
         JScrollPane jsp = new JScrollPane(searchList);
+        jsp
+                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
         c1.add(jsp);
 
@@ -241,6 +259,10 @@ public class Main {
         return m;
     }
 
+    protected void stopSearch() throws InterruptedException {
+        search.close();
+    }
+
     private void startSearch(List<Filter> codec) throws IOException,
             InterruptedException {
         System.out.println(codec);
@@ -256,7 +278,7 @@ public class Main {
 
         System.out.println(factory);
 
-        Search search = factory.createSearch(null);
+        search = factory.createSearch(null);
 
         // start
         results.start(search, factory, executor);

@@ -42,14 +42,14 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import edu.cmu.cs.diamond.opendiamond.*;
@@ -61,34 +61,10 @@ public class ThumbnailBox extends JPanel {
 
     final private StatisticsBar stats;
 
-    final private Timer statsTimer = new Timer(500, new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            // because it is Swing Timer, this is called from the
-            // AWT dispatch thread
-            Map<String, ServerStatistics> serverStats = null;
-            try {
-                serverStats = search.getStatistics();
-            } catch (SearchClosedException e1) {
-                return;
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
-            boolean hasStats = false;
-            for (ServerStatistics s : serverStats.values()) {
-                if (s.getTotalObjects() != 0) {
-                    hasStats = true;
-                    break;
-                }
-            }
-            if (hasStats) {
-                stats.update(serverStats);
-            } else {
-                stats.setIndeterminateMessage("Waiting for First Results");
-            }
-        }
-    });
+    final private ScheduledExecutorService timerExecutor = Executors
+            .newSingleThreadScheduledExecutor();
+
+    private ScheduledFuture<?> statsTimerFuture;
 
     private final JButton stopButton;
 
@@ -107,19 +83,79 @@ public class ThumbnailBox extends JPanel {
 
         setLayout(new BorderLayout());
 
-        add(new JScrollPane(list));
+        JScrollPane jsp = new JScrollPane(list);
+        jsp
+                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jsp
+                .setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+        add(jsp);
 
         add(stats, BorderLayout.SOUTH);
 
         setPreferredSize(new Dimension(600, 600));
     }
 
-    public void stop() throws InterruptedException {
-        search.close();
-        statsTimer.stop();
+    private void startStatsTimer() {
+        statsTimerFuture = timerExecutor.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final Map<String, ServerStatistics> serverStats = search
+                            .getStatistics();
+
+                    boolean hasStats = false;
+                    for (ServerStatistics s : serverStats.values()) {
+                        if (s.getTotalObjects() != 0) {
+                            hasStats = true;
+                            break;
+                        }
+                    }
+                    if (hasStats) {
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                stats.update(serverStats);
+                            }
+                        });
+                    } else {
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                stats
+                                        .setIndeterminateMessage("Waiting for First Results");
+                            }
+                        });
+                    }
+                } catch (SearchClosedException e1) {
+                    return;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, 0, 500, TimeUnit.MILLISECONDS);
     }
 
-    public Future<?> start(Search s, SearchFactory f, ExecutorService executor) {
+    public void stop() throws InterruptedException {
+        search.close();
+        if (statsTimerFuture != null) {
+            statsTimerFuture.cancel(true);
+        }
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                startButton.setEnabled(true);
+                stopButton.setEnabled(false);
+            }
+        });
+    }
+
+    private static final BufferedImage NO_IMAGE = new BufferedImage(200, 150,
+            BufferedImage.TYPE_INT_RGB);
+
+    public void start(Search s, SearchFactory f, ExecutorService executor) {
         search = s;
         factory = f;
 
@@ -127,36 +163,54 @@ public class ThumbnailBox extends JPanel {
         stopButton.setEnabled(true);
 
         stats.setIndeterminateMessage("Initializing Search");
-        statsTimer.start();
+        startStatsTimer();
 
         final DefaultListModel model = new DefaultListModel();
 
         list.setModel(model);
 
-        return executor.submit(new Callable<Object>() {
+        new SwingWorker<Object, ResultIcon>() {
             @Override
-            public Object call() throws Exception {
+            protected Object doInBackground() throws Exception {
                 try {
                     while (true) {
                         Result r = search.getNextResult();
                         if (r == null) {
                             break;
                         }
-                        model.addElement(r);
+
+                        byte[] thumbData = r.getValue("thumbnail.jpeg");
+                        BufferedImage thumb = null;
+                        if (thumbData != null) {
+                            ByteArrayInputStream in = new ByteArrayInputStream(
+                                    thumbData);
+                            try {
+                                thumb = ImageIO.read(in);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        if (thumb == null) {
+                            thumb = NO_IMAGE;
+                        }
+
+                        final ResultIcon resultIcon = new ResultIcon(
+                                new ImageIcon(thumb), r.getObjectIdentifier());
+
+                        publish(resultIcon);
                     }
                 } finally {
-                    search.close();
-                    SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            startButton.setEnabled(true);
-                            stopButton.setEnabled(false);
-                        }
-                    });
+                    stop();
                 }
-
                 return null;
             }
-        });
+
+            @Override
+            protected void process(List<ResultIcon> chunks) {
+                for (ResultIcon resultIcon : chunks) {
+                    model.addElement(resultIcon);
+                }
+            }
+        }.execute();
     }
 }

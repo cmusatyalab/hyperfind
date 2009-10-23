@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2009 Carnegie Mellon University
+ *  Copyright (c) 2009 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -40,32 +40,27 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.Component;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
+import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 
-public class SearchPanelCellRenderer extends DefaultListCellRenderer {
+class ResultIcon {
 
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value,
-            int index, boolean isSelected, boolean cellHasFocus) {
-        super.getListCellRendererComponent(list, value, index, isSelected,
-                cellHasFocus);
+    private final ImageIcon icon;
 
-        ResultIcon r = (ResultIcon) value;
+    private final ObjectIdentifier identifier;
 
-        // setHorizontalAlignment(SwingConstants.CENTER);
-        // setHorizontalTextPosition(SwingConstants.CENTER);
-        // setVerticalTextPosition(SwingConstants.BOTTOM);
-        //
-        // setVerticalAlignment(SwingConstants.CENTER);
+    public ResultIcon(ImageIcon icon, ObjectIdentifier identifier) {
+        this.icon = icon;
+        this.identifier = identifier;
+    }
 
-        setText(null);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setIcon(r.getIcon());
+    public Icon getIcon() {
+        return icon;
+    }
 
-        return this;
+    public ObjectIdentifier getObjectIdentifier() {
+        return identifier;
     }
 }
