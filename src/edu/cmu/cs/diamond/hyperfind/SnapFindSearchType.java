@@ -41,7 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 public enum SnapFindSearchType {
-    CODEC, FILTER;
+    CODEC, FILTER, THUMBNAIL;
 
     public static SnapFindSearchType fromString(String s) {
         return valueOf(s.toUpperCase());
