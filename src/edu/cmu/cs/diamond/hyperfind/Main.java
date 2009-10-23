@@ -46,9 +46,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -95,7 +93,6 @@ public class Main {
         SearchList searchList = new SearchList(factories);
 
         // codecs / menu
-        // TODO
         JButton addSearchButton = new JButton("+");
         final JPopupMenu searches = new JPopupMenu();
 
@@ -107,6 +104,8 @@ public class Main {
             }
         });
 
+        final List<Filter> thumbnailFilter = new ArrayList<Filter>();
+
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         for (SnapFindSearchFactory f : factories) {
             SnapFindSearchType t = f.getType();
@@ -117,6 +116,9 @@ public class Main {
             case FILTER:
                 searches.add(new JMenuItem(f.getDisplayName()));
                 break;
+            case THUMBNAIL:
+                thumbnailFilter.addAll(f.createHyperFindSearch()
+                        .createFilters());
             }
         }
 
@@ -156,8 +158,8 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    m.startSearch(codecList.get(codecs.getSelectedIndex())
-                            .createFilters());
+                    m.startSearch(thumbnailFilter, codecList.get(
+                            codecs.getSelectedIndex()).createFilters());
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -259,15 +261,18 @@ public class Main {
         return m;
     }
 
-    protected void stopSearch() throws InterruptedException {
+    private void stopSearch() throws InterruptedException {
         search.close();
     }
 
-    private void startSearch(List<Filter> codec) throws IOException,
-            InterruptedException {
+    private void startSearch(List<Filter> thumbnail, List<Filter> codec)
+            throws IOException, InterruptedException {
         System.out.println(codec);
 
         List<Filter> filters = new ArrayList<Filter>(codec);
+        filters.addAll(thumbnail);
+
+        System.out.println(filters);
 
         // TODO collect more search info
 
@@ -276,9 +281,10 @@ public class Main {
 
         SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
 
-        System.out.println(factory);
+        Set<String> attributes = new HashSet<String>();
+        attributes.add("thumbnail.jpeg");
 
-        search = factory.createSearch(null);
+        search = factory.createSearch(attributes);
 
         // start
         results.start(search, factory, executor);
