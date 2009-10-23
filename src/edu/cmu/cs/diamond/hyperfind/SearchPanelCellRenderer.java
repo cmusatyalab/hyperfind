@@ -45,6 +45,7 @@ import java.awt.Component;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
+import javax.swing.SwingConstants;
 
 public class SearchPanelCellRenderer extends DefaultListCellRenderer {
 
@@ -56,13 +57,13 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
 
         ResultIcon r = (ResultIcon) value;
 
-        // setHorizontalAlignment(SwingConstants.CENTER);
         // setHorizontalTextPosition(SwingConstants.CENTER);
         // setVerticalTextPosition(SwingConstants.BOTTOM);
         //
         // setVerticalAlignment(SwingConstants.CENTER);
 
         setText(null);
+        setHorizontalAlignment(SwingConstants.CENTER);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setIcon(r.getIcon());
 
