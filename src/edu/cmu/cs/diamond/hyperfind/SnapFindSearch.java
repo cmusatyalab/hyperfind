@@ -112,7 +112,7 @@ class SnapFindSearch implements HyperFindSearch {
     private void readConfigs(Map<String, byte[]> map) throws IOException {
         config = map.get("config");
         fspec = new String(SnapFindSearchFactory.getOrFail(map, "fspec"));
-        blob = map.get("blob");
+        blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
                 "searchlet-lib-path")));
 
@@ -277,7 +277,7 @@ class SnapFindSearch implements HyperFindSearch {
 
         // finally, commit
         filters.add(new Filter(name, fc, evalFunction, initFunction,
-                finiFunction, threshold, dependencies, arguments));
+                finiFunction, threshold, dependencies, arguments, blob));
 
         return filters;
     }
