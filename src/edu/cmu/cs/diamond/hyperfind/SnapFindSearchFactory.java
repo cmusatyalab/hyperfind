@@ -75,8 +75,14 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
         displayName = new String(getOrFail(map, "display-name"));
         internalName = new String(getOrFail(map, "internal-name"));
-        type = SnapFindSearchType
-                .fromString(new String(getOrFail(map, "type")));
+
+        String typeString = new String(getOrFail(map, "type"));
+
+        try {
+            type = SnapFindSearchType.fromString(typeString);
+        } catch (IllegalArgumentException e) {
+            throw new UnknownSearchTypeException(e);
+        }
     }
 
     public HyperFindSearch createHyperFindSearch() throws IOException,
@@ -104,7 +110,10 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
         List<Map<String, byte[]>> listPluginsResult = readKeyValueSetList(in);
         for (Map<String, byte[]> map : listPluginsResult) {
-            result.add(new SnapFindSearchFactory(pluginRunner, map));
+            try {
+                result.add(new SnapFindSearchFactory(pluginRunner, map));
+            } catch (UnknownSearchTypeException ignore) {
+            }
         }
 
         if (p.waitFor() != 0) {
