@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2009 Carnegie Mellon University
+ *  Copyright (c) 2008-2009 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -40,23 +40,29 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.util.List;
+import javax.swing.table.AbstractTableModel;
 
-import javax.swing.JTable;
+class SearchTableModel extends AbstractTableModel {
 
-public class SearchList extends JTable {
-
-    public SearchList(List<SnapFindSearchFactory> factories) {
-        // get codecs
-        for (SnapFindSearchFactory sf : factories) {
-            if (sf.getType() == SnapFindSearchType.CODEC) {
-                populateCodecList(sf);
-            }
-        }
+    @Override
+    public int getColumnCount() {
+        return 4;
     }
 
-    private void populateCodecList(SnapFindSearchFactory sf) {
+    @Override
+    public int getRowCount() {
+        return 100;
+    }
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void addSearch(SnapFindSearchFactory f) {
         // TODO Auto-generated method stub
 
     }
+
 }

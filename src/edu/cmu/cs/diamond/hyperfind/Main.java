@@ -46,7 +46,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -90,7 +94,8 @@ public class Main {
                 resultsList, stats);
 
         // search list
-        SearchList searchList = new SearchList(factories);
+        final SearchTableModel searchTableModel = new SearchTableModel();
+        JTable searchList = new JTable(searchTableModel);
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");
@@ -107,14 +112,21 @@ public class Main {
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
 
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
-        for (SnapFindSearchFactory f : factories) {
+        for (final SnapFindSearchFactory f : factories) {
             SnapFindSearchType t = f.getType();
             switch (t) {
             case CODEC:
                 codecList.add(f.createHyperFindSearch());
                 break;
             case FILTER:
-                searches.add(new JMenuItem(f.getDisplayName()));
+                JMenuItem jm = new JMenuItem(f.getDisplayName());
+                jm.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        searchTableModel.addSearch(f);
+                    }
+                });
+                searches.add(jm);
                 break;
             case THUMBNAIL:
                 thumbnailFilter.addAll(f.createHyperFindSearch()
@@ -159,7 +171,8 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     m.startSearch(thumbnailFilter, codecList.get(
-                            codecs.getSelectedIndex()).createFilters());
+                            codecs.getSelectedIndex()).createFilters(),
+                            createSearchListFilters());
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -261,25 +274,30 @@ public class Main {
         return m;
     }
 
+    protected static List<Filter> createSearchListFilters() {
+        // TODO Auto-generated method stub
+        return new ArrayList<Filter>();
+    }
+
     private void stopSearch() throws InterruptedException {
         search.close();
     }
 
-    private void startSearch(List<Filter> thumbnail, List<Filter> codec)
-            throws IOException, InterruptedException {
+    private void startSearch(List<Filter> thumbnail, List<Filter> codec,
+            List<Filter> searches) throws IOException, InterruptedException {
         System.out.println(codec);
 
         List<Filter> filters = new ArrayList<Filter>(codec);
         filters.addAll(thumbnail);
+        filters.addAll(searches);
 
         System.out.println(filters);
-
-        // TODO collect more search info
 
         List<String> appDepends = new ArrayList<String>();
         appDepends.add("RGB");
 
         SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
+        System.out.println(factory);
 
         Set<String> attributes = new HashSet<String>();
         attributes.add("thumbnail.jpeg");
