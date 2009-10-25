@@ -94,8 +94,7 @@ public class Main {
                 resultsList, stats);
 
         // search list
-        final SearchTableModel searchTableModel = new SearchTableModel();
-        JTable searchList = new JTable(searchTableModel);
+        final SearchList searchList = new SearchList();
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");
@@ -123,7 +122,16 @@ public class Main {
                 jm.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        searchTableModel.addSearch(f);
+                        try {
+                            searchList.addSearch(f.createHyperFindSearch());
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        } catch (InterruptedException e1) {
+                            // TODO Auto-generated catch block
+                            Thread.currentThread().interrupt();
+                            e1.printStackTrace();
+                        }
                     }
                 });
                 searches.add(jm);
@@ -230,11 +238,7 @@ public class Main {
         c1.add(codecPanel);
 
         // filters
-        JScrollPane jsp = new JScrollPane(searchList);
-        jsp
-                .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
-        c1.add(jsp);
+        c1.add(searchList);
 
         Box h1 = Box.createHorizontalBox();
         h1.add(Box.createHorizontalGlue());

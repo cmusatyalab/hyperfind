@@ -40,29 +40,51 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import javax.swing.table.AbstractTableModel;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.List;
 
-class SearchTableModel extends AbstractTableModel {
+import javax.swing.*;
 
-    @Override
-    public int getColumnCount() {
-        return 4;
+final class SearchList extends JPanel {
+    private static final int PREFERRED_WIDTH = 300;
+    private static final int MINIMUM_HEIGHT = 300;
+
+    private final List<Box> searches = new ArrayList<Box>();
+
+    private final Box box = Box.createVerticalBox();
+
+    public SearchList() {
+        setMinimumSize(new Dimension(PREFERRED_WIDTH, MINIMUM_HEIGHT));
+        setPreferredSize(new Dimension(PREFERRED_WIDTH, MINIMUM_HEIGHT));
+        setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+        setLayout(new BorderLayout());
+
+        JScrollPane jsp = new JScrollPane(box,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
+        jsp.getVerticalScrollBar().setUnitIncrement(20);
+
+        add(jsp);
     }
 
-    @Override
-    public int getRowCount() {
-        return 100;
+    public void addSearch(HyperFindSearch s) {
+        JCheckBox cb = new JCheckBox(s.getSearchName());
+        JButton edit = new JButton("Edit");
+        JButton delete = new JButton("X");
+
+        Box item = Box.createHorizontalBox();
+        item.add(cb);
+        item.add(new JLabel(s.getInstanceName()));
+        item.add(Box.createHorizontalGlue());
+        item.add(edit);
+        item.add(delete);
+
+        searches.add(item);
+        box.add(item);
+
+        revalidate();
     }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public void addSearch(SnapFindSearchFactory f) {
-        // TODO Auto-generated method stub
-
-    }
-
 }
