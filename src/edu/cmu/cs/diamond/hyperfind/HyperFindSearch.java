@@ -54,4 +54,8 @@ public interface HyperFindSearch {
     List<BoundingBox> runLocally(BufferedImage image);
 
     List<Filter> createFilters() throws IOException;
+
+    String getInstanceName();
+
+    String getSearchName();
 }

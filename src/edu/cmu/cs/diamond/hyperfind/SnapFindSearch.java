@@ -69,6 +69,8 @@ class SnapFindSearch implements HyperFindSearch {
 
     private byte[] blob;
 
+    private String instanceName;
+
     private List<BufferedImage> patches;
 
     private File searchletLib;
@@ -280,5 +282,15 @@ class SnapFindSearch implements HyperFindSearch {
                 finiFunction, threshold, dependencies, arguments, blob));
 
         return filters;
+    }
+
+    @Override
+    public String getSearchName() {
+        return displayName;
+    }
+
+    @Override
+    public String getInstanceName() {
+        return instanceName;
     }
 }
