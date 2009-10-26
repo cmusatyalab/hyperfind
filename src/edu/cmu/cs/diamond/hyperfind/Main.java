@@ -85,7 +85,7 @@ public class Main {
         StatisticsBar stats = new StatisticsBar();
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
-                resultsList, stats);
+                resultsList, stats, 500);
 
         // search list
         final SearchList searchList = new SearchList();
@@ -276,7 +276,7 @@ public class Main {
     }
 
     private void stopSearch() throws InterruptedException {
-        search.close();
+        results.stop();
     }
 
     private void startSearch(List<Filter> thumbnail, List<Filter> codec,

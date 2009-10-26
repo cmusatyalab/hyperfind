@@ -45,6 +45,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -56,7 +58,9 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -64,6 +68,10 @@ import javax.swing.*;
 import edu.cmu.cs.diamond.opendiamond.*;
 
 public class ThumbnailBox extends JPanel {
+    private final int resultsPerScreen;
+
+    private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null);
+
     private Search search;
 
     private SearchFactory factory;
@@ -79,30 +87,47 @@ public class ThumbnailBox extends JPanel {
 
     private final JButton startButton;
 
+    private final JButton moreResultsButton;
+
     private final JList list;
 
+    private SwingWorker<?, ?> workerFuture;
+
     public ThumbnailBox(JButton stopButton, JButton startButton, JList list,
-            StatisticsBar stats) {
+            StatisticsBar stats, final int resultsPerScreen) {
         super();
 
         this.stopButton = stopButton;
         this.startButton = startButton;
         this.stats = stats;
         this.list = list;
+        this.resultsPerScreen = resultsPerScreen;
 
         setLayout(new BorderLayout());
 
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
         JScrollPane jsp = new JScrollPane(list);
         jsp
                 .setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         jsp
                 .setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        add(jsp);
+        panel.add(jsp);
+
+        // more results button
+        moreResultsButton = new JButton("Get next " + resultsPerScreen
+                + " results");
+        moreResultsButton.setVisible(false);
+
+        panel.add(moreResultsButton, BorderLayout.SOUTH);
+
+        add(panel);
 
         add(stats, BorderLayout.SOUTH);
 
         setPreferredSize(new Dimension(700, 600));
+
     }
 
     private void startStatsTimer() {
@@ -148,15 +173,22 @@ public class ThumbnailBox extends JPanel {
     }
 
     public void stop() throws InterruptedException {
+        System.out.println("STOP");
         search.close();
         if (statsTimerFuture != null) {
             statsTimerFuture.cancel(true);
         }
+
+        if (workerFuture != null) {
+            workerFuture.cancel(true);
+        }
+
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 startButton.setEnabled(true);
                 stopButton.setEnabled(false);
+                moreResultsButton.setVisible(false);
             }
         });
     }
@@ -176,42 +208,73 @@ public class ThumbnailBox extends JPanel {
 
         list.setModel(model);
 
-        new SwingWorker<Object, ResultIcon>() {
+        // the tricky pausing, try to make it better with local variables
+        final AtomicInteger resultsLeftBeforePause = new AtomicInteger(
+                resultsPerScreen);
+        final Semaphore pauseSemaphore = new Semaphore(0);
+
+        for (ActionListener a : moreResultsButton.getActionListeners()) {
+            moreResultsButton.removeActionListener(a);
+        }
+        moreResultsButton.addActionListener(new ActionListener() {
             @Override
-            protected Object doInBackground() throws Exception {
+            public void actionPerformed(ActionEvent e) {
+                moreResultsButton.setVisible(false);
+                resultsLeftBeforePause.set(resultsPerScreen);
+                pauseSemaphore.release();
+                revalidate();
+                repaint();
+            }
+        });
+
+        workerFuture = new SwingWorker<Object, ResultIcon>() {
+            @Override
+            protected Object doInBackground() throws InterruptedException,
+                    IOException {
                 try {
-                    while (true) {
-                        Result r = search.getNextResult();
-                        if (r == null) {
-                            break;
-                        }
-                        System.out.println(r);
+                    try {
+                        while (true) {
+                            if (resultsLeftBeforePause.getAndDecrement() == 0) {
+                                publish(PAUSE_RESULT);
 
-                        byte[] thumbData = r.getValue("thumbnail.jpeg");
-                        BufferedImage thumb = null;
-                        if (thumbData != null) {
-                            ByteArrayInputStream in = new ByteArrayInputStream(
-                                    thumbData);
-                            try {
-                                thumb = ImageIO.read(in);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                                pauseSemaphore.acquire();
+                                continue;
                             }
-                        }
-                        if (thumb == null) {
-                            thumb = new BufferedImage(200, 150,
-                                    BufferedImage.TYPE_INT_RGB);
-                        }
 
-                        // draw patches
-                        Graphics2D g = thumb.createGraphics();
-                        g.setColor(Color.GREEN);
-                        int origW = Util.extractInt(r.getValue("_cols.int"));
-                        int origH = Util.extractInt(r.getValue("_rows.int"));
-                        g.scale((double) thumb.getWidth() / (double) origW,
-                                (double) thumb.getHeight() / (double) origH);
+                            Result r = search.getNextResult();
+                            if (r == null) {
+                                break;
+                            }
+                            System.out.println(r);
 
-                        try {
+                            byte[] thumbData = r.getValue("thumbnail.jpeg");
+                            BufferedImage thumb = null;
+                            if (thumbData != null) {
+                                ByteArrayInputStream in = new ByteArrayInputStream(
+                                        thumbData);
+                                try {
+                                    thumb = ImageIO.read(in);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            if (thumb == null) {
+                                thumb = new BufferedImage(200, 150,
+                                        BufferedImage.TYPE_INT_RGB);
+                            }
+
+                            // draw patches
+                            Graphics2D g = thumb.createGraphics();
+                            g.setColor(Color.GREEN);
+                            int origW = Util
+                                    .extractInt(r.getValue("_cols.int"));
+                            int origH = Util
+                                    .extractInt(r.getValue("_rows.int"));
+                            g
+                                    .scale((double) thumb.getWidth()
+                                            / (double) origW, (double) thumb
+                                            .getHeight()
+                                            / (double) origH);
                             for (String p : patchAttributes) {
                                 System.out.println(p);
                                 byte[] patch = r.getValue(p);
@@ -219,19 +282,21 @@ public class ThumbnailBox extends JPanel {
                                     drawPatches(g, patch);
                                 }
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            throw e;
+                            g.dispose();
+
+                            final ResultIcon resultIcon = new ResultIcon(
+                                    new ImageIcon(thumb), r
+                                            .getObjectIdentifier());
+
+                            publish(resultIcon);
                         }
-                        g.dispose();
-
-                        final ResultIcon resultIcon = new ResultIcon(
-                                new ImageIcon(thumb), r.getObjectIdentifier());
-
-                        publish(resultIcon);
+                    } finally {
+                        stop();
                     }
-                } finally {
-                    stop();
+                } catch (IOException e) {
+                    // TODO something with stats:
+                    // stats.setString(e.toString());
+                    throw e;
                 }
                 return null;
             }
@@ -239,10 +304,17 @@ public class ThumbnailBox extends JPanel {
             @Override
             protected void process(List<ResultIcon> chunks) {
                 for (ResultIcon resultIcon : chunks) {
-                    model.addElement(resultIcon);
+                    if (resultIcon == PAUSE_RESULT) {
+                        moreResultsButton.setVisible(true);
+                        revalidate();
+                        repaint();
+                    } else {
+                        model.addElement(resultIcon);
+                    }
                 }
             }
-        }.execute();
+        };
+        workerFuture.execute();
     }
 
     private void drawPatches(Graphics2D g, byte[] patches) {
