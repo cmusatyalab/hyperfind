@@ -102,7 +102,7 @@ public class ThumbnailBox extends JPanel {
 
         add(stats, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(600, 600));
+        setPreferredSize(new Dimension(700, 600));
     }
 
     private void startStatsTimer() {
