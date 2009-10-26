@@ -79,7 +79,9 @@ final class SearchList extends JPanel {
     }
 
     private static final int PREFERRED_WIDTH = 300;
+
     private static final int MINIMUM_HEIGHT = 300;
+
     private static final boolean INITIALLY_SELECTED = true;
 
     private final List<SelectableSearch> searches = new ArrayList<SelectableSearch>();
@@ -150,7 +152,8 @@ final class SearchList extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 box.remove(item);
-                assert searches.remove(ss);
+                boolean success = searches.remove(ss);
+                assert success;
                 revalidate();
                 repaint();
             }
