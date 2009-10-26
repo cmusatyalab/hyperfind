@@ -176,6 +176,18 @@ final class SearchList extends JPanel {
         return s.replace("&", "&amp;").replace("<", "&lt;");
     }
 
+    List<HyperFindSearch> getSelectedSearches() {
+        List<HyperFindSearch> result = new ArrayList<HyperFindSearch>();
+
+        for (SelectableSearch s : searches) {
+            if (s.isSelected()) {
+                result.add(s.getSearch());
+            }
+        }
+
+        return result;
+    }
+
     List<Filter> createFilters() throws IOException {
         List<Filter> result = new ArrayList<Filter>();
 

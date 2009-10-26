@@ -65,7 +65,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import edu.cmu.cs.diamond.opendiamond.*;
+import edu.cmu.cs.diamond.opendiamond.Result;
+import edu.cmu.cs.diamond.opendiamond.Search;
+import edu.cmu.cs.diamond.opendiamond.SearchClosedException;
+import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
+import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
@@ -73,8 +77,6 @@ public class ThumbnailBox extends JPanel {
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null);
 
     private Search search;
-
-    private SearchFactory factory;
 
     final private StatisticsBar stats;
 
@@ -193,11 +195,8 @@ public class ThumbnailBox extends JPanel {
         });
     }
 
-    public void start(Search s, SearchFactory f,
-            final Collection<String> patchAttributes) {
+    public void start(Search s, final Collection<String> patchAttributes) {
         search = s;
-        factory = f;
-
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
 
@@ -205,7 +204,6 @@ public class ThumbnailBox extends JPanel {
         startStatsTimer();
 
         final DefaultListModel model = new DefaultListModel();
-
         list.setModel(model);
 
         // the tricky pausing, try to make it better with local variables

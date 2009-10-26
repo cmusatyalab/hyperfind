@@ -41,9 +41,12 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,22 +57,24 @@ import java.util.Set;
 
 import javax.swing.*;
 
-import edu.cmu.cs.diamond.opendiamond.CookieMap;
-import edu.cmu.cs.diamond.opendiamond.Filter;
-import edu.cmu.cs.diamond.opendiamond.Search;
-import edu.cmu.cs.diamond.opendiamond.SearchFactory;
+import edu.cmu.cs.diamond.opendiamond.*;
 
 /**
  * The Main class.
  */
-public class Main {
+public final class Main {
     private final ThumbnailBox results;
 
     private CookieMap cookies;
 
     private Search search;
 
-    private Main(ThumbnailBox results, CookieMap initialCookieMap) {
+    private final JFrame frame;
+
+    private final JFrame popupFrame = new JFrame();
+
+    private Main(JFrame frame, ThumbnailBox results, CookieMap initialCookieMap) {
+        this.frame = frame;
         this.results = results;
         this.cookies = initialCookieMap;
     }
@@ -81,8 +86,10 @@ public class Main {
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton defineScopeButton = new JButton("Define Scope");
-        JList resultsList = new JList();
+        final JList resultsList = new JList();
         StatisticsBar stats = new StatisticsBar();
+
+        resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
                 resultsList, stats, 500);
@@ -103,6 +110,7 @@ public class Main {
         });
 
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
+        final List<SnapFindSearchFactory> exampleSearchFactories = new ArrayList<SnapFindSearchFactory>();
 
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         for (final SnapFindSearchFactory f : factories) {
@@ -113,26 +121,27 @@ public class Main {
                 break;
             case FILTER:
                 if (f.needsPatches()) {
-                    break;
-                }
-
-                JMenuItem jm = new JMenuItem(f.getDisplayName());
-                jm.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        try {
-                            searchList.addSearch(f.createHyperFindSearch());
-                        } catch (IOException e1) {
-                            // TODO Auto-generated catch block
-                            e1.printStackTrace();
-                        } catch (InterruptedException e1) {
-                            // TODO Auto-generated catch block
-                            Thread.currentThread().interrupt();
-                            e1.printStackTrace();
+                    exampleSearchFactories.add(f);
+                } else {
+                    JMenuItem jm = new JMenuItem(f.getDisplayName());
+                    jm.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            try {
+                                searchList.addSearch(f.createHyperFindSearch());
+                            } catch (IOException e1) {
+                                // TODO Auto-generated catch block
+                                e1.printStackTrace();
+                            } catch (InterruptedException e1) {
+                                // TODO Auto-generated catch block
+                                Thread.currentThread().interrupt();
+                                e1.printStackTrace();
+                            }
                         }
-                    }
-                });
-                searches.add(jm);
+
+                    });
+                    searches.add(jm);
+                }
                 break;
             case THUMBNAIL:
                 thumbnailFilter.addAll(f.createHyperFindSearch()
@@ -142,7 +151,8 @@ public class Main {
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
-        final Main m = new Main(results, CookieMap.createDefaultCookieMap());
+        final Main m = new Main(frame, results, CookieMap
+                .createDefaultCookieMap());
 
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
@@ -213,6 +223,30 @@ public class Main {
             }
         });
 
+        resultsList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 1) {
+                    int index = resultsList.locationToIndex(e.getPoint());
+                    ResultIcon r = (ResultIcon) resultsList.getModel()
+                            .getElementAt(index);
+                    if (r != null) {
+                        ObjectIdentifier id = r.getObjectIdentifier();
+                        try {
+                            Result newR = m.reexecute(id, thumbnailFilter,
+                                    codecList.get(codecs.getSelectedIndex())
+                                            .createFilters(), searchList
+                                            .createFilters());
+                            m.popup(newR, searchList.getSelectedSearches(),
+                                    exampleSearchFactories);
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+
         // list of results
         resultsList.setCellRenderer(new SearchPanelCellRenderer());
         resultsList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
@@ -275,24 +309,58 @@ public class Main {
         return m;
     }
 
+    private void popup(Result r, List<HyperFindSearch> activeSearches,
+            List<SnapFindSearchFactory> exampleSearchFactories)
+            throws IOException {
+        popupFrame.setTitle(r.getName());
+        popupFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+        popupFrame.getContentPane().removeAll();
+        popupFrame.add(PopupPanel.createInstance(r, activeSearches,
+                exampleSearchFactories));
+
+        popupFrame.pack();
+        popupFrame.setVisible(true);
+        popupFrame.repaint();
+    }
+
+    private Result reexecute(ObjectIdentifier id, List<Filter> thumbnail,
+            List<Filter> codec, List<Filter> searches) throws IOException {
+        Cursor oldCursor = frame.getCursor();
+
+        try {
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            List<Filter> filters = new ArrayList<Filter>(codec);
+            filters.addAll(thumbnail);
+            filters.addAll(searches);
+
+            SearchFactory factory = createFactory(filters);
+            Set<String> attributes = Collections.emptySet();
+            return factory.generateResult(id, attributes);
+        } finally {
+            frame.setCursor(oldCursor);
+        }
+    }
+
+    private SearchFactory createFactory(List<Filter> filters) {
+        List<String> appDepends = new ArrayList<String>();
+        appDepends.add("RGB");
+
+        return new SearchFactory(filters, appDepends, cookies);
+    }
+
     private void stopSearch() throws InterruptedException {
         results.stop();
     }
 
     private void startSearch(List<Filter> thumbnail, List<Filter> codec,
             List<Filter> searches) throws IOException, InterruptedException {
-        System.out.println(codec);
-
         List<Filter> filters = new ArrayList<Filter>(codec);
         filters.addAll(thumbnail);
         filters.addAll(searches);
 
-        System.out.println(filters);
-
-        List<String> appDepends = new ArrayList<String>();
-        appDepends.add("RGB");
-
-        SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
+        SearchFactory factory = createFactory(filters);
         System.out.println(factory);
 
         // push attributes
@@ -312,7 +380,7 @@ public class Main {
         search = factory.createSearch(attributes);
 
         // start
-        results.start(search, factory, patchAttributes);
+        results.start(search, patchAttributes);
     }
 
     private static void updateEditCodecButton(final JButton editCodecButton,

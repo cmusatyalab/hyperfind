@@ -58,4 +58,6 @@ public interface HyperFindSearch {
     String getInstanceName();
 
     String getSearchName();
+
+    String getMangledName();
 }
