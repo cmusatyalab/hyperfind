@@ -47,11 +47,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import edu.cmu.cs.diamond.opendiamond.*;
 
@@ -106,50 +109,50 @@ public final class Main {
             }
         });
 
-        final List<Filter> thumbnailFilter = new ArrayList<Filter>();
-        final List<SnapFindSearchFactory> exampleSearchFactories = new ArrayList<SnapFindSearchFactory>();
-
-        final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
-        for (final SnapFindSearchFactory f : factories) {
-            SnapFindSearchType t = f.getType();
-            switch (t) {
-            case CODEC:
-                codecList.add(f.createHyperFindSearch());
-                break;
-            case FILTER:
-                if (f.needsPatches()) {
-                    exampleSearchFactories.add(f);
-                } else {
-                    JMenuItem jm = new JMenuItem(f.getDisplayName());
-                    jm.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            try {
-                                searchList.addSearch(f.createHyperFindSearch());
-                            } catch (IOException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
-                            } catch (InterruptedException e1) {
-                                // TODO Auto-generated catch block
-                                Thread.currentThread().interrupt();
-                                e1.printStackTrace();
-                            }
-                        }
-
-                    });
-                    searches.add(jm);
-                }
-                break;
-            case THUMBNAIL:
-                thumbnailFilter.addAll(f.createHyperFindSearch()
-                        .createFilters());
-            }
-        }
-
-        final JComboBox codecs = new JComboBox(codecList.toArray());
-
         final Main m = new Main(frame, results, CookieMap
                 .createDefaultCookieMap());
+
+        final List<Filter> thumbnailFilter = new ArrayList<Filter>();
+        final List<SnapFindSearchFactory> exampleSearchFactories = new ArrayList<SnapFindSearchFactory>();
+        final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
+        initSearchFactories(factories, searchList, searches, thumbnailFilter,
+                exampleSearchFactories, codecList);
+
+        // add import
+        searches.add(new JSeparator());
+        JMenuItem importExampleMenuItem = new JMenuItem("From Example...");
+        searches.add(importExampleMenuItem);
+        importExampleMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // get file
+                JFileChooser chooser = new JFileChooser();
+                String[] suffixes = ImageIO.getReaderFileSuffixes();
+                List<String> filteredSuffixes = new ArrayList<String>();
+                for (String su : suffixes) {
+                    if (!su.isEmpty()) {
+                        filteredSuffixes.add(su);
+                    }
+                }
+                FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                        "Images", filteredSuffixes.toArray(new String[0]));
+                chooser.setFileFilter(filter);
+                int returnVal = chooser.showOpenDialog(m.frame);
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    try {
+                        File f = chooser.getSelectedFile();
+                        BufferedImage img = ImageIO.read(f);
+                        m.popup(f.getName(), img, searchList
+                                .getSelectedSearches(), exampleSearchFactories);
+                    } catch (IOException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        final JComboBox codecs = new JComboBox(codecList.toArray());
 
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
@@ -309,16 +312,70 @@ public final class Main {
         return m;
     }
 
+    private void popup(String name, BufferedImage img,
+            List<HyperFindSearch> activeSearches,
+            List<SnapFindSearchFactory> exampleSearchFactories) {
+        popup(name, PopupPanel.createInstance(img, activeSearches,
+                exampleSearchFactories));
+    }
+
+    private static void initSearchFactories(
+            List<SnapFindSearchFactory> factories, final SearchList searchList,
+            final JPopupMenu searches, final List<Filter> thumbnailFilter,
+            final List<SnapFindSearchFactory> exampleSearchFactories,
+            final List<HyperFindSearch> codecList) throws IOException,
+            InterruptedException {
+        for (final SnapFindSearchFactory f : factories) {
+            SnapFindSearchType t = f.getType();
+            switch (t) {
+            case CODEC:
+                codecList.add(f.createHyperFindSearch());
+                break;
+            case FILTER:
+                if (f.needsPatches()) {
+                    exampleSearchFactories.add(f);
+                } else {
+                    JMenuItem jm = new JMenuItem(f.getDisplayName());
+                    jm.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            try {
+                                searchList.addSearch(f.createHyperFindSearch());
+                            } catch (IOException e1) {
+                                // TODO Auto-generated catch block
+                                e1.printStackTrace();
+                            } catch (InterruptedException e1) {
+                                // TODO Auto-generated catch block
+                                Thread.currentThread().interrupt();
+                                e1.printStackTrace();
+                            }
+                        }
+
+                    });
+                    searches.add(jm);
+                }
+                break;
+            case THUMBNAIL:
+                thumbnailFilter.addAll(f.createHyperFindSearch()
+                        .createFilters());
+            }
+        }
+    }
+
     private void popup(Result r, List<HyperFindSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories)
             throws IOException {
+        popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
+                exampleSearchFactories));
+    }
+
+    private void popup(String title, PopupPanel p) {
         popupFrame.setVisible(false);
-        popupFrame.setTitle(r.getName());
+        popupFrame.setTitle(title);
         popupFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
         popupFrame.getContentPane().removeAll();
-        popupFrame.add(PopupPanel.createInstance(r, activeSearches,
-                exampleSearchFactories));
+        popupFrame.add(p);
 
         popupFrame.pack();
         popupFrame.repaint();

@@ -88,9 +88,26 @@ public class PopupPanel extends JPanel {
                 attributes.put(k, r.getValue(k));
             }
         }
+        return createInstance(img, activeSearches, exampleSearchFactories,
+                attributes);
+    }
 
+    public static PopupPanel createInstance(BufferedImage img,
+            List<HyperFindSearch> activeSearches,
+            List<SnapFindSearchFactory> exampleSearchFactories) {
+        Map<String, byte[]> attributes = Collections.emptyMap();
+
+        return createInstance(img, activeSearches, exampleSearchFactories,
+                attributes);
+    }
+
+    private static PopupPanel createInstance(BufferedImage img,
+            List<HyperFindSearch> activeSearches,
+            List<SnapFindSearchFactory> exampleSearchFactories,
+            Map<String, byte[]> attributes) {
         PopupPanel p = new PopupPanel(img, activeSearches,
                 exampleSearchFactories, attributes);
+
         p.setLayout(new BorderLayout());
         p.add(new JLabel(new ImageIcon(img)));
 
