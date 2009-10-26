@@ -254,7 +254,6 @@ public final class Main {
         resultsList.setVisibleRowCount(0);
 
         // layout
-        // TODO make left side resizing not push huge ugly space in
 
         Box b = Box.createHorizontalBox();
         frame.add(b);
