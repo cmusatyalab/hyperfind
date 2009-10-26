@@ -117,6 +117,7 @@ class SnapFindSearch implements HyperFindSearch {
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
                 "searchlet-lib-path")));
+        instanceName = new String(SnapFindSearchFactory.getOrFail(map, "name"));
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
@@ -169,6 +170,8 @@ class SnapFindSearch implements HyperFindSearch {
         }
         writeKey(out, "patch-count", Integer.toString(patches.size())
                 .getBytes());
+
+        writeKey(out, "name", instanceName.getBytes());
 
         int i = 0;
         for (BufferedImage b : patches) {
