@@ -42,7 +42,10 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -113,7 +116,14 @@ class SnapFindSearch implements HyperFindSearch {
 
     private void readConfigs(Map<String, byte[]> map) throws IOException {
         config = map.get("config");
-        fspec = new String(SnapFindSearchFactory.getOrFail(map, "fspec"));
+
+        // fspec and digest
+        byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
+        String fspecDigest = digestFspec(fspecBytes);
+
+        // replace the filter name with a hash of the args, etc.
+        fspec = new String(fspecBytes).replace("*", "f" + fspecDigest);
+
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
                 "searchlet-lib-path")));
@@ -129,6 +139,24 @@ class SnapFindSearch implements HyperFindSearch {
                 patches.add(ImageIO.read(in));
             }
         }
+    }
+
+    private static String digestFspec(byte[] fspecBytes) {
+        try {
+            MessageDigest m = MessageDigest.getInstance("SHA-256");
+            byte[] digest = m.digest(fspecBytes);
+            System.out.println(Arrays.toString(digest));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(Integer.toString(b & 0xFF, 36));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // can't happen on java 6?
+            e.printStackTrace();
+        }
+
+        return "";
     }
 
     @Override
