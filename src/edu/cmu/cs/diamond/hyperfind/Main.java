@@ -312,6 +312,7 @@ public final class Main {
     private void popup(Result r, List<HyperFindSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories)
             throws IOException {
+        popupFrame.setVisible(false);
         popupFrame.setTitle(r.getName());
         popupFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
@@ -320,8 +321,8 @@ public final class Main {
                 exampleSearchFactories));
 
         popupFrame.pack();
-        popupFrame.setVisible(true);
         popupFrame.repaint();
+        popupFrame.setVisible(true);
     }
 
     private Result reexecute(ObjectIdentifier id, List<Filter> thumbnail,
