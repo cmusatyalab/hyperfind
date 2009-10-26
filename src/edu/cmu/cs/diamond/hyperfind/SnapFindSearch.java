@@ -119,17 +119,17 @@ class SnapFindSearch implements HyperFindSearch {
     private void readConfigs(Map<String, byte[]> map) throws IOException {
         config = map.get("config");
 
-        // fspec and digest
-        byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
-        fspecFilterName = digestFspec(fspecBytes);
-
-        // replace the filter name with a hash of the args, etc.
-        fspec = new String(fspecBytes).replace("*", "z" + fspecFilterName);
-
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
                 "searchlet-lib-path")));
         instanceName = new String(SnapFindSearchFactory.getOrFail(map, "name"));
+
+        // fspec and digest
+        byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
+        fspecFilterName = digestForFspec(fspecBytes);
+
+        // replace the filter name with a hash of the args, etc.
+        fspec = new String(fspecBytes).replace("*", "z" + fspecFilterName);
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
@@ -143,9 +143,12 @@ class SnapFindSearch implements HyperFindSearch {
         }
     }
 
-    private static String digestFspec(byte[] fspecBytes) {
+    private String digestForFspec(byte[] fspecBytes) {
         try {
             MessageDigest m = MessageDigest.getInstance("SHA-256");
+            m.update(type.toString().getBytes());
+            m.update(internalName.getBytes());
+            m.update(blob);
             byte[] digest = m.digest(fspecBytes);
             System.out.println(digest.length);
             Formatter f = new Formatter();
