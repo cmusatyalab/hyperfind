@@ -45,7 +45,7 @@ import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 
@@ -124,7 +124,7 @@ class SnapFindSearch implements HyperFindSearch {
         fspecFilterName = digestFspec(fspecBytes);
 
         // replace the filter name with a hash of the args, etc.
-        fspec = new String(fspecBytes).replace("*", "f" + fspecFilterName);
+        fspec = new String(fspecBytes).replace("*", "z" + fspecFilterName);
 
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
@@ -147,12 +147,12 @@ class SnapFindSearch implements HyperFindSearch {
         try {
             MessageDigest m = MessageDigest.getInstance("SHA-256");
             byte[] digest = m.digest(fspecBytes);
-            System.out.println(Arrays.toString(digest));
-            StringBuilder sb = new StringBuilder();
+            System.out.println(digest.length);
+            Formatter f = new Formatter();
             for (byte b : digest) {
-                sb.append(Integer.toString(b & 0xFF, 36));
+                f.format("%02x", b & 0xFF);
             }
-            return sb.toString();
+            return f.toString();
         } catch (NoSuchAlgorithmException e) {
             // can't happen on java 6?
             e.printStackTrace();
