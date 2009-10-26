@@ -184,7 +184,7 @@ public class Main {
                 try {
                     m.startSearch(thumbnailFilter, codecList.get(
                             codecs.getSelectedIndex()).createFilters(),
-                            createSearchListFilters());
+                            searchList.createFilters());
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -280,11 +280,6 @@ public class Main {
         frame.setVisible(true);
 
         return m;
-    }
-
-    protected static List<Filter> createSearchListFilters() {
-        // TODO Auto-generated method stub
-        return new ArrayList<Filter>();
     }
 
     private void stopSearch() throws InterruptedException {
