@@ -70,11 +70,15 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
     private final SnapFindSearchType type;
 
+    private final boolean needsPatches;
+
     public SnapFindSearchFactory(File pluginRunner, Map<String, byte[]> map) {
         this.pluginRunner = pluginRunner;
 
         displayName = new String(getOrFail(map, "display-name"));
         internalName = new String(getOrFail(map, "internal-name"));
+        needsPatches = Boolean.parseBoolean(new String(getOrFail(map,
+                "needs-patches")));
 
         String typeString = new String(getOrFail(map, "type"));
 
@@ -211,5 +215,9 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
     @Override
     public int compareTo(SnapFindSearchFactory o) {
         return getDisplayName().compareTo(o.getDisplayName());
+    }
+
+    public boolean needsPatches() {
+        return needsPatches;
     }
 }

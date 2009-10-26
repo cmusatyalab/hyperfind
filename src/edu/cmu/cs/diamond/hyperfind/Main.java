@@ -118,6 +118,10 @@ public class Main {
                 codecList.add(f.createHyperFindSearch());
                 break;
             case FILTER:
+                if (f.needsPatches()) {
+                    break;
+                }
+
                 JMenuItem jm = new JMenuItem(f.getDisplayName());
                 jm.addActionListener(new ActionListener() {
                     @Override
