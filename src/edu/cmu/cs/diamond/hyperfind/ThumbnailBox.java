@@ -41,13 +41,22 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -152,10 +161,8 @@ public class ThumbnailBox extends JPanel {
         });
     }
 
-    private static final BufferedImage NO_IMAGE = new BufferedImage(200, 150,
-            BufferedImage.TYPE_INT_RGB);
-
-    public void start(Search s, SearchFactory f, ExecutorService executor) {
+    public void start(Search s, SearchFactory f,
+            final Collection<String> patchAttributes) {
         search = s;
         factory = f;
 
@@ -178,6 +185,7 @@ public class ThumbnailBox extends JPanel {
                         if (r == null) {
                             break;
                         }
+                        System.out.println(r);
 
                         byte[] thumbData = r.getValue("thumbnail.jpeg");
                         BufferedImage thumb = null;
@@ -191,8 +199,31 @@ public class ThumbnailBox extends JPanel {
                             }
                         }
                         if (thumb == null) {
-                            thumb = NO_IMAGE;
+                            thumb = new BufferedImage(200, 150,
+                                    BufferedImage.TYPE_INT_RGB);
                         }
+
+                        // draw patches
+                        Graphics2D g = thumb.createGraphics();
+                        g.setColor(Color.GREEN);
+                        int origW = Util.extractInt(r.getValue("_cols.int"));
+                        int origH = Util.extractInt(r.getValue("_rows.int"));
+                        g.scale((double) thumb.getWidth() / (double) origW,
+                                (double) thumb.getHeight() / (double) origH);
+
+                        try {
+                            for (String p : patchAttributes) {
+                                System.out.println(p);
+                                byte[] patch = r.getValue(p);
+                                if (patch != null) {
+                                    drawPatches(g, patch);
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            throw e;
+                        }
+                        g.dispose();
 
                         final ResultIcon resultIcon = new ResultIcon(
                                 new ImageIcon(thumb), r.getObjectIdentifier());
@@ -212,5 +243,24 @@ public class ThumbnailBox extends JPanel {
                 }
             }
         }.execute();
+    }
+
+    private void drawPatches(Graphics2D g, byte[] patches) {
+        ByteBuffer bb = ByteBuffer.wrap(patches);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        int count = bb.getInt();
+        double distance = bb.getDouble();
+
+        for (int i = 0; i < count; i++) {
+            int x0 = bb.getInt();
+            int y0 = bb.getInt();
+            int x1 = bb.getInt();
+            int y1 = bb.getInt();
+
+            Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
+            System.out.println(r);
+            g.draw(r);
+        }
     }
 }

@@ -51,8 +51,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.swing.*;
 
@@ -69,14 +67,10 @@ public class Main {
 
     private CookieMap cookies;
 
-    private final ExecutorService executor;
-
     private Search search;
 
-    private Main(ThumbnailBox results, ExecutorService executor,
-            CookieMap initialCookieMap) {
+    private Main(ThumbnailBox results, CookieMap initialCookieMap) {
         this.results = results;
-        this.executor = executor;
         this.cookies = initialCookieMap;
     }
 
@@ -148,8 +142,7 @@ public class Main {
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
-        final Main m = new Main(results, Executors.newCachedThreadPool(),
-                CookieMap.createDefaultCookieMap());
+        final Main m = new Main(results, CookieMap.createDefaultCookieMap());
 
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
@@ -302,13 +295,24 @@ public class Main {
         SearchFactory factory = new SearchFactory(filters, appDepends, cookies);
         System.out.println(factory);
 
+        // push attributes
         Set<String> attributes = new HashSet<String>();
-        attributes.add("thumbnail.jpeg");
+        attributes.add("thumbnail.jpeg"); // thumbnail
+        attributes.add("_cols.int"); // original width
+        attributes.add("_rows.int"); // original height
+
+        Set<String> patchAttributes = new HashSet<String>();
+        for (Filter f : filters) {
+            String n = f.getName();
+            String p = "_filter." + n + ".patches"; // patches
+            attributes.add(p);
+            patchAttributes.add(p);
+        }
 
         search = factory.createSearch(attributes);
 
         // start
-        results.start(search, factory, executor);
+        results.start(search, factory, patchAttributes);
     }
 
     private static void updateEditCodecButton(final JButton editCodecButton,

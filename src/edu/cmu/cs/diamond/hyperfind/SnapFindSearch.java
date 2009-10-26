@@ -70,6 +70,8 @@ class SnapFindSearch implements HyperFindSearch {
 
     private String fspec;
 
+    private String fspecFilterName;
+
     private byte[] blob;
 
     private String instanceName;
@@ -119,10 +121,10 @@ class SnapFindSearch implements HyperFindSearch {
 
         // fspec and digest
         byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
-        String fspecDigest = digestFspec(fspecBytes);
+        fspecFilterName = digestFspec(fspecBytes);
 
         // replace the filter name with a hash of the args, etc.
-        fspec = new String(fspecBytes).replace("*", "f" + fspecDigest);
+        fspec = new String(fspecBytes).replace("*", "f" + fspecFilterName);
 
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
