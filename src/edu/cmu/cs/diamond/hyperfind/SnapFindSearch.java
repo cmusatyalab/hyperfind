@@ -334,4 +334,18 @@ class SnapFindSearch implements HyperFindSearch {
     public String getMangledName() {
         return fspecFilterName;
     }
+
+    @Override
+    public int hashCode() {
+        return getMangledName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SnapFindSearch) {
+            SnapFindSearch s = (SnapFindSearch) obj;
+            return getMangledName().equals(s.getMangledName());
+        }
+        return false;
+    }
 }
