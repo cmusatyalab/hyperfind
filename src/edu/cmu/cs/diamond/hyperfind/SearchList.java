@@ -48,7 +48,9 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.*;
 
@@ -192,11 +194,18 @@ final class SearchList extends JPanel {
     }
 
     List<Filter> createFilters() throws IOException {
-        List<Filter> result = new ArrayList<Filter>();
-
+        // first, eliminate duplicates
+        Set<HyperFindSearch> set = new HashSet<HyperFindSearch>();
         for (SelectableSearch s : searches) {
             if (s.isSelected())
-                result.addAll(s.getSearch().createFilters());
+                set.add(s.getSearch());
+        }
+
+        System.out.println("set: " + set);
+
+        List<Filter> result = new ArrayList<Filter>();
+        for (HyperFindSearch s : set) {
+            result.addAll(s.createFilters());
         }
 
         return result;
