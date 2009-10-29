@@ -45,14 +45,20 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
 
 import edu.cmu.cs.diamond.opendiamond.Result;
+import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class PopupPanel extends JPanel {
     private final BufferedImage img;
@@ -72,6 +78,25 @@ public class PopupPanel extends JPanel {
                 exampleSearchFactories);
         this.attributes = new HashMap<String, byte[]>(attributes);
 
+    }
+
+    private static String attributeToString(String name, byte[] value) {
+        if (name.endsWith(".int")) {
+            return Integer.toString(Util.extractInt(value));
+        } else if (name.endsWith(".time")) {
+            return Long.toString(Util.extractLong(value));
+        } else if (name.endsWith(".double")) {
+            return Double.toString(Util.extractDouble(value));
+        } else if (name.endsWith(".jpeg")) {
+            return "JPEG";
+        } else if (name.endsWith(".rgbimage")) {
+            return "RGBImage";
+        } else if (name.endsWith(".patches")) {
+            return BoundingBox.fromPatchesList(ByteBuffer.wrap(value))
+                    .toString();
+        } else {
+            return Util.extractString(value);
+        }
     }
 
     public static PopupPanel createInstance(Result r,
@@ -104,12 +129,74 @@ public class PopupPanel extends JPanel {
     private static PopupPanel createInstance(BufferedImage img,
             List<HyperFindSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories,
-            Map<String, byte[]> attributes) {
+            final Map<String, byte[]> attributes) {
         PopupPanel p = new PopupPanel(img, activeSearches,
                 exampleSearchFactories, attributes);
 
+        // image pane
+        JLabel image = new JLabel(new ImageIcon(img));
+        JScrollPane imagePane = new JScrollPane(image);
+
+        // sort keys
+        final List<String> keys = new ArrayList<String>(attributes.keySet());
+        Collections.sort(keys);
+
+        TableModel model = new AbstractTableModel() {
+            @Override
+            public int getColumnCount() {
+                return 2;
+            }
+
+            @Override
+            public int getRowCount() {
+                return keys.size();
+            }
+
+            @Override
+            public Object getValueAt(int rowIndex, int columnIndex) {
+                String key = keys.get(rowIndex);
+
+                switch (columnIndex) {
+                case 0:
+                    return key;
+                case 1:
+                    return attributeToString(key, attributes.get(key));
+                default:
+                    return null;
+                }
+            }
+
+            @Override
+            public String getColumnName(int column) {
+                switch (column) {
+                case 0:
+                    return "Name";
+                case 1:
+                    return "Value";
+                default:
+                    return null;
+                }
+            }
+        };
+
+        JTable properties = new JTable(model);
+        // properties.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        JScrollPane propertiesPane = new JScrollPane(properties);
+
+        // assemble entire window
+        Box hBox = Box.createHorizontalBox();
+        Box leftSide = Box.createVerticalBox();
+
+        hBox.add(leftSide);
+
+        JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+                imagePane, propertiesPane);
+
+        hBox.add(rightSide);
+
+        // done
         p.setLayout(new BorderLayout());
-        p.add(new JLabel(new ImageIcon(img)));
+        p.add(hBox);
 
         return p;
     }
