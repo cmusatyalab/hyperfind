@@ -61,4 +61,9 @@ class SelectableSearch {
         this.search = search;
         this.selected = selected;
     }
+
+    @Override
+    public String toString() {
+        return search.toString();
+    }
 }

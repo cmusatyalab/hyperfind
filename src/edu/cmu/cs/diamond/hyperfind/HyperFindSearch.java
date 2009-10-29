@@ -51,7 +51,8 @@ public interface HyperFindSearch {
 
     void edit() throws IOException, InterruptedException;
 
-    List<BoundingBox> runLocally(BufferedImage image);
+    List<BoundingBox> runLocally(BufferedImage image) throws IOException,
+            InterruptedException;
 
     List<Filter> createFilters() throws IOException;
 

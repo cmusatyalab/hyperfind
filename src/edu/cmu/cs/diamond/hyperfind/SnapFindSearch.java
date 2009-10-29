@@ -40,11 +40,13 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -208,14 +210,13 @@ class SnapFindSearch implements HyperFindSearch {
 
         int i = 0;
         for (BufferedImage b : patches) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(b, "ppm", baos);
-            writeKey(out, "patch-" + (i++), baos.toByteArray());
+            writeKey(out, "patch-" + (i++), encodePNM(b));
         }
     }
 
     private static void writeKey(OutputStream out, String key, byte[] value)
             throws IOException {
+        System.out.println(key + " " + value.length);
         byte[] bytes = key.getBytes();
         String k = "K " + bytes.length + "\n";
         out.write(k.getBytes());
@@ -234,9 +235,77 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     @Override
-    public List<BoundingBox> runLocally(BufferedImage image) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<BoundingBox> runLocally(BufferedImage image)
+            throws IOException, InterruptedException {
+        System.out.println(Arrays.toString(ImageIO.getWriterFormatNames()));
+
+        // convert to PPM
+        byte ppmOut[] = encodePNM(image);
+
+        // process
+        Process p = null;
+        try {
+            p = new ProcessBuilder(pluginRunner.getPath(), "run-plugin", type
+                    .toString(), internalName).start();
+
+            OutputStream out = p.getOutputStream();
+
+            DataInputStream in = new DataInputStream(p.getInputStream());
+
+            writeConfig(out);
+            writeKey(out, "target-image", ppmOut);
+            out.close();
+
+            List<Map<String, byte[]>> list = SnapFindSearchFactory
+                    .readKeyValueSetList(in);
+
+            if (p.waitFor() != 0) {
+                throw new IOException("Bad result for run-plugin");
+            }
+
+            // convert to boundingboxes
+            List<BoundingBox> result = new ArrayList<BoundingBox>(list.size());
+            for (Map<String, byte[]> m : list) {
+                int x0 = intOrFail(m, "min-x");
+                int y0 = intOrFail(m, "min-y");
+                int x1 = intOrFail(m, "max-x");
+                int y1 = intOrFail(m, "max-y");
+                double distance = doubleOrFail(m, "distance");
+
+                result.add(new BoundingBox(x0, y0, x1, y1, distance));
+            }
+
+            return result;
+        } finally {
+            if (p != null) {
+                p.destroy();
+            }
+        }
+    }
+
+    private byte[] encodePNM(BufferedImage image) throws IOException {
+        BufferedImage buf = new BufferedImage(image.getWidth(), image
+                .getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2 = buf.createGraphics();
+        g2.drawImage(image, 0, 0, null);
+        g2.dispose();
+
+        ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
+        System.out.println(buf);
+        if (!ImageIO.write(buf, "PNM", ppmOut)) {
+            throw new IOException("Can't write out PNM");
+        }
+        return ppmOut.toByteArray();
+    }
+
+    private double doubleOrFail(Map<String, byte[]> m, String key) {
+        return Double.parseDouble(new String(SnapFindSearchFactory.getOrFail(m,
+                key)));
+    }
+
+    private int intOrFail(Map<String, byte[]> m, String key) {
+        return Integer.parseInt(new String(SnapFindSearchFactory.getOrFail(m,
+                key)));
     }
 
     @Override

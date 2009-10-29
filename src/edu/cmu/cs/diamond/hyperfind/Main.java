@@ -151,9 +151,8 @@ public final class Main {
                         File f = chooser.getSelectedFile();
                         BufferedImage img = ImageIO.read(f);
                         List<ActiveSearch> empty = Collections.emptyList();
-                        m
-                                .popup(f.getName(), img, empty,
-                                        exampleSearchFactories);
+                        m.popup(f.getName(), img, empty,
+                                exampleSearchFactories, model);
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -253,7 +252,7 @@ public final class Main {
                                             .createFilters(), model
                                             .createFilters());
                             m.popup(newR, r.getActiveSearches(),
-                                    exampleSearchFactories);
+                                    exampleSearchFactories, model);
                         } catch (IOException e1) {
                             e1.printStackTrace();
                         }
@@ -338,9 +337,10 @@ public final class Main {
 
     private void popup(String name, BufferedImage img,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories) {
+            List<SnapFindSearchFactory> exampleSearchFactories,
+            SearchListModel model) {
         popup(name, PopupPanel.createInstance(img, activeSearches,
-                exampleSearchFactories));
+                exampleSearchFactories, model));
     }
 
     private static void initSearchFactories(
@@ -387,10 +387,10 @@ public final class Main {
     }
 
     private void popup(Result r, List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories)
-            throws IOException {
+            List<SnapFindSearchFactory> exampleSearchFactories,
+            SearchListModel model) throws IOException {
         popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
-                exampleSearchFactories));
+                exampleSearchFactories, model));
     }
 
     private void popup(String title, PopupPanel p) {

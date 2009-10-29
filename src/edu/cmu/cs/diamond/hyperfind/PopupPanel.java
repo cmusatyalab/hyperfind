@@ -41,8 +41,11 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
@@ -54,6 +57,8 @@ import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -105,8 +110,8 @@ public class PopupPanel extends JPanel {
 
     public static PopupPanel createInstance(Result r,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories)
-            throws IOException {
+            List<SnapFindSearchFactory> exampleSearchFactories,
+            SearchListModel model) throws IOException {
 
         InputStream in = new ByteArrayInputStream(r.getData());
         BufferedImage img = ImageIO.read(in);
@@ -119,22 +124,24 @@ public class PopupPanel extends JPanel {
             }
         }
         return createInstance(img, activeSearches, exampleSearchFactories,
-                attributes);
+                attributes, model);
     }
 
     public static PopupPanel createInstance(BufferedImage img,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories) {
+            List<SnapFindSearchFactory> exampleSearchFactories,
+            SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
 
         return createInstance(img, activeSearches, exampleSearchFactories,
-                attributes);
+                attributes, model);
     }
 
     private static PopupPanel createInstance(BufferedImage img,
             List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories,
-            final Map<String, byte[]> attributes) {
+            final Map<String, byte[]> attributes,
+            SearchListModel searchListModel) {
         PopupPanel p = new PopupPanel(img, activeSearches,
                 exampleSearchFactories, attributes);
 
@@ -195,7 +202,7 @@ public class PopupPanel extends JPanel {
         Box leftSide = Box.createVerticalBox();
 
         leftSide.add(createPatchesList(activeSearches, attributes, image));
-        // leftSide.add(createLocalSearchBox(activeSearches, image));
+        leftSide.add(createLocalSearchBox(searchListModel, image, img, p));
 
         hBox.add(leftSide);
 
@@ -213,12 +220,102 @@ public class PopupPanel extends JPanel {
         return p;
     }
 
-    private static JPanel createLocalSearchBox(
-            List<HyperFindSearch> activeSearches, ImagePatchesLabel image) {
+    private static class ComboModel extends AbstractListModel implements
+            ComboBoxModel, ListDataListener {
+
+        private final SearchListModel model;
+        private Object selectedItem;
+
+        public ComboModel(SearchListModel model) {
+            this.model = model;
+            model.addListDataListener(this);
+        }
+
+        @Override
+        public Object getSelectedItem() {
+            return selectedItem;
+        }
+
+        @Override
+        public void setSelectedItem(Object anItem) {
+            if ((selectedItem != null && !selectedItem.equals(anItem))
+                    || selectedItem == null && anItem != null) {
+                selectedItem = anItem;
+                fireContentsChanged(this, -1, -1);
+            }
+        }
+
+        @Override
+        public Object getElementAt(int index) {
+            if (index == 0) {
+                return "No selection";
+            }
+            return model.getElementAt(index - 1);
+        }
+
+        @Override
+        public int getSize() {
+            return model.getSize() + 1;
+        }
+
+        @Override
+        public void contentsChanged(ListDataEvent e) {
+            fireContentsChanged(this, e.getIndex0() + 1, e.getIndex1() + 1);
+        }
+
+        @Override
+        public void intervalAdded(ListDataEvent e) {
+            fireIntervalAdded(this, e.getIndex0() + 1, e.getIndex1() + 1);
+        }
+
+        @Override
+        public void intervalRemoved(ListDataEvent e) {
+            fireIntervalRemoved(this, e.getIndex0() + 1, e.getIndex1() + 1);
+        }
+    }
+
+    private static JPanel createLocalSearchBox(final SearchListModel model,
+            final ImagePatchesLabel image, final BufferedImage img,
+            final PopupPanel pp) {
         JPanel p = new JPanel();
         p.setBorder(BorderFactory.createTitledBorder("Local Execution"));
 
-        JComboBox c = new JComboBox();
+        final JComboBox c = new JComboBox(new ComboModel(model));
+        c.setSelectedIndex(0);
+        p.add(c);
+
+        c.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (c.getSelectedIndex() <= 0) {
+                    // clear
+                    List<BoundingBox> patches = Collections.emptyList();
+                    image.setLocalResultPatches(patches);
+                } else {
+                    SelectableSearch ss = (SelectableSearch) c
+                            .getSelectedItem();
+                    HyperFindSearch s = ss.getSearch();
+
+                    Cursor oldCursor = pp.getCursor();
+
+                    try {
+                        pp.setCursor(Cursor
+                                .getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                        image.setLocalResultPatches(s.runLocally(img));
+                    } catch (IOException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    } catch (InterruptedException e1) {
+                        // TODO Auto-generated catch block
+                        Thread.currentThread().interrupt();
+                        e1.printStackTrace();
+                    } finally {
+                        pp.setCursor(oldCursor);
+                    }
+                }
+            }
+        });
 
         return p;
     }
