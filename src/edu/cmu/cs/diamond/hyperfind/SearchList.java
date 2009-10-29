@@ -48,49 +48,58 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.swing.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 
-import edu.cmu.cs.diamond.opendiamond.Filter;
+final class SearchList extends JPanel implements ListDataListener {
+    private static class ListElement {
+        public ListElement(JCheckBox cb, JButton edit, JButton delete, Box box) {
+            this.cb = cb;
+            this.edit = edit;
+            this.delete = delete;
+            this.box = box;
 
-final class SearchList extends JPanel {
-    private static class SelectableSearch {
-        private boolean selected;
-
-        public boolean isSelected() {
-            return selected;
         }
 
-        public void setSelected(boolean selected) {
-            this.selected = selected;
+        public JCheckBox getCb() {
+            return cb;
         }
 
-        public HyperFindSearch getSearch() {
-            return search;
+        public JButton getEdit() {
+            return edit;
         }
 
-        private final HyperFindSearch search;
-
-        public SelectableSearch(HyperFindSearch search, boolean selected) {
-            this.search = search;
-            this.selected = selected;
+        public JButton getDelete() {
+            return delete;
         }
+
+        public Box getBox() {
+            return box;
+        }
+
+        private final JCheckBox cb;
+        private final JButton edit;
+        private final JButton delete;
+        private final Box box;
     }
 
     private static final int PREFERRED_WIDTH = 300;
 
     private static final int MINIMUM_HEIGHT = 300;
 
-    private static final boolean INITIALLY_SELECTED = true;
-
-    private final List<SelectableSearch> searches = new ArrayList<SelectableSearch>();
-
     private final Box box = Box.createVerticalBox();
 
-    public SearchList() {
+    private final SearchListModel model;
+
+    private final List<ListElement> elements = new ArrayList<ListElement>();
+
+    public SearchList(SearchListModel model) {
+        this.model = model;
+        model.addListDataListener(this);
+
         setMinimumSize(new Dimension(PREFERRED_WIDTH, MINIMUM_HEIGHT));
         setPreferredSize(new Dimension(PREFERRED_WIDTH, MINIMUM_HEIGHT));
         setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
@@ -104,66 +113,6 @@ final class SearchList extends JPanel {
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 
         add(jsp);
-    }
-
-    public void addSearch(final HyperFindSearch s) {
-        final JCheckBox cb = new JCheckBox("", INITIALLY_SELECTED);
-
-        JButton edit = new JButton("Edit");
-        JButton delete = new JButton("X");
-
-        updateCheckBox(cb, s.getSearchName(), s.getInstanceName());
-
-        edit.setEnabled(s.isEditable());
-        edit.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    s.edit();
-                    updateCheckBox(cb, s.getSearchName(), s.getInstanceName());
-                    revalidate();
-                    repaint();
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                } catch (InterruptedException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                    Thread.currentThread().interrupt();
-                }
-            }
-        });
-
-        final Box item = Box.createHorizontalBox();
-        item.add(cb);
-        item.add(Box.createHorizontalGlue());
-        item.add(edit);
-        item.add(delete);
-
-        final SelectableSearch ss = new SelectableSearch(s, INITIALLY_SELECTED);
-        searches.add(ss);
-        box.add(item);
-
-        cb.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                ss.setSelected(e.getStateChange() == ItemEvent.SELECTED);
-            }
-        });
-
-        delete.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                box.remove(item);
-                boolean success = searches.remove(ss);
-                assert success;
-                revalidate();
-                repaint();
-            }
-        });
-
-        revalidate();
-        repaint();
     }
 
     static void updateCheckBox(JCheckBox cb, String searchName,
@@ -182,33 +131,86 @@ final class SearchList extends JPanel {
         return s.replace("&", "&amp;").replace("<", "&lt;");
     }
 
-    List<HyperFindSearch> getSelectedSearches() {
-        List<HyperFindSearch> result = new ArrayList<HyperFindSearch>();
+    @Override
+    public void contentsChanged(ListDataEvent e) {
+        SelectableSearch ss = (SelectableSearch) model.getElementAt(e
+                .getIndex0());
+        ListElement element = elements.get(e.getIndex0());
+        HyperFindSearch s = ss.getSearch();
 
-        for (SelectableSearch s : searches) {
-            if (s.isSelected()) {
-                result.add(s.getSearch());
-            }
-        }
-
-        return result;
+        updateCheckBox(element.getCb(), s.getSearchName(), s.getInstanceName());
+        revalidate();
+        repaint();
     }
 
-    List<Filter> createFilters() throws IOException {
-        // first, eliminate duplicates
-        Set<HyperFindSearch> set = new HashSet<HyperFindSearch>();
-        for (SelectableSearch s : searches) {
-            if (s.isSelected())
-                set.add(s.getSearch());
-        }
+    @Override
+    public void intervalAdded(ListDataEvent e) {
+        final SelectableSearch ss = (SelectableSearch) model.getElementAt(e
+                .getIndex0());
+        final HyperFindSearch s = ss.getSearch();
 
-        System.out.println("set: " + set);
+        JCheckBox cb = new JCheckBox("", ss.isSelected());
 
-        List<Filter> result = new ArrayList<Filter>();
-        for (HyperFindSearch s : set) {
-            result.addAll(s.createFilters());
-        }
+        JButton edit = new JButton("Edit");
+        JButton delete = new JButton("X");
 
-        return result;
+        updateCheckBox(cb, s.getSearchName(), s.getInstanceName());
+
+        edit.setEnabled(s.isEditable());
+        edit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    s.edit();
+                    model.updated(ss);
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
+        Box item = Box.createHorizontalBox();
+        item.add(cb);
+        item.add(Box.createHorizontalGlue());
+        item.add(edit);
+        item.add(delete);
+
+        box.add(item);
+
+        elements.add(e.getIndex0(), new ListElement(cb, edit, delete, item));
+
+        cb.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                ss.setSelected(e.getStateChange() == ItemEvent.SELECTED);
+                model.updated(ss);
+            }
+        });
+
+        delete.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.remove(ss);
+            }
+        });
+
+        revalidate();
+        repaint();
+    }
+
+    @Override
+    public void intervalRemoved(ListDataEvent e) {
+        ListElement element = elements.get(e.getIndex0());
+
+        box.remove(element.getBox());
+
+        revalidate();
+        repaint();
+
     }
 }

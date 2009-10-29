@@ -102,7 +102,8 @@ public final class Main {
                 resultsList, stats, 500);
 
         // search list
-        final SearchList searchList = new SearchList();
+        final SearchListModel model = new SearchListModel();
+        final SearchList searchList = new SearchList(model);
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");
@@ -122,7 +123,7 @@ public final class Main {
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
         final List<SnapFindSearchFactory> exampleSearchFactories = new ArrayList<SnapFindSearchFactory>();
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
-        initSearchFactories(factories, searchList, searches, thumbnailFilter,
+        initSearchFactories(factories, model, searches, thumbnailFilter,
                 exampleSearchFactories, codecList);
 
         // add import
@@ -195,10 +196,9 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     m.startSearch(thumbnailFilter, codecList.get(
-                            codecs.getSelectedIndex()).createFilters(),
-                            searchList.createFilters(),
-                            convertToActiveSearchList(searchList
-                                    .getSelectedSearches()));
+                            codecs.getSelectedIndex()).createFilters(), model
+                            .createFilters(), convertToActiveSearchList(model
+                            .getSelectedSearches()));
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -250,7 +250,7 @@ public final class Main {
                         try {
                             Result newR = m.reexecute(id, thumbnailFilter,
                                     codecList.get(codecs.getSelectedIndex())
-                                            .createFilters(), searchList
+                                            .createFilters(), model
                                             .createFilters());
                             m.popup(newR, r.getActiveSearches(),
                                     exampleSearchFactories);
@@ -344,7 +344,7 @@ public final class Main {
     }
 
     private static void initSearchFactories(
-            List<SnapFindSearchFactory> factories, final SearchList searchList,
+            List<SnapFindSearchFactory> factories, final SearchListModel model,
             final JPopupMenu searches, final List<Filter> thumbnailFilter,
             final List<SnapFindSearchFactory> exampleSearchFactories,
             final List<HyperFindSearch> codecList) throws IOException,
@@ -364,7 +364,7 @@ public final class Main {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             try {
-                                searchList.addSearch(f.createHyperFindSearch());
+                                model.addSearch(f.createHyperFindSearch());
                             } catch (IOException e1) {
                                 // TODO Auto-generated catch block
                                 e1.printStackTrace();
