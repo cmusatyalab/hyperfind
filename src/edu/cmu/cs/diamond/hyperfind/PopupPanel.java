@@ -53,7 +53,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -134,8 +138,10 @@ public class PopupPanel extends JPanel {
                 exampleSearchFactories, attributes);
 
         // image pane
-        JLabel image = new JLabel(new ImageIcon(img));
+        ImagePatchesLabel image = new ImagePatchesLabel(img);
         JScrollPane imagePane = new JScrollPane(image);
+        imagePane.getHorizontalScrollBar().setUnitIncrement(20);
+        imagePane.getVerticalScrollBar().setUnitIncrement(20);
 
         // sort keys
         final List<String> keys = new ArrayList<String>(attributes.keySet());
