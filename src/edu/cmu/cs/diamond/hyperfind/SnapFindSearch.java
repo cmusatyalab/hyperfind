@@ -126,10 +126,10 @@ class SnapFindSearch implements HyperFindSearch {
 
         // fspec and digest
         byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
-        fspecFilterName = digestForFspec(fspecBytes);
+        fspecFilterName = "z" + digestForFspec(fspecBytes);
 
         // replace the filter name with a hash of the args, etc.
-        fspec = new String(fspecBytes).replace("*", "z" + fspecFilterName);
+        fspec = new String(fspecBytes).replace("*", fspecFilterName);
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
