@@ -206,4 +206,7 @@ public class PopupPanel extends JPanel {
 
         return p;
     }
+    public Image getImage() {
+        return img;
+    }
 }

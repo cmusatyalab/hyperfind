@@ -375,6 +375,7 @@ public final class Main {
     private void popup(String title, PopupPanel p) {
         popupFrame.setVisible(false);
         popupFrame.setTitle(title);
+        popupFrame.setIconImage(p.getImage());
         popupFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
         popupFrame.getContentPane().removeAll();
