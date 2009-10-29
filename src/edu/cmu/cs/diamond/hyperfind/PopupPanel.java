@@ -273,8 +273,10 @@ public class PopupPanel extends JPanel {
         JPanel p = new JPanel();
         p.setBorder(BorderFactory.createTitledBorder("Example Search"));
 
+        Box vBox = Box.createVerticalBox();
+        p.add(vBox);
+
         JButton add = new JButton("+");
-        p.add(add);
 
         final JPopupMenu searches = new JPopupMenu();
 
@@ -321,7 +323,51 @@ public class PopupPanel extends JPanel {
             searches.add(jm);
         }
 
+        JButton clearButton = new JButton("Clear Patches");
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                image.clearDrawnPatches();
+            }
+        });
+
+        final JLabel countLabel = new JLabel();
+        updateCountLabel(countLabel, model);
+
+        // XXX leaky
+        model.addListDataListener(new ListDataListener() {
+            @Override
+            public void contentsChanged(ListDataEvent e) {
+            }
+
+            @Override
+            public void intervalAdded(ListDataEvent e) {
+                updateCountLabel(countLabel, model);
+            }
+
+            @Override
+            public void intervalRemoved(ListDataEvent e) {
+                updateCountLabel(countLabel, model);
+            }
+        });
+
+        Box hBox = Box.createHorizontalBox();
+        hBox.add(add);
+        hBox.add(Box.createHorizontalStrut(10));
+        hBox.add(clearButton);
+        vBox.add(hBox);
+
+        hBox = Box.createHorizontalBox();
+        hBox.add(countLabel);
+        vBox.add(hBox);
+
         return p;
+    }
+
+    private static void updateCountLabel(JLabel countLabel,
+            SearchListModel model) {
+        int count = model.getSize();
+        countLabel.setText("Search count: " + count);
     }
 
     private static class ComboModel extends AbstractListModel implements
