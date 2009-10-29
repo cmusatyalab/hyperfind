@@ -40,6 +40,12 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Formatter;
+import java.util.List;
+
 public class BoundingBox {
     private final int x0;
     private final int y0;
@@ -73,5 +79,33 @@ public class BoundingBox {
 
     public double getDistance() {
         return distance;
+    }
+
+    public static List<BoundingBox> fromPatchesList(ByteBuffer buf) {
+        ByteBuffer bb = buf.duplicate();
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        int count = bb.getInt();
+        double distance = bb.getDouble();
+
+        List<BoundingBox> result = new ArrayList<BoundingBox>(count);
+
+        for (int i = 0; i < count; i++) {
+            int x0 = bb.getInt();
+            int y0 = bb.getInt();
+            int x1 = bb.getInt();
+            int y1 = bb.getInt();
+
+            result.add(new BoundingBox(x0, y0, x1, y1, distance));
+        }
+
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        Formatter f = new Formatter();
+        f.format("(%d,%d), (%d,%d), distance: %g", x0, y0, x1, y1, distance);
+        return f.toString();
     }
 }

@@ -51,7 +51,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -317,19 +316,14 @@ public class ThumbnailBox extends JPanel {
 
     private void drawPatches(Graphics2D g, byte[] patches) {
         ByteBuffer bb = ByteBuffer.wrap(patches);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
+        List<BoundingBox> boxes = BoundingBox.fromPatchesList(bb);
 
-        int count = bb.getInt();
-        double distance = bb.getDouble();
-
-        for (int i = 0; i < count; i++) {
-            int x0 = bb.getInt();
-            int y0 = bb.getInt();
-            int x1 = bb.getInt();
-            int y1 = bb.getInt();
-
+        for (BoundingBox b : boxes) {
+            int x0 = b.getX0();
+            int y0 = b.getY0();
+            int x1 = b.getX1();
+            int y1 = b.getY1();
             Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
-            System.out.println(r);
             g.draw(r);
         }
     }
