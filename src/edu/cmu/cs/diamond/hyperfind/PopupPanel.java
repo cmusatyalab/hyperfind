@@ -333,6 +333,8 @@ public class PopupPanel extends JPanel {
 
         public ComboModel(SearchListModel model) {
             this.model = model;
+
+            // XXX leaking
             model.addListDataListener(this);
         }
 
