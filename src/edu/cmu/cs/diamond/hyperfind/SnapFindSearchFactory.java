@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -219,5 +220,11 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
     public boolean needsPatches() {
         return needsPatches;
+    }
+
+    public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
+            throws IOException, InterruptedException {
+        return new SnapFindSearch(pluginRunner, displayName, internalName,
+                type, patches);
     }
 }

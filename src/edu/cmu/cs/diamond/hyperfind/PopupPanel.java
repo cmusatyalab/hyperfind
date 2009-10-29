@@ -40,10 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.BorderLayout;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Image;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -54,6 +51,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -203,6 +201,8 @@ public class PopupPanel extends JPanel {
 
         leftSide.add(createPatchesList(activeSearches, attributes, image));
         leftSide.add(createLocalSearchBox(searchListModel, image, img, p));
+        leftSide.add(createExampleSearchPanel(searchListModel, image, img,
+                exampleSearchFactories));
 
         hBox.add(leftSide);
 
@@ -216,6 +216,63 @@ public class PopupPanel extends JPanel {
         // done
         p.setLayout(new BorderLayout());
         p.add(hBox);
+
+        return p;
+    }
+
+    private static JPanel createExampleSearchPanel(final SearchListModel model,
+            final ImagePatchesLabel image, final BufferedImage img,
+            List<SnapFindSearchFactory> exampleSearchFactories) {
+        JPanel p = new JPanel();
+        p.setBorder(BorderFactory.createTitledBorder("Example Search"));
+
+        JButton add = new JButton("+");
+        p.add(add);
+
+        final JPopupMenu searches = new JPopupMenu();
+
+        add.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Component c = (Component) e.getSource();
+                searches.show(c, 0, c.getHeight());
+            }
+        });
+
+        for (final SnapFindSearchFactory f : exampleSearchFactories) {
+            JMenuItem jm = new JMenuItem(f.getDisplayName());
+            jm.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        // make patches
+                        List<BufferedImage> patches = new ArrayList<BufferedImage>();
+                        for (Rectangle r : image.getDrawnPatches()) {
+                            BufferedImage b = new BufferedImage(r.width,
+                                    r.height, BufferedImage.TYPE_INT_RGB);
+
+                            Graphics2D g2 = b.createGraphics();
+                            g2.drawImage(img, 0, 0, r.width, r.height, r.x,
+                                    r.y, r.x + r.width, r.y + r.height, null);
+                            g2.dispose();
+
+                            patches.add(b);
+                        }
+
+                        model.addSearch(f.createHyperFindSearch(patches));
+                    } catch (IOException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    } catch (InterruptedException e1) {
+                        // TODO Auto-generated catch block
+                        Thread.currentThread().interrupt();
+                        e1.printStackTrace();
+                    }
+                }
+
+            });
+            searches.add(jm);
+        }
 
         return p;
     }

@@ -85,6 +85,14 @@ class SnapFindSearch implements HyperFindSearch {
     public SnapFindSearch(File pluginRunner, String displayName,
             String internalName, SnapFindSearchType type) throws IOException,
             InterruptedException {
+        this(pluginRunner, displayName, internalName, type,
+                new ArrayList<BufferedImage>());
+    }
+
+    public SnapFindSearch(File pluginRunner, String displayName,
+            String internalName, SnapFindSearchType type,
+            List<BufferedImage> patches) throws IOException,
+            InterruptedException {
         this.pluginRunner = pluginRunner;
         this.displayName = displayName;
         this.internalName = internalName;
@@ -106,6 +114,7 @@ class SnapFindSearch implements HyperFindSearch {
                     .getOrFail(map, "is-editable")));
 
             readConfigs(map);
+            this.patches = new ArrayList<BufferedImage>(patches);
 
             if (p.waitFor() != 0) {
                 throw new IOException(
