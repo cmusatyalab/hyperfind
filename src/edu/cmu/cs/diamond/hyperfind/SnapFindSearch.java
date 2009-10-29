@@ -45,11 +45,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Formatter;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 
@@ -125,6 +121,36 @@ class SnapFindSearch implements HyperFindSearch {
                 p.destroy();
             }
         }
+
+        reprocessConfig("normalize-plugin-config");
+    }
+
+    private void reprocessConfig(String command) throws IOException,
+            InterruptedException {
+        Process p = null;
+        try {
+            p = new ProcessBuilder(pluginRunner.getPath(), command, type
+                    .toString(), internalName).start();
+
+            OutputStream out = p.getOutputStream();
+
+            DataInputStream in = new DataInputStream(p.getInputStream());
+
+            writeConfig(out);
+            out.close();
+
+            Map<String, byte[]> map = SnapFindSearchFactory.readKeyValueSet(in);
+            readConfigs(map);
+
+            if (p.waitFor() != 0) {
+                throw new IOException(
+                        "Bad result for get-plugin-initial-config");
+            }
+        } finally {
+            if (p != null) {
+                p.destroy();
+            }
+        }
     }
 
     private void readConfigs(Map<String, byte[]> map) throws IOException {
@@ -177,35 +203,7 @@ class SnapFindSearch implements HyperFindSearch {
 
     @Override
     public void edit() throws IOException, InterruptedException {
-        if (!isEditable) {
-            return;
-        }
-
-        Process p = null;
-        try {
-            p = new ProcessBuilder(pluginRunner.getPath(),
-                    "edit-plugin-config", type.toString(), internalName)
-                    .start();
-
-            OutputStream out = p.getOutputStream();
-
-            DataInputStream in = new DataInputStream(p.getInputStream());
-
-            writeConfig(out);
-            out.close();
-
-            Map<String, byte[]> map = SnapFindSearchFactory.readKeyValueSet(in);
-            readConfigs(map);
-
-            if (p.waitFor() != 0) {
-                throw new IOException(
-                        "Bad result for get-plugin-initial-config");
-            }
-        } finally {
-            if (p != null) {
-                p.destroy();
-            }
-        }
+        reprocessConfig("edit-plugin-config");
     }
 
     private void writeConfig(OutputStream out) throws IOException {
