@@ -50,7 +50,11 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -375,8 +379,9 @@ public final class Main {
     private void popup(String title, PopupPanel p) {
         popupFrame.setVisible(false);
         popupFrame.setTitle(title);
+        popupFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
         popupFrame.setIconImage(p.getImage());
-        popupFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
         popupFrame.getContentPane().removeAll();
         popupFrame.add(p);
