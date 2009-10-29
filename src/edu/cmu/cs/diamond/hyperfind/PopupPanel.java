@@ -156,7 +156,7 @@ public class PopupPanel extends JPanel {
         TableModel model = new AbstractTableModel() {
             @Override
             public int getColumnCount() {
-                return 2;
+                return 3;
             }
 
             @Override
@@ -167,12 +167,15 @@ public class PopupPanel extends JPanel {
             @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
                 String key = keys.get(rowIndex);
+                byte value[] = attributes.get(key);
 
                 switch (columnIndex) {
                 case 0:
                     return key;
                 case 1:
-                    return attributeToString(key, attributes.get(key));
+                    return Integer.toString(value.length);
+                case 2:
+                    return attributeToString(key, value);
                 default:
                     return null;
                 }
@@ -184,6 +187,8 @@ public class PopupPanel extends JPanel {
                 case 0:
                     return "Name";
                 case 1:
+                    return "Size";
+                case 2:
                     return "Value";
                 default:
                     return null;
@@ -281,6 +286,7 @@ public class PopupPanel extends JPanel {
             ComboBoxModel, ListDataListener {
 
         private final SearchListModel model;
+
         private Object selectedItem;
 
         public ComboModel(SearchListModel model) {
