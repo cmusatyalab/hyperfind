@@ -70,12 +70,15 @@ public final class Main {
 
     private final JFrame frame;
 
-    private final JFrame popupFrame = new JFrame();
+    private final JFrame popupFrame;
 
     private Main(JFrame frame, ThumbnailBox results, CookieMap initialCookieMap) {
         this.frame = frame;
         this.results = results;
         this.cookies = initialCookieMap;
+
+        popupFrame = new JFrame();
+        popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
     public static Main createMain(File pluginRunner,
