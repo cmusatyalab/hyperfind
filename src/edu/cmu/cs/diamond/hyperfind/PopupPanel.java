@@ -46,10 +46,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 import java.util.List;
 
@@ -102,8 +104,38 @@ public class PopupPanel extends JPanel {
             return BoundingBox.fromPatchesList(ByteBuffer.wrap(value))
                     .toString();
         } else {
-            return Util.extractString(value);
+            String str = Util.extractString(value);
+            int len = Math.min(str.length(), 1024);
+            return Util.extractString(value).substring(0, len);
         }
+    }
+
+    private static BufferedImage decodeRGBImage(byte[] rgbimage) {
+        ByteBuffer buf = ByteBuffer.wrap(rgbimage);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+
+        // skip header
+        buf.position(8);
+
+        // sizes
+        int h = buf.getInt();
+        int w = buf.getInt();
+
+        // do it
+        BufferedImage result = new BufferedImage(w, h,
+                BufferedImage.TYPE_INT_RGB);
+        int data[] = ((DataBufferInt) result.getRaster().getDataBuffer())
+                .getData();
+        for (int i = 0; i < data.length; i++) {
+            byte r = buf.get();
+            byte g = buf.get();
+            byte b = buf.get();
+            byte pad = buf.get();
+
+            data[i] = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+        }
+
+        return result;
     }
 
     public static PopupPanel createInstance(Result r,
@@ -111,8 +143,18 @@ public class PopupPanel extends JPanel {
             List<SnapFindSearchFactory> exampleSearchFactories,
             SearchListModel model) throws IOException {
 
-        InputStream in = new ByteArrayInputStream(r.getData());
-        BufferedImage img = ImageIO.read(in);
+        BufferedImage img;
+
+        // first look for codec attribute
+        byte rgbimage[] = r.getValue("_rgb_image.rgbimage");
+        if (rgbimage != null) {
+            // decode it
+            img = decodeRGBImage(rgbimage);
+        } else {
+            // ImageIO
+            InputStream in = new ByteArrayInputStream(r.getData());
+            img = ImageIO.read(in);
+        }
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
         for (String k : r.getKeys()) {
