@@ -61,10 +61,13 @@ import org.jdesktop.swingx.graphics.GraphicsUtilities;
 class ImagePatchesLabel extends JLabel {
 
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
+
     final Set<List<BoundingBox>> resultPatches = new HashSet<List<BoundingBox>>();
 
     int mouseDownX;
+
     int mouseDownY;
+
     final private List<BoundingBox> localResultPatches = new ArrayList<BoundingBox>();
 
     public ImagePatchesLabel(BufferedImage img) {
@@ -76,8 +79,6 @@ class ImagePatchesLabel extends JLabel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                super.mousePressed(e);
-
                 mouseDownX = e.getX();
                 mouseDownY = e.getY();
 
@@ -87,12 +88,24 @@ class ImagePatchesLabel extends JLabel {
 
                 repaint();
             }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // get current rectangle
+                int index = drawnPatches.size() - 1;
+                Rectangle r = drawnPatches.get(index);
+
+                // remove impossible rectangles
+                if (r.height <= 0 || r.width <= 0) {
+                    drawnPatches.remove(index);
+                }
+
+                repaint();
+            }
         });
         addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                super.mouseDragged(e);
-
                 // get current rectangle
                 Rectangle r = drawnPatches.get(drawnPatches.size() - 1);
 
@@ -107,7 +120,6 @@ class ImagePatchesLabel extends JLabel {
 
                 // mutate it
                 r.setBounds(x0, y0, x1 - x0, y1 - y0);
-
                 repaint();
             }
         });
