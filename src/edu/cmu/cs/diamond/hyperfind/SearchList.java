@@ -100,6 +100,7 @@ final class SearchList extends JPanel {
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
+        jsp.getHorizontalScrollBar().setUnitIncrement(20);
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 
         add(jsp);
