@@ -166,7 +166,7 @@ final class SearchList extends JPanel {
         repaint();
     }
 
-    private static void updateCheckBox(JCheckBox cb, String searchName,
+    static void updateCheckBox(JCheckBox cb, String searchName,
             String instanceName) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html>");
