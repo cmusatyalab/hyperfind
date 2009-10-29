@@ -43,18 +43,11 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -316,7 +309,19 @@ public final class Main {
         frame.pack();
 
         frame.setMinimumSize(new Dimension(640, 480));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                try {
+                    m.stopSearch();
+                    m.popupFrame.dispose();
+                } catch (InterruptedException e1) {
+                    Thread.currentThread().interrupt();
+                    e1.printStackTrace();
+                }
+            }
+        });
         frame.setVisible(true);
 
         return m;
