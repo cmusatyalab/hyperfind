@@ -41,23 +41,19 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.imageio.ImageIO;
-import javax.swing.Box;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -65,6 +61,10 @@ import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class PopupPanel extends JPanel {
+    private static final int PATCH_LIST_MINIMUM_HEIGHT = 300;
+
+    private static final int PATCH_LIST_PREFERRED_WIDTH = 300;
+
     private final BufferedImage img;
 
     private final List<HyperFindSearch> activeSearches;
@@ -113,6 +113,7 @@ public class PopupPanel extends JPanel {
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
         for (String k : r.getKeys()) {
+            // skip "data" attribute
             if (!k.equals("")) {
                 attributes.put(k, r.getValue(k));
             }
@@ -193,12 +194,16 @@ public class PopupPanel extends JPanel {
         Box hBox = Box.createHorizontalBox();
         Box leftSide = Box.createVerticalBox();
 
+        leftSide.add(createPatchesList(activeSearches, attributes, image));
+
         hBox.add(leftSide);
 
         JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                 imagePane, propertiesPane);
 
-        hBox.add(rightSide);
+        Box vBox = Box.createVerticalBox();
+        vBox.add(rightSide);
+        hBox.add(vBox);
 
         // done
         p.setLayout(new BorderLayout());
@@ -206,6 +211,69 @@ public class PopupPanel extends JPanel {
 
         return p;
     }
+
+    private static JPanel createPatchesList(
+            List<HyperFindSearch> activeSearches,
+            Map<String, byte[]> attributes, final ImagePatchesLabel image) {
+        Box box = Box.createVerticalBox();
+
+        JPanel p = new JPanel();
+
+        p.setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                PATCH_LIST_MINIMUM_HEIGHT));
+        p.setPreferredSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                PATCH_LIST_MINIMUM_HEIGHT));
+        p.setMaximumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                Integer.MAX_VALUE));
+        p.setLayout(new BorderLayout());
+
+        JScrollPane jsp = new JScrollPane(box,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jsp.setBorder(BorderFactory.createTitledBorder("Patch Results"));
+        jsp.getHorizontalScrollBar().setUnitIncrement(20);
+        jsp.getVerticalScrollBar().setUnitIncrement(20);
+
+        p.add(jsp);
+
+        for (HyperFindSearch h : activeSearches) {
+            // extract patches
+            String searchName = h.getSearchName();
+            String name = h.getInstanceName();
+            String mName = h.getMangledName();
+
+            String key = "_filter." + mName + ".patches";
+
+            System.out.println(key);
+            if (attributes.containsKey(key)) {
+                System.out.println(" YES");
+                // patches found, add them
+                final List<BoundingBox> bb = BoundingBox
+                        .fromPatchesList(ByteBuffer.wrap(attributes.get(key)));
+
+                JCheckBox cb = new JCheckBox();
+                Formatter f = new Formatter();
+                f.format("%s (similarity %.0f%%)", searchName, 100 - 100.0 * bb
+                        .get(0).getDistance());
+                SearchList.updateCheckBox(cb, f.toString(), name); // TODO
+                // distance
+                cb.addItemListener(new ItemListener() {
+                    @Override
+                    public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.SELECTED) {
+                            image.addResultPatch(bb);
+                        } else {
+                            image.removeResultPatch(bb);
+                        }
+                    }
+                });
+                box.add(cb);
+            }
+        }
+
+        return p;
+    }
+
     public Image getImage() {
         return img;
     }
