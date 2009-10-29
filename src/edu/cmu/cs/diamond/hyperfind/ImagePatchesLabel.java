@@ -48,7 +48,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -59,7 +61,7 @@ import org.jdesktop.swingx.graphics.GraphicsUtilities;
 class ImagePatchesLabel extends JLabel {
 
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
-    final List<Rectangle> resultPatches = new ArrayList<Rectangle>();
+    final Set<List<BoundingBox>> resultPatches = new HashSet<List<BoundingBox>>();
 
     int mouseDownX;
     int mouseDownY;
@@ -125,8 +127,13 @@ class ImagePatchesLabel extends JLabel {
         return result;
     }
 
-    public void addResultPatch(Rectangle r) {
-        resultPatches.add(new Rectangle(r));
+    public void addResultPatch(List<BoundingBox> rr) {
+        resultPatches.add(rr);
+        repaint();
+    }
+
+    public void removeResultPatch(List<BoundingBox> rr) {
+        resultPatches.remove(rr);
         repaint();
     }
 
@@ -141,9 +148,16 @@ class ImagePatchesLabel extends JLabel {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        for (Rectangle r : resultPatches) {
-            g2.setColor(Color.GREEN);
-            g2.draw(r);
+        for (List<BoundingBox> rr : resultPatches) {
+            for (BoundingBox r : rr) {
+                int x0 = r.getX0();
+                int y0 = r.getY0();
+                int x1 = r.getX1();
+                int y1 = r.getY1();
+
+                g2.setColor(Color.GREEN);
+                g2.drawRect(x0, y0, x1 - x0, y1 - y0);
+            }
         }
 
         for (Rectangle r : drawnPatches) {
