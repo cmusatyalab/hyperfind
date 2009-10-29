@@ -67,17 +67,17 @@ public class PopupPanel extends JPanel {
 
     private final BufferedImage img;
 
-    private final List<HyperFindSearch> activeSearches;
+    private final List<ActiveSearch> activeSearches;
 
     private final List<SnapFindSearchFactory> exampleSearchFactories;
 
     private final Map<String, byte[]> attributes;
 
-    private PopupPanel(BufferedImage img, List<HyperFindSearch> activeSearches,
+    private PopupPanel(BufferedImage img, List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories,
             Map<String, byte[]> attributes) {
         this.img = img;
-        this.activeSearches = new ArrayList<HyperFindSearch>(activeSearches);
+        this.activeSearches = new ArrayList<ActiveSearch>(activeSearches);
         this.exampleSearchFactories = new ArrayList<SnapFindSearchFactory>(
                 exampleSearchFactories);
         this.attributes = new HashMap<String, byte[]>(attributes);
@@ -104,7 +104,7 @@ public class PopupPanel extends JPanel {
     }
 
     public static PopupPanel createInstance(Result r,
-            List<HyperFindSearch> activeSearches,
+            List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories)
             throws IOException {
 
@@ -123,7 +123,7 @@ public class PopupPanel extends JPanel {
     }
 
     public static PopupPanel createInstance(BufferedImage img,
-            List<HyperFindSearch> activeSearches,
+            List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories) {
         Map<String, byte[]> attributes = Collections.emptyMap();
 
@@ -132,7 +132,7 @@ public class PopupPanel extends JPanel {
     }
 
     private static PopupPanel createInstance(BufferedImage img,
-            List<HyperFindSearch> activeSearches,
+            List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes) {
         PopupPanel p = new PopupPanel(img, activeSearches,
@@ -195,6 +195,7 @@ public class PopupPanel extends JPanel {
         Box leftSide = Box.createVerticalBox();
 
         leftSide.add(createPatchesList(activeSearches, attributes, image));
+        // leftSide.add(createLocalSearchBox(activeSearches, image));
 
         hBox.add(leftSide);
 
@@ -212,8 +213,17 @@ public class PopupPanel extends JPanel {
         return p;
     }
 
-    private static JPanel createPatchesList(
-            List<HyperFindSearch> activeSearches,
+    private static JPanel createLocalSearchBox(
+            List<HyperFindSearch> activeSearches, ImagePatchesLabel image) {
+        JPanel p = new JPanel();
+        p.setBorder(BorderFactory.createTitledBorder("Local Execution"));
+
+        JComboBox c = new JComboBox();
+
+        return p;
+    }
+
+    private static JPanel createPatchesList(List<ActiveSearch> activeSearches,
             Map<String, byte[]> attributes, final ImagePatchesLabel image) {
         Box box = Box.createVerticalBox();
 
@@ -236,7 +246,7 @@ public class PopupPanel extends JPanel {
 
         p.add(jsp);
 
-        for (HyperFindSearch h : activeSearches) {
+        for (ActiveSearch h : activeSearches) {
             // extract patches
             String searchName = h.getSearchName();
             String name = h.getInstanceName();

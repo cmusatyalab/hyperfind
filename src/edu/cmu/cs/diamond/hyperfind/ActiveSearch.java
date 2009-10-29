@@ -40,37 +40,28 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.util.List;
+public class ActiveSearch {
 
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
+    private final String searchName;
+    private final String instanceName;
+    private final String mangledName;
 
-import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
-
-class ResultIcon {
-
-    private final ImageIcon icon;
-
-    private final ObjectIdentifier identifier;
-
-    private final List<ActiveSearch> activeSearches;
-
-    public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
-            List<ActiveSearch> activeSearches) {
-        this.icon = icon;
-        this.identifier = identifier;
-        this.activeSearches = activeSearches;
+    public ActiveSearch(String searchName, String instanceName,
+            String mangledName) {
+        this.searchName = searchName;
+        this.instanceName = instanceName;
+        this.mangledName = mangledName;
     }
 
-    public Icon getIcon() {
-        return icon;
+    public String getSearchName() {
+        return searchName;
     }
 
-    public ObjectIdentifier getObjectIdentifier() {
-        return identifier;
+    public String getInstanceName() {
+        return instanceName;
     }
 
-    public List<ActiveSearch> getActiveSearches() {
-        return activeSearches;
+    public String getMangledName() {
+        return mangledName;
     }
 }

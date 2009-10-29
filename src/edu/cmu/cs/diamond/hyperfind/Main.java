@@ -149,8 +149,10 @@ public final class Main {
                     try {
                         File f = chooser.getSelectedFile();
                         BufferedImage img = ImageIO.read(f);
-                        m.popup(f.getName(), img, searchList
-                                .getSelectedSearches(), exampleSearchFactories);
+                        List<ActiveSearch> empty = Collections.emptyList();
+                        m
+                                .popup(f.getName(), img, empty,
+                                        exampleSearchFactories);
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -194,7 +196,9 @@ public final class Main {
                 try {
                     m.startSearch(thumbnailFilter, codecList.get(
                             codecs.getSelectedIndex()).createFilters(),
-                            searchList.createFilters());
+                            searchList.createFilters(),
+                            convertToActiveSearchList(searchList
+                                    .getSelectedSearches()));
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -248,7 +252,7 @@ public final class Main {
                                     codecList.get(codecs.getSelectedIndex())
                                             .createFilters(), searchList
                                             .createFilters());
-                            m.popup(newR, searchList.getSelectedSearches(),
+                            m.popup(newR, r.getActiveSearches(),
                                     exampleSearchFactories);
                         } catch (IOException e1) {
                             e1.printStackTrace();
@@ -319,8 +323,21 @@ public final class Main {
         return m;
     }
 
+    private static List<ActiveSearch> convertToActiveSearchList(
+            List<HyperFindSearch> selectedSearches) {
+        List<ActiveSearch> result = new ArrayList<ActiveSearch>(
+                selectedSearches.size());
+
+        for (HyperFindSearch h : selectedSearches) {
+            result.add(new ActiveSearch(h.getSearchName(), h.getInstanceName(),
+                    h.getMangledName()));
+        }
+
+        return Collections.unmodifiableList(result);
+    }
+
     private void popup(String name, BufferedImage img,
-            List<HyperFindSearch> activeSearches,
+            List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories) {
         popup(name, PopupPanel.createInstance(img, activeSearches,
                 exampleSearchFactories));
@@ -369,7 +386,7 @@ public final class Main {
         }
     }
 
-    private void popup(Result r, List<HyperFindSearch> activeSearches,
+    private void popup(Result r, List<ActiveSearch> activeSearches,
             List<SnapFindSearchFactory> exampleSearchFactories)
             throws IOException {
         popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
@@ -422,7 +439,8 @@ public final class Main {
     }
 
     private void startSearch(List<Filter> thumbnail, List<Filter> codec,
-            List<Filter> searches) throws IOException, InterruptedException {
+            List<Filter> searches, List<ActiveSearch> activeSearches)
+            throws IOException, InterruptedException {
         List<Filter> filters = new ArrayList<Filter>(codec);
         filters.addAll(thumbnail);
         filters.addAll(searches);
@@ -447,7 +465,7 @@ public final class Main {
         search = factory.createSearch(attributes);
 
         // start
-        results.start(search, patchAttributes);
+        results.start(search, patchAttributes, activeSearches);
     }
 
     private static void updateEditCodecButton(final JButton editCodecButton,
