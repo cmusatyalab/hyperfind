@@ -276,11 +276,12 @@ public class PopupPanel extends JPanel {
         Box vBox = Box.createVerticalBox();
         p.add(vBox);
 
-        JButton add = new JButton("+");
+        final JButton addButton = new JButton("+");
+        addButton.setEnabled(false);
 
         final JPopupMenu searches = new JPopupMenu();
 
-        add.addActionListener(new ActionListener() {
+        addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Component c = (Component) e.getSource();
@@ -323,11 +324,24 @@ public class PopupPanel extends JPanel {
             searches.add(jm);
         }
 
-        JButton clearButton = new JButton("Clear Patches");
+        final JButton clearButton = new JButton("Clear Patches");
+        clearButton.setEnabled(false);
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 image.clearDrawnPatches();
+                addButton.setEnabled(false);
+                clearButton.setEnabled(false);
+            }
+        });
+
+        image.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // check if we have any patches
+                boolean b = !image.getDrawnPatches().isEmpty();
+                addButton.setEnabled(b);
+                clearButton.setEnabled(b);
             }
         });
 
@@ -352,7 +366,7 @@ public class PopupPanel extends JPanel {
         });
 
         Box hBox = Box.createHorizontalBox();
-        hBox.add(add);
+        hBox.add(addButton);
         hBox.add(Box.createHorizontalStrut(10));
         hBox.add(clearButton);
         vBox.add(hBox);
@@ -515,8 +529,8 @@ public class PopupPanel extends JPanel {
                 Formatter f = new Formatter();
                 f.format("%s (similarity %.0f%%)", searchName, 100 - 100.0 * bb
                         .get(0).getDistance());
-                SearchList.updateCheckBox(cb, f.toString(), name); // TODO
-                // distance
+                SearchList.updateCheckBox(cb, f.toString(), name);
+
                 cb.addItemListener(new ItemListener() {
                     @Override
                     public void itemStateChanged(ItemEvent e) {
