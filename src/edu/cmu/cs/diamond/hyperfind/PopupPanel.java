@@ -41,10 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.ByteArrayInputStream;
@@ -72,21 +69,8 @@ public class PopupPanel extends JPanel {
 
     private final BufferedImage img;
 
-    private final List<ActiveSearch> activeSearches;
-
-    private final List<SnapFindSearchFactory> exampleSearchFactories;
-
-    private final Map<String, byte[]> attributes;
-
-    private PopupPanel(BufferedImage img, List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
-            Map<String, byte[]> attributes) {
+    private PopupPanel(BufferedImage img) {
         this.img = img;
-        this.activeSearches = new ArrayList<ActiveSearch>(activeSearches);
-        this.exampleSearchFactories = new ArrayList<SnapFindSearchFactory>(
-                exampleSearchFactories);
-        this.attributes = new HashMap<String, byte[]>(attributes);
-
     }
 
     private static String attributeToString(String name, byte[] value) {
@@ -182,8 +166,7 @@ public class PopupPanel extends JPanel {
             List<SnapFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
-        PopupPanel p = new PopupPanel(img, activeSearches,
-                exampleSearchFactories, attributes);
+        PopupPanel p = new PopupPanel(img);
 
         // image pane
         ImagePatchesLabel image = new ImagePatchesLabel(img);
