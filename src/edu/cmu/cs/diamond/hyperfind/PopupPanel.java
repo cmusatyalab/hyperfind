@@ -309,24 +309,6 @@ public class PopupPanel extends JPanel {
 
         final JButton clearButton = new JButton("Clear Patches");
         clearButton.setEnabled(false);
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                image.clearDrawnPatches();
-                addButton.setEnabled(false);
-                clearButton.setEnabled(false);
-            }
-        });
-
-        image.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                // check if we have any patches
-                boolean b = !image.getDrawnPatches().isEmpty();
-                addButton.setEnabled(b);
-                clearButton.setEnabled(b);
-            }
-        });
 
         final JLabel countLabel = new JLabel();
         updateCountLabel(countLabel, model);
@@ -354,10 +336,47 @@ public class PopupPanel extends JPanel {
         hBox.add(clearButton);
         vBox.add(hBox);
 
+        // TODO add existing
+        final JButton addToExistingButton = new JButton("Add to Existing");
+        final JComboBox addToExistingCombo = new JComboBox();
+
+        addToExistingButton.setEnabled(false);
+        addToExistingCombo.setEnabled(false);
+
+        hBox = Box.createHorizontalBox();
+        hBox.add(addToExistingButton);
+        hBox.add(Box.createHorizontalStrut(10));
+        hBox.add(addToExistingCombo);
+        vBox.add(Box.createVerticalStrut(10));
+        vBox.add(hBox);
+
         hBox = Box.createHorizontalBox();
         hBox.add(countLabel);
         vBox.add(hBox);
 
+        // enabled/disabled behaviors
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                image.clearDrawnPatches();
+                addButton.setEnabled(false);
+                clearButton.setEnabled(false);
+                addToExistingButton.setEnabled(false);
+                addToExistingCombo.setEnabled(false);
+            }
+        });
+
+        image.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // check if we have any patches
+                boolean b = !image.getDrawnPatches().isEmpty();
+                addButton.setEnabled(b);
+                clearButton.setEnabled(b);
+                addToExistingButton.setEnabled(b);
+                addToExistingCombo.setEnabled(b);
+            }
+        });
         return p;
     }
 
