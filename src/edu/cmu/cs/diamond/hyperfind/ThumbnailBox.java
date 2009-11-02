@@ -164,7 +164,9 @@ public class ThumbnailBox extends JPanel {
 
     public void stop() throws InterruptedException {
         System.out.println("STOP");
-        search.close();
+        if (search != null) {
+            search.close();
+        }
 
         if (timerExecutor != null) {
             timerExecutor.shutdownNow();
