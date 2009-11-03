@@ -366,18 +366,35 @@ public class PopupPanel extends JPanel {
             }
         });
 
+        addToExistingCombo.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                updateComponentsEnablement(image, addButton, clearButton,
+                        addToExistingButton, addToExistingCombo);
+            }
+        });
+
         image.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseReleased(MouseEvent e) {
-                // check if we have any patches
-                boolean b = !image.getDrawnPatches().isEmpty();
-                addButton.setEnabled(b);
-                clearButton.setEnabled(b);
-                addToExistingButton.setEnabled(b);
-                addToExistingCombo.setEnabled(b);
+                updateComponentsEnablement(image, addButton, clearButton,
+                        addToExistingButton, addToExistingCombo);
             }
         });
         return p;
+    }
+
+    private static void updateComponentsEnablement(
+            final ImagePatchesLabel image, final JButton addButton,
+            final JButton clearButton, final JButton addToExistingButton,
+            final JComboBox addToExistingCombo) {
+        boolean b = !image.getDrawnPatches().isEmpty();
+        addButton.setEnabled(b);
+        clearButton.setEnabled(b);
+        addToExistingCombo.setEnabled(b);
+
+        addToExistingButton.setEnabled(b
+                && (addToExistingCombo.getSelectedIndex() != -1));
     }
 
     private static void updateCountLabel(JLabel countLabel,
