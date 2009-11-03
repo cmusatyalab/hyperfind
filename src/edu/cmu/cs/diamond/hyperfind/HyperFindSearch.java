@@ -63,4 +63,7 @@ public interface HyperFindSearch {
     String getSearchName();
 
     String getMangledName();
+
+    void addPatches(List<BufferedImage> patches) throws IOException,
+            InterruptedException;
 }

@@ -395,18 +395,7 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     try {
                         // make patches
-                        List<BufferedImage> patches = new ArrayList<BufferedImage>();
-                        for (Rectangle r : image.getDrawnPatches()) {
-                            BufferedImage b = new BufferedImage(r.width,
-                                    r.height, BufferedImage.TYPE_INT_RGB);
-
-                            Graphics2D g2 = b.createGraphics();
-                            g2.drawImage(img, 0, 0, r.width, r.height, r.x,
-                                    r.y, r.x + r.width, r.y + r.height, null);
-                            g2.dispose();
-
-                            patches.add(b);
-                        }
+                        List<BufferedImage> patches = createPatches(image, img);
 
                         model.addSearch(f.createHyperFindSearch(patches));
                     } catch (IOException e1) {
@@ -453,8 +442,30 @@ public class PopupPanel extends JPanel {
         vBox.add(hBox);
 
         final JButton addToExistingButton = new JButton("Add to Existing");
+        final ExistingSearchComboModel existingSearchComboModel = new ExistingSearchComboModel(
+                model);
         final JComboBox addToExistingCombo = new JComboBox(
-                new ExistingSearchComboModel(model));
+                existingSearchComboModel);
+
+        addToExistingButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // get item
+                SelectableSearch item = (SelectableSearch) existingSearchComboModel
+                        .getSelectedItem();
+                try {
+                    System.out.println(item);
+                    item.getSearch().addPatches(createPatches(image, img));
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    Thread.currentThread().interrupt();
+                    e1.printStackTrace();
+                }
+            }
+        });
 
         addToExistingButton.setEnabled(false);
         addToExistingCombo.setEnabled(false);
@@ -685,5 +696,22 @@ public class PopupPanel extends JPanel {
 
     public Image getImage() {
         return img;
+    }
+
+    private static List<BufferedImage> createPatches(ImagePatchesLabel image,
+            BufferedImage img) {
+        List<BufferedImage> patches = new ArrayList<BufferedImage>();
+        for (Rectangle r : image.getDrawnPatches()) {
+            BufferedImage b = new BufferedImage(r.width, r.height,
+                    BufferedImage.TYPE_INT_RGB);
+
+            Graphics2D g2 = b.createGraphics();
+            g2.drawImage(img, 0, 0, r.width, r.height, r.x, r.y, r.x + r.width,
+                    r.y + r.height, null);
+            g2.dispose();
+
+            patches.add(b);
+        }
+        return patches;
     }
 }

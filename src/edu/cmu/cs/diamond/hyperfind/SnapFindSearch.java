@@ -45,7 +45,11 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Formatter;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -431,5 +435,12 @@ class SnapFindSearch implements HyperFindSearch {
     @Override
     public boolean needsPatches() {
         return needsPatches;
+    }
+
+    @Override
+    public void addPatches(List<BufferedImage> patches) throws IOException,
+            InterruptedException {
+        this.patches.addAll(patches);
+        reprocessConfig("normalize-plugin-config");
     }
 }
