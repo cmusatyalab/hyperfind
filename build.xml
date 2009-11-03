@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="jar" name="HyperFind">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="HyperFind.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="/usr/share/java/opendiamond.jar"/>
+        <pathelement location="/usr/share/java/swingx.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src" excludes="**/*.launch, **/*.java"/>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    	<delete file="hyperfind.jar"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="build" name="jar">
+      <jar destfile="hyperfind.jar" basedir="bin">
+            <manifest>
+                <attribute name="Main-Class" value="edu.cmu.cs.diamond.hyperfind.Main"/>
+		<attribute name="Class-Path" value="file:///usr/share/java/opendiamond.jar file:///usr/share/java/swingx.jar"/>
+            </manifest>
+      </jar>
+    </target>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="HyperFind.classpath"/>
+        </javac>
+    </target>
+</project>
