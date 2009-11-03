@@ -63,6 +63,114 @@ import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class PopupPanel extends JPanel {
+    private static class ExistingSearchComboModel extends AbstractListModel
+            implements ComboBoxModel, ListDataListener {
+
+        private final SearchListModel model;
+
+        private final List<SelectableSearch> list;
+
+        private Object selectedItem;
+
+        public ExistingSearchComboModel(SearchListModel model) {
+            this.model = model;
+
+            // XXX leaking
+            model.addListDataListener(this);
+
+            list = new ArrayList<SelectableSearch>();
+            for (int i = 0; i < model.getSize(); i++) {
+                SelectableSearch item = (SelectableSearch) model
+                        .getElementAt(i);
+                if (item.getSearch().needsPatches()) {
+                    list.add(item);
+                }
+            }
+        }
+
+        @Override
+        public Object getSelectedItem() {
+            return selectedItem;
+        }
+
+        @Override
+        public void setSelectedItem(Object anItem) {
+            if ((selectedItem != null && !selectedItem.equals(anItem))
+                    || selectedItem == null && anItem != null) {
+                selectedItem = anItem;
+                fireContentsChanged(this, -1, -1);
+            }
+        }
+
+        @Override
+        public Object getElementAt(int index) {
+            return list.get(index);
+        }
+
+        @Override
+        public int getSize() {
+            return list.size();
+        }
+
+        // SearchListModel will never give a range, just single elements here
+        @Override
+        public void contentsChanged(ListDataEvent e) {
+            assert e.getIndex0() == e.getIndex1();
+
+            // find in ours
+            if (isExample(e.getIndex0())) {
+                int index = offsetIndex(e.getIndex0());
+
+                fireContentsChanged(this, index, index);
+            }
+        }
+
+        private boolean isExample(int index0) {
+            SelectableSearch item = (SelectableSearch) model
+                    .getElementAt(index0);
+            return item.getSearch().needsPatches();
+        }
+
+        private int offsetIndex(int index) {
+            int myIndex = -1;
+            for (int i = 0; i < index; i++) {
+                SelectableSearch item = (SelectableSearch) model
+                        .getElementAt(i);
+                System.out.println(item);
+                if (item.getSearch().needsPatches()) {
+                    myIndex++;
+                }
+            }
+            return myIndex;
+        }
+
+        @Override
+        public void intervalAdded(ListDataEvent e) {
+            assert e.getIndex0() == e.getIndex1();
+
+            if (isExample(e.getIndex0())) {
+                System.out.println("zzz");
+                int index = offsetIndex(e.getIndex0());
+
+                list.add(index, (SelectableSearch) model.getElementAt(e
+                        .getIndex0()));
+                fireIntervalAdded(this, index, index);
+            }
+        }
+
+        @Override
+        public void intervalRemoved(ListDataEvent e) {
+            assert e.getIndex0() == e.getIndex1();
+
+            if (isExample(e.getIndex0())) {
+                int index = offsetIndex(e.getIndex0());
+
+                list.remove(index);
+                fireIntervalRemoved(this, index, index);
+            }
+        }
+    }
+
     private static final int PATCH_LIST_MINIMUM_HEIGHT = 300;
 
     private static final int PATCH_LIST_PREFERRED_WIDTH = 300;
@@ -336,9 +444,9 @@ public class PopupPanel extends JPanel {
         hBox.add(clearButton);
         vBox.add(hBox);
 
-        // TODO add existing
         final JButton addToExistingButton = new JButton("Add to Existing");
-        final JComboBox addToExistingCombo = new JComboBox();
+        final JComboBox addToExistingCombo = new JComboBox(
+                new ExistingSearchComboModel(model));
 
         addToExistingButton.setEnabled(false);
         addToExistingCombo.setEnabled(false);
