@@ -205,7 +205,7 @@ final class SearchList extends JPanel implements ListDataListener {
 
     @Override
     public void intervalRemoved(ListDataEvent e) {
-        ListElement element = elements.get(e.getIndex0());
+        ListElement element = elements.remove(e.getIndex0());
 
         box.remove(element.getBox());
 
