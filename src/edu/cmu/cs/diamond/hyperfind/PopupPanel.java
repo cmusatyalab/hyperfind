@@ -78,12 +78,15 @@ public class PopupPanel extends JPanel {
             // XXX leaking
             model.addListDataListener(this);
 
+            // copy the elements out and keep a shadow copy
             list = new ArrayList<SelectableSearch>();
             for (int i = 0; i < model.getSize(); i++) {
                 SelectableSearch item = (SelectableSearch) model
                         .getElementAt(i);
                 if (item.getSearch().needsPatches()) {
                     list.add(item);
+                } else {
+                    list.add(null);
                 }
             }
         }
@@ -104,56 +107,61 @@ public class PopupPanel extends JPanel {
 
         @Override
         public Object getElementAt(int index) {
-            return list.get(index);
+            int myIndex = -1;
+
+            Object o = null;
+            for (int i = 0; i < list.size(); i++) {
+                o = list.get(i);
+                if (o != null) {
+                    myIndex++;
+                }
+
+                if (myIndex == index) {
+                    break;
+                }
+            }
+
+            return o;
         }
 
         @Override
         public int getSize() {
-            return list.size();
+            int size = 0;
+            for (Object o : list) {
+                if (o != null) {
+                    size++;
+                }
+            }
+            return size;
         }
 
-        // SearchListModel will never give a range, just single elements here
+        // SearchListModel will never give a range, just single elements
         @Override
         public void contentsChanged(ListDataEvent e) {
             assert e.getIndex0() == e.getIndex1();
 
-            // find in ours
-            if (isExample(e.getIndex0())) {
-                int index = offsetIndex(e.getIndex0());
+            int index = e.getIndex0();
 
+            // find in ours
+            if (list.get(index) != null) {
                 fireContentsChanged(this, index, index);
             }
-        }
-
-        private boolean isExample(int index0) {
-            SelectableSearch item = (SelectableSearch) model
-                    .getElementAt(index0);
-            return item.getSearch().needsPatches();
-        }
-
-        private int offsetIndex(int index) {
-            int myIndex = -1;
-            for (int i = 0; i < index; i++) {
-                SelectableSearch item = (SelectableSearch) model
-                        .getElementAt(i);
-                System.out.println(item);
-                if (item.getSearch().needsPatches()) {
-                    myIndex++;
-                }
-            }
-            return myIndex;
         }
 
         @Override
         public void intervalAdded(ListDataEvent e) {
             assert e.getIndex0() == e.getIndex1();
 
-            if (isExample(e.getIndex0())) {
-                System.out.println("zzz");
-                int index = offsetIndex(e.getIndex0());
+            int index = e.getIndex0();
 
-                list.add(index, (SelectableSearch) model.getElementAt(e
-                        .getIndex0()));
+            SelectableSearch item = (SelectableSearch) model
+                    .getElementAt(index);
+            if (!item.getSearch().needsPatches()) {
+                item = null;
+            }
+            list.add(index, item);
+
+            if (item != null) {
                 fireIntervalAdded(this, index, index);
             }
         }
@@ -162,10 +170,10 @@ public class PopupPanel extends JPanel {
         public void intervalRemoved(ListDataEvent e) {
             assert e.getIndex0() == e.getIndex1();
 
-            if (isExample(e.getIndex0())) {
-                int index = offsetIndex(e.getIndex0());
+            int index = e.getIndex0();
 
-                list.remove(index);
+            SelectableSearch item = list.remove(index);
+            if (item != null) {
                 fireIntervalRemoved(this, index, index);
             }
         }
