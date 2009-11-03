@@ -386,14 +386,14 @@ public class PopupPanel extends JPanel {
         countLabel.setText("Search count: " + count);
     }
 
-    private static class ComboModel extends AbstractListModel implements
-            ComboBoxModel, ListDataListener {
+    private static class LocalSearchComboModel extends AbstractListModel
+            implements ComboBoxModel, ListDataListener {
 
         private final SearchListModel model;
 
         private Object selectedItem;
 
-        public ComboModel(SearchListModel model) {
+        public LocalSearchComboModel(SearchListModel model) {
             this.model = model;
 
             // XXX leaking
@@ -449,7 +449,7 @@ public class PopupPanel extends JPanel {
         JPanel p = new JPanel();
         p.setBorder(BorderFactory.createTitledBorder("Local Execution"));
 
-        final JComboBox c = new JComboBox(new ComboModel(model));
+        final JComboBox c = new JComboBox(new LocalSearchComboModel(model));
         c.setSelectedIndex(0);
         p.add(c);
 
