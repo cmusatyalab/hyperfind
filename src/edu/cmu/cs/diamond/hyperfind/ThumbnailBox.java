@@ -253,6 +253,7 @@ public class ThumbnailBox extends JPanel {
                                 }
                             }
                             if (thumb == null) {
+                                // cook up blank image
                                 thumb = new BufferedImage(200, 150,
                                         BufferedImage.TYPE_INT_RGB);
                             }
