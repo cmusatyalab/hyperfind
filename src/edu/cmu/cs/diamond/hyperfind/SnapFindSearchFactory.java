@@ -92,7 +92,8 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
-        return new SnapFindSearch(pluginRunner, displayName, internalName, type);
+        return new SnapFindSearch(pluginRunner, displayName, internalName,
+                type, needsPatches);
     }
 
     static <V> V getOrFail(Map<String, V> map, String key) {
@@ -225,6 +226,6 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
-                type, patches);
+                type, needsPatches, patches);
     }
 }

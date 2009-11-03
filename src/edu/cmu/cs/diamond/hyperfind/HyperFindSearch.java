@@ -49,6 +49,8 @@ import edu.cmu.cs.diamond.opendiamond.Filter;
 public interface HyperFindSearch {
     boolean isEditable();
 
+    boolean needsPatches();
+
     void edit() throws IOException, InterruptedException;
 
     List<BoundingBox> runLocally(BufferedImage image) throws IOException,
