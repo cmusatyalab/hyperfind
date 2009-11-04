@@ -65,7 +65,7 @@ class SnapFindSearch implements HyperFindSearch {
 
     private final String internalName;
 
-    private final SnapFindSearchType type;
+    private final HyperFindSearchType type;
 
     private final boolean isEditable;
 
@@ -86,14 +86,14 @@ class SnapFindSearch implements HyperFindSearch {
     private File searchletLib;
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, SnapFindSearchType type, boolean needsPatches)
+            String internalName, HyperFindSearchType type, boolean needsPatches)
             throws IOException, InterruptedException {
         this(pluginRunner, displayName, internalName, type, needsPatches,
                 new ArrayList<BufferedImage>());
     }
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, SnapFindSearchType type, boolean needsPatches,
+            String internalName, HyperFindSearchType type, boolean needsPatches,
             List<BufferedImage> patches) throws IOException,
             InterruptedException {
         this.pluginRunner = pluginRunner;

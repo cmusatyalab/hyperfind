@@ -40,15 +40,21 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-public enum SnapFindSearchType {
-    CODEC, FILTER, THUMBNAIL;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.List;
 
-    public static SnapFindSearchType fromString(String s) {
-        return valueOf(s.toUpperCase());
-    }
+public interface HyperFindSearchFactory {
 
-    @Override
-    public String toString() {
-        return super.toString().toLowerCase();
-    }
+    String getDisplayName();
+
+    HyperFindSearchType getType();
+
+    HyperFindSearch createHyperFindSearch() throws IOException,
+            InterruptedException;
+
+    boolean needsPatches();
+
+    HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
+            throws IOException, InterruptedException;
 }

@@ -240,7 +240,7 @@ public class PopupPanel extends JPanel {
 
     public static PopupPanel createInstance(Result r,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) throws IOException {
 
         BufferedImage img;
@@ -269,7 +269,7 @@ public class PopupPanel extends JPanel {
 
     public static PopupPanel createInstance(BufferedImage img,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
 
@@ -279,7 +279,7 @@ public class PopupPanel extends JPanel {
 
     private static PopupPanel createInstance(BufferedImage img,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
         PopupPanel p = new PopupPanel(img);
@@ -368,7 +368,7 @@ public class PopupPanel extends JPanel {
 
     private static JPanel createExampleSearchPanel(final SearchListModel model,
             final ImagePatchesLabel image, final BufferedImage img,
-            List<SnapFindSearchFactory> exampleSearchFactories) {
+            List<HyperFindSearchFactory> exampleSearchFactories) {
         JPanel p = new JPanel();
         p.setBorder(BorderFactory.createTitledBorder("Example Search"));
 
@@ -388,7 +388,7 @@ public class PopupPanel extends JPanel {
             }
         });
 
-        for (final SnapFindSearchFactory f : exampleSearchFactories) {
+        for (final HyperFindSearchFactory f : exampleSearchFactories) {
             JMenuItem jm = new JMenuItem(f.getDisplayName());
             jm.addActionListener(new ActionListener() {
                 @Override

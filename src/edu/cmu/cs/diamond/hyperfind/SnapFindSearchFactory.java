@@ -49,10 +49,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> {
+public class SnapFindSearchFactory implements HyperFindSearchFactory {
 
     private final File pluginRunner;
 
+    /* (non-Javadoc)
+     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getDisplayName()
+     */
     public String getDisplayName() {
         return displayName;
     }
@@ -61,7 +64,10 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
         return internalName;
     }
 
-    public SnapFindSearchType getType() {
+    /* (non-Javadoc)
+     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getType()
+     */
+    public HyperFindSearchType getType() {
         return type;
     }
 
@@ -69,7 +75,7 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
 
     private final String internalName;
 
-    private final SnapFindSearchType type;
+    private final HyperFindSearchType type;
 
     private final boolean needsPatches;
 
@@ -84,12 +90,15 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
         String typeString = new String(getOrFail(map, "type"));
 
         try {
-            type = SnapFindSearchType.fromString(typeString);
+            type = HyperFindSearchType.fromString(typeString);
         } catch (IllegalArgumentException e) {
             throw new UnknownSearchTypeException(e);
         }
     }
 
+    /* (non-Javadoc)
+     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch()
+     */
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
@@ -105,9 +114,9 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
         return value;
     }
 
-    public static List<SnapFindSearchFactory> createSnapFindSearchFactories(
+    public static List<HyperFindSearchFactory> createHyperFindSearchFactories(
             File pluginRunner) throws IOException, InterruptedException {
-        List<SnapFindSearchFactory> result = new ArrayList<SnapFindSearchFactory>();
+        ArrayList<HyperFindSearchFactory> result = new ArrayList<HyperFindSearchFactory>();
 
         Process p = new ProcessBuilder(pluginRunner.getPath(), "list-plugins")
                 .start();
@@ -214,15 +223,16 @@ public class SnapFindSearchFactory implements Comparable<SnapFindSearchFactory> 
         return displayName;
     }
 
-    @Override
-    public int compareTo(SnapFindSearchFactory o) {
-        return getDisplayName().compareTo(o.getDisplayName());
-    }
-
+    /* (non-Javadoc)
+     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#needsPatches()
+     */
     public boolean needsPatches() {
         return needsPatches;
     }
 
+    /* (non-Javadoc)
+     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch(java.util.List)
+     */
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,

@@ -47,11 +47,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -83,7 +79,7 @@ public final class Main {
     }
 
     public static Main createMain(File pluginRunner,
-            List<SnapFindSearchFactory> factories) throws IOException,
+            List<HyperFindSearchFactory> factories) throws IOException,
             InterruptedException {
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -118,7 +114,7 @@ public final class Main {
                 .createDefaultCookieMap());
 
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
-        final List<SnapFindSearchFactory> exampleSearchFactories = new ArrayList<SnapFindSearchFactory>();
+        final List<HyperFindSearchFactory> exampleSearchFactories = new ArrayList<HyperFindSearchFactory>();
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         initSearchFactories(factories, model, searches, thumbnailFilter,
                 exampleSearchFactories, codecList);
@@ -346,20 +342,21 @@ public final class Main {
 
     private void popup(String name, BufferedImage img,
             List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         popup(name, PopupPanel.createInstance(img, activeSearches,
                 exampleSearchFactories, model));
     }
 
     private static void initSearchFactories(
-            List<SnapFindSearchFactory> factories, final SearchListModel model,
-            final JPopupMenu searches, final List<Filter> thumbnailFilter,
-            final List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> factories,
+            final SearchListModel model, final JPopupMenu searches,
+            final List<Filter> thumbnailFilter,
+            final List<HyperFindSearchFactory> exampleSearchFactories,
             final List<HyperFindSearch> codecList) throws IOException,
             InterruptedException {
-        for (final SnapFindSearchFactory f : factories) {
-            SnapFindSearchType t = f.getType();
+        for (final HyperFindSearchFactory f : factories) {
+            HyperFindSearchType t = f.getType();
             switch (t) {
             case CODEC:
                 codecList.add(f.createHyperFindSearch());
@@ -396,7 +393,7 @@ public final class Main {
     }
 
     private void popup(Result r, List<ActiveSearch> activeSearches,
-            List<SnapFindSearchFactory> exampleSearchFactories,
+            List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) throws IOException {
         popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
                 exampleSearchFactories, model));
@@ -502,9 +499,15 @@ public final class Main {
                             + pluginRunner);
         }
 
-        final List<SnapFindSearchFactory> factories = SnapFindSearchFactory
-                .createSnapFindSearchFactories(pluginRunner);
-        Collections.sort(factories);
+        final List<HyperFindSearchFactory> factories = SnapFindSearchFactory
+                .createHyperFindSearchFactories(pluginRunner);
+        Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
+            @Override
+            public int compare(HyperFindSearchFactory o1,
+                    HyperFindSearchFactory o2) {
+                return o1.getDisplayName().compareTo(o2.getDisplayName());
+            }
+        });
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
