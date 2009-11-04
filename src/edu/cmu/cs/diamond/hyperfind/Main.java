@@ -47,7 +47,11 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -81,7 +85,7 @@ public final class Main {
     public static Main createMain(File pluginRunner,
             List<SnapFindSearchFactory> factories) throws IOException,
             InterruptedException {
-        JFrame frame = new JFrame("HyperFind");
+        final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton defineScopeButton = new JButton("Define Scope");
@@ -162,7 +166,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 HyperFindSearch s = codecList.get(codecs.getSelectedIndex());
                 try {
-                    s.edit();
+                    s.edit(frame);
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();

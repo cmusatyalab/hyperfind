@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
@@ -51,7 +52,8 @@ public interface HyperFindSearch {
 
     boolean needsPatches();
 
-    void edit() throws IOException, InterruptedException;
+    void edit(Component parentComponent) throws IOException,
+            InterruptedException;
 
     List<BoundingBox> runLocally(BufferedImage image) throws IOException,
             InterruptedException;

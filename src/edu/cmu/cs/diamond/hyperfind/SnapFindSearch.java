@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -209,7 +210,8 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     @Override
-    public void edit() throws IOException, InterruptedException {
+    public void edit(Component parentComponent) throws IOException,
+            InterruptedException {
         reprocessConfig("edit-plugin-config");
     }
 
