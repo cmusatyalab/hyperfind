@@ -137,34 +137,7 @@ public class ThumbnailBox extends JPanel {
             @Override
             public void run() {
                 try {
-                    final Map<String, ServerStatistics> serverStats = search
-                            .getStatistics();
-
-                    boolean hasStats = false;
-                    for (ServerStatistics s : serverStats.values()) {
-                        if (s.getTotalObjects() != 0) {
-                            hasStats = true;
-                            break;
-                        }
-                    }
-                    if (hasStats) {
-                        SwingUtilities.invokeLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                stats.update(serverStats);
-                            }
-                        });
-                    } else {
-                        SwingUtilities.invokeLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                stats
-                                        .setIndeterminateMessage("Waiting for First Results");
-                            }
-                        });
-                    }
-                } catch (SearchClosedException e1) {
-                    return;
+                    updateStats();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
@@ -299,6 +272,8 @@ public class ThumbnailBox extends JPanel {
                             publish(resultIcon);
                         }
                     } finally {
+                        // update stats one more time
+                        updateStats();
                         stop();
                     }
                 } catch (IOException e) {
@@ -336,6 +311,38 @@ public class ThumbnailBox extends JPanel {
             int y1 = b.getY1();
             Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
             g.draw(r);
+        }
+    }
+
+    private void updateStats() throws IOException, InterruptedException {
+        try {
+            final Map<String, ServerStatistics> serverStats = search
+                    .getStatistics();
+
+            boolean hasStats = false;
+            for (ServerStatistics s : serverStats.values()) {
+                if (s.getTotalObjects() != 0) {
+                    hasStats = true;
+                    break;
+                }
+            }
+            if (hasStats) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        stats.update(serverStats);
+                    }
+                });
+            } else {
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        stats
+                                .setIndeterminateMessage("Waiting for First Results");
+                    }
+                });
+            }
+        } catch (SearchClosedException ignore) {
         }
     }
 }
