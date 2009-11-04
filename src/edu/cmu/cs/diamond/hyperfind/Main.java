@@ -47,6 +47,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import javax.imageio.ImageIO;
@@ -509,6 +511,9 @@ public final class Main {
             }
         });
 
+        // make SSL trusting
+        trustAllSSL();
+
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -524,5 +529,55 @@ public final class Main {
                 }
             }
         });
+    }
+
+    private static void trustAllSSL() {
+        javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[1];
+
+        javax.net.ssl.TrustManager tm = new VeryTrusting();
+        trustAllCerts[0] = tm;
+
+        javax.net.ssl.SSLContext sc;
+        try {
+            sc = javax.net.ssl.SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, null);
+            javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc
+                    .getSocketFactory());
+        } catch (NoSuchAlgorithmException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public static class VeryTrusting implements javax.net.ssl.TrustManager,
+            javax.net.ssl.X509TrustManager {
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            return null;
+        }
+
+        public boolean isServerTrusted(
+                java.security.cert.X509Certificate[] certs) {
+            return true;
+        }
+
+        public boolean isClientTrusted(
+                java.security.cert.X509Certificate[] certs) {
+            return true;
+        }
+
+        public void checkServerTrusted(
+                java.security.cert.X509Certificate[] certs, String authType)
+                throws java.security.cert.CertificateException {
+            return;
+        }
+
+        public void checkClientTrusted(
+                java.security.cert.X509Certificate[] certs, String authType)
+                throws java.security.cert.CertificateException {
+            return;
+        }
     }
 }
