@@ -100,6 +100,8 @@ public final class Main {
         final SearchListModel model = new SearchListModel();
         final SearchList searchList = new SearchList(model);
 
+        searchList.setTransferHandler(new HyperFindTransferHandler());
+
         // codecs / menu
         JButton addSearchButton = new JButton("+");
         final JPopupMenu searches = new JPopupMenu();
