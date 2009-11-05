@@ -338,7 +338,7 @@ public final class Main {
 
         for (HyperFindSearch h : selectedSearches) {
             result.add(new ActiveSearch(h.getSearchName(), h.getInstanceName(),
-                    h.getMangledName()));
+                    h.getDigestedName()));
         }
 
         return Collections.unmodifiableList(result);

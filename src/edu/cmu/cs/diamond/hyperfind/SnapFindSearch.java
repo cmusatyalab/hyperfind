@@ -44,11 +44,8 @@ import java.awt.Component;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +54,7 @@ import javax.imageio.ImageIO;
 import edu.cmu.cs.diamond.opendiamond.Filter;
 import edu.cmu.cs.diamond.opendiamond.FilterCode;
 
-class SnapFindSearch implements HyperFindSearch {
+class SnapFindSearch extends HyperFindSearch {
 
     private final File pluginRunner;
 
@@ -93,9 +90,9 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, HyperFindSearchType type, boolean needsPatches,
-            List<BufferedImage> patches) throws IOException,
-            InterruptedException {
+            String internalName, HyperFindSearchType type,
+            boolean needsPatches, List<BufferedImage> patches)
+            throws IOException, InterruptedException {
         this.pluginRunner = pluginRunner;
         this.displayName = displayName;
         this.internalName = internalName;
@@ -171,7 +168,7 @@ class SnapFindSearch implements HyperFindSearch {
 
         // fspec and digest
         byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
-        fspecFilterName = "z" + digestForFspec(fspecBytes);
+        fspecFilterName = digestForFspec(fspecBytes);
 
         // replace the filter name with a hash of the args, etc.
         fspec = new String(fspecBytes).replace("*", fspecFilterName);
@@ -189,24 +186,8 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     private String digestForFspec(byte[] fspecBytes) {
-        try {
-            MessageDigest m = MessageDigest.getInstance("SHA-256");
-            m.update(type.toString().getBytes());
-            m.update(internalName.getBytes());
-            m.update(blob);
-            byte[] digest = m.digest(fspecBytes);
-            System.out.println(digest.length);
-            Formatter f = new Formatter();
-            for (byte b : digest) {
-                f.format("%02x", b & 0xFF);
-            }
-            return f.toString();
-        } catch (NoSuchAlgorithmException e) {
-            // can't happen on java 6?
-            e.printStackTrace();
-        }
-
-        return "";
+        return digest(type.toString().getBytes(), internalName.getBytes(),
+                blob, fspecBytes);
     }
 
     @Override
@@ -325,11 +306,6 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     @Override
-    public String toString() {
-        return displayName;
-    }
-
-    @Override
     public List<Filter> createFilters() throws IOException {
         List<Filter> filters = new ArrayList<Filter>();
 
@@ -416,22 +392,8 @@ class SnapFindSearch implements HyperFindSearch {
     }
 
     @Override
-    public String getMangledName() {
+    public String getDigestedName() {
         return fspecFilterName;
-    }
-
-    @Override
-    public int hashCode() {
-        return getMangledName().hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof SnapFindSearch) {
-            SnapFindSearch s = (SnapFindSearch) obj;
-            return getMangledName().equals(s.getMangledName());
-        }
-        return false;
     }
 
     @Override

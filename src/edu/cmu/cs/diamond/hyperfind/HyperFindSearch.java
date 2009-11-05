@@ -43,29 +43,72 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Formatter;
 import java.util.List;
 
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
-public interface HyperFindSearch {
-    boolean isEditable();
+public abstract class HyperFindSearch {
+    public abstract boolean isEditable();
 
-    boolean needsPatches();
+    public abstract boolean needsPatches();
 
-    void edit(Component parentComponent) throws IOException,
+    public abstract void edit(Component parentComponent) throws IOException,
             InterruptedException;
 
-    List<BoundingBox> runLocally(BufferedImage image) throws IOException,
-            InterruptedException;
+    public abstract List<BoundingBox> runLocally(BufferedImage image)
+            throws IOException, InterruptedException;
 
-    List<Filter> createFilters() throws IOException;
+    public abstract List<Filter> createFilters() throws IOException;
 
-    String getInstanceName();
+    public abstract String getInstanceName();
 
-    String getSearchName();
+    public abstract String getSearchName();
 
-    String getMangledName();
+    public abstract String getDigestedName();
 
-    void addPatches(List<BufferedImage> patches) throws IOException,
-            InterruptedException;
+    public abstract void addPatches(List<BufferedImage> patches)
+            throws IOException, InterruptedException;
+
+    @Override
+    public String toString() {
+        return getSearchName();
+    }
+
+    @Override
+    public int hashCode() {
+        return getDigestedName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SnapFindSearch) {
+            SnapFindSearch s = (SnapFindSearch) obj;
+            return getDigestedName().equals(s.getDigestedName());
+        }
+        return false;
+    }
+
+    protected static String digest(byte[]... datas) {
+        try {
+            MessageDigest m = MessageDigest.getInstance("SHA-256");
+            for (byte[] data : datas) {
+                m.update(data);
+            }
+            byte[] digest = m.digest();
+            System.out.println(digest.length);
+            Formatter f = new Formatter();
+            for (byte b : digest) {
+                f.format("%02x", b & 0xFF);
+            }
+            return "z" + f.toString();
+        } catch (NoSuchAlgorithmException e) {
+            // can't happen on java 6?
+            e.printStackTrace();
+        }
+
+        return "";
+    }
 }
