@@ -57,6 +57,12 @@ import java.util.zip.ZipInputStream;
 import javax.swing.TransferHandler;
 
 public class HyperFindTransferHandler extends TransferHandler {
+    private final SearchListModel model;
+
+    public HyperFindTransferHandler(SearchListModel model) {
+        this.model = model;
+    }
+
     private static final DataFlavor uriListFlavor;
     static {
         DataFlavor z = null;
@@ -122,6 +128,12 @@ public class HyperFindTransferHandler extends TransferHandler {
                     if (manifest != null) {
                         System.out.println("manifest: "
                                 + new String(manifest).trim());
+                    }
+
+                    HyperFindSearch s = HyperFindSearchFactory
+                            .createHyperFindSearch(zipMap);
+                    if (s != null) {
+                        model.addSearch(s);
                     }
                 } finally {
                     try {

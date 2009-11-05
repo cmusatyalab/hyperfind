@@ -49,13 +49,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SnapFindSearchFactory implements HyperFindSearchFactory {
+public class SnapFindSearchFactory extends HyperFindSearchFactory {
 
     private final File pluginRunner;
 
     /* (non-Javadoc)
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getDisplayName()
      */
+    @Override
     public String getDisplayName() {
         return displayName;
     }
@@ -67,6 +68,7 @@ public class SnapFindSearchFactory implements HyperFindSearchFactory {
     /* (non-Javadoc)
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getType()
      */
+    @Override
     public HyperFindSearchType getType() {
         return type;
     }
@@ -99,6 +101,7 @@ public class SnapFindSearchFactory implements HyperFindSearchFactory {
     /* (non-Javadoc)
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch()
      */
+    @Override
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
@@ -226,6 +229,7 @@ public class SnapFindSearchFactory implements HyperFindSearchFactory {
     /* (non-Javadoc)
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#needsPatches()
      */
+    @Override
     public boolean needsPatches() {
         return needsPatches;
     }
@@ -233,9 +237,16 @@ public class SnapFindSearchFactory implements HyperFindSearchFactory {
     /* (non-Javadoc)
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch(java.util.List)
      */
+    @Override
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
                 type, needsPatches, patches);
+    }
+
+    @Override
+    public HyperFindSearch createHyperFindSearchFromZipMap(
+            Map<String, byte[]> zipMap) {
+        return null;
     }
 }

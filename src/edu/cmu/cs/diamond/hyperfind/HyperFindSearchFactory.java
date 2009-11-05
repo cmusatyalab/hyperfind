@@ -43,18 +43,38 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
 
-public interface HyperFindSearchFactory {
+public abstract class HyperFindSearchFactory {
 
-    String getDisplayName();
+    public abstract String getDisplayName();
 
-    HyperFindSearchType getType();
+    public abstract HyperFindSearchType getType();
 
-    HyperFindSearch createHyperFindSearch() throws IOException,
+    public abstract HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException;
 
-    boolean needsPatches();
+    public abstract boolean needsPatches();
 
-    HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
-            throws IOException, InterruptedException;
+    public abstract HyperFindSearch createHyperFindSearch(
+            List<BufferedImage> patches) throws IOException,
+            InterruptedException;
+
+    public abstract HyperFindSearch createHyperFindSearchFromZipMap(
+            Map<String, byte[]> zipMap);
+
+    public static HyperFindSearch createHyperFindSearch(
+            Map<String, byte[]> zipMap) {
+        for (HyperFindSearchFactory f : factoryLoader) {
+            HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap);
+            if (s != null) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private static ServiceLoader<HyperFindSearchFactory> factoryLoader = ServiceLoader
+            .load(HyperFindSearchFactory.class);
 }
