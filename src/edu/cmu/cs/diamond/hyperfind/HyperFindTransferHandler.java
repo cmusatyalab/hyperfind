@@ -42,15 +42,10 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -125,23 +120,18 @@ public class HyperFindTransferHandler extends TransferHandler {
                     System.out.println(zipMap);
 
                     byte manifest[] = zipMap.get("hyperfind-manifest.txt");
+                    Properties p = new Properties();
                     if (manifest != null) {
-                        System.out.println("manifest: "
-                                + new String(manifest).trim());
+                        ByteArrayInputStream bIn = new ByteArrayInputStream(
+                                manifest);
+                        Reader r = new InputStreamReader(bIn, "UTF-8");
+                        p.load(r);
                     }
 
-                    String[] pathComponents = u.getPath().split("/");
-                    String lastPath = pathComponents[pathComponents.length - 1];
-                    String defaultInstanceName;
-                    if (lastPath.endsWith(".zip")) {
-                        defaultInstanceName = lastPath.substring(0, lastPath
-                                .length() - 4);
-                    } else {
-                        defaultInstanceName = lastPath;
-                    }
+                    System.out.println(p);
 
                     HyperFindSearch s = HyperFindSearchFactory
-                            .createHyperFindSearch(defaultInstanceName, zipMap);
+                            .createHyperFindSearch(zipMap, p);
                     if (s != null) {
                         model.addSearch(s);
                     }

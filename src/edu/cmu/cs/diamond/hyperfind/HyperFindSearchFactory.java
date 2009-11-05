@@ -44,6 +44,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 
 public abstract class HyperFindSearchFactory {
@@ -62,14 +63,13 @@ public abstract class HyperFindSearchFactory {
             InterruptedException;
 
     public abstract HyperFindSearch createHyperFindSearchFromZipMap(
-            String defaultInstanceName, Map<String, byte[]> zipMap);
+            Map<String, byte[]> zipMap, Properties p);
 
     public static HyperFindSearch createHyperFindSearch(
-            String defaultInstanceName, Map<String, byte[]> zipMap) {
+            Map<String, byte[]> zipMap, Properties p) {
         for (HyperFindSearchFactory f : factoryLoader) {
             System.out.println(f);
-            HyperFindSearch s = f.createHyperFindSearchFromZipMap(
-                    defaultInstanceName, zipMap);
+            HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap, p);
             if (s != null) {
                 return s;
             }
