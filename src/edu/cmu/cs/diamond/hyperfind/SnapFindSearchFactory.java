@@ -246,7 +246,7 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
 
     @Override
     public HyperFindSearch createHyperFindSearchFromZipMap(
-            Map<String, byte[]> zipMap) {
+            String defaultInstanceName, Map<String, byte[]> zipMap) {
         return null;
     }
 }

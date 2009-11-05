@@ -130,8 +130,18 @@ public class HyperFindTransferHandler extends TransferHandler {
                                 + new String(manifest).trim());
                     }
 
+                    String[] pathComponents = u.getPath().split("/");
+                    String lastPath = pathComponents[pathComponents.length - 1];
+                    String defaultInstanceName;
+                    if (lastPath.endsWith(".zip")) {
+                        defaultInstanceName = lastPath.substring(0, lastPath
+                                .length() - 4);
+                    } else {
+                        defaultInstanceName = lastPath;
+                    }
+
                     HyperFindSearch s = HyperFindSearchFactory
-                            .createHyperFindSearch(zipMap);
+                            .createHyperFindSearch(defaultInstanceName, zipMap);
                     if (s != null) {
                         model.addSearch(s);
                     }

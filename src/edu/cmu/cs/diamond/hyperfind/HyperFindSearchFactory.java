@@ -62,12 +62,14 @@ public abstract class HyperFindSearchFactory {
             InterruptedException;
 
     public abstract HyperFindSearch createHyperFindSearchFromZipMap(
-            Map<String, byte[]> zipMap);
+            String defaultInstanceName, Map<String, byte[]> zipMap);
 
     public static HyperFindSearch createHyperFindSearch(
-            Map<String, byte[]> zipMap) {
+            String defaultInstanceName, Map<String, byte[]> zipMap) {
         for (HyperFindSearchFactory f : factoryLoader) {
-            HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap);
+            System.out.println(f);
+            HyperFindSearch s = f.createHyperFindSearchFromZipMap(
+                    defaultInstanceName, zipMap);
             if (s != null) {
                 return s;
             }
