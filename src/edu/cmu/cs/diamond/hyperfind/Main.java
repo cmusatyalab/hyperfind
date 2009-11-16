@@ -114,8 +114,14 @@ public final class Main {
             }
         });
 
-        final Main m = new Main(frame, results, CookieMap
-                .createDefaultCookieMap());
+        CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
+        try {
+            defaultCookieMap = CookieMap.createDefaultCookieMap();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final Main m = new Main(frame, results, defaultCookieMap);
 
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
         final List<HyperFindSearchFactory> exampleSearchFactories = new ArrayList<HyperFindSearchFactory>();
