@@ -63,6 +63,7 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
         // setVerticalAlignment(SwingConstants.CENTER);
 
         setText(null);
+        setToolTipText(r.getName());
         setHorizontalAlignment(SwingConstants.CENTER);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setIcon(r.getIcon());

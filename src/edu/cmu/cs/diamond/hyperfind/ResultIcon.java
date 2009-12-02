@@ -55,11 +55,18 @@ class ResultIcon {
 
     private final List<ActiveSearch> activeSearches;
 
-    public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
-            List<ActiveSearch> activeSearches) {
+	private final String name;
+
+    public String getName() {
+		return name;
+	}
+
+	public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
+            List<ActiveSearch> activeSearches, String name) {
         this.icon = icon;
         this.identifier = identifier;
         this.activeSearches = activeSearches;
+        this.name = name;
     }
 
     public Icon getIcon() {

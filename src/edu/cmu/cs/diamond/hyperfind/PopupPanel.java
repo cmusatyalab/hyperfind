@@ -230,7 +230,7 @@ public class PopupPanel extends JPanel {
             byte r = buf.get();
             byte g = buf.get();
             byte b = buf.get();
-            byte pad = buf.get();
+            buf.get();
 
             data[i] = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
         }
