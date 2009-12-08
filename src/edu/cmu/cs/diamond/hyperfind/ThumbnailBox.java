@@ -40,11 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -54,21 +50,13 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import edu.cmu.cs.diamond.opendiamond.Result;
-import edu.cmu.cs.diamond.opendiamond.Search;
-import edu.cmu.cs.diamond.opendiamond.SearchClosedException;
-import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
-import edu.cmu.cs.diamond.opendiamond.Util;
+import edu.cmu.cs.diamond.opendiamond.*;
 
 public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
@@ -147,34 +135,14 @@ public class ThumbnailBox extends JPanel {
         }, 0, 500, TimeUnit.MILLISECONDS);
     }
 
-    public void stop() throws InterruptedException {
-        System.out.println("STOP");
-        if (search != null) {
-            search.close();
-        }
-
-        if (timerExecutor != null) {
-            timerExecutor.shutdownNow();
-        }
-
-        if (statsTimerFuture != null) {
-            statsTimerFuture.cancel(true);
-        }
-
+    // called on AWT thread
+    public void stop() {
         if (workerFuture != null) {
             workerFuture.cancel(true);
         }
-
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                startButton.setEnabled(true);
-                stopButton.setEnabled(false);
-                moreResultsButton.setVisible(false);
-            }
-        });
     }
 
+    // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
             final List<ActiveSearch> activeSearches) {
         search = s;
@@ -208,8 +176,8 @@ public class ThumbnailBox extends JPanel {
 
         workerFuture = new SwingWorker<Object, ResultIcon>() {
             @Override
-            protected Object doInBackground() throws InterruptedException,
-                    IOException {
+            protected Object doInBackground() throws InterruptedException {
+                // non-AWT thread
                 try {
                     try {
                         while (true) {
@@ -272,20 +240,47 @@ public class ThumbnailBox extends JPanel {
                             publish(resultIcon);
                         }
                     } finally {
+                        System.out.println("STOP");
+
                         // update stats one more time
                         updateStats();
-                        stop();
+
+                        SwingUtilities.invokeLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (search != null) {
+                                    try {
+                                        search.close();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                        Thread.currentThread().interrupt();
+                                    }
+                                }
+
+                                if (timerExecutor != null) {
+                                    timerExecutor.shutdownNow();
+                                }
+
+                                if (statsTimerFuture != null) {
+                                    statsTimerFuture.cancel(true);
+                                }
+
+                                startButton.setEnabled(true);
+                                stopButton.setEnabled(false);
+                                moreResultsButton.setVisible(false);
+                            }
+                        });
                     }
                 } catch (IOException e) {
-                    // TODO something with stats:
-                    // stats.setString(e.toString());
-                    throw e;
+                    // TODO pop up something?
+                    e.printStackTrace();
                 }
                 return null;
             }
 
             @Override
             protected void process(List<ResultIcon> chunks) {
+                // AWT thread
                 for (ResultIcon resultIcon : chunks) {
                     if (resultIcon == PAUSE_RESULT) {
                         moreResultsButton.setVisible(true);
