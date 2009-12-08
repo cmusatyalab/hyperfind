@@ -224,7 +224,7 @@ public class ThumbnailBox extends JPanel {
                             if (r == null) {
                                 break;
                             }
-                            System.out.println(r);
+                            // System.out.println(r);
 
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
                             BufferedImage thumb = null;
@@ -256,7 +256,7 @@ public class ThumbnailBox extends JPanel {
                                             .getHeight()
                                             / (double) origH);
                             for (String p : patchAttributes) {
-                                System.out.println(p);
+                                // System.out.println(p);
                                 byte[] patch = r.getValue(p);
                                 if (patch != null) {
                                     drawPatches(g, patch);
