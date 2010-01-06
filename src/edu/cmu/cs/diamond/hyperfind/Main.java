@@ -469,6 +469,7 @@ public final class Main {
         attributes.add("_cols.int"); // original width
         attributes.add("_rows.int"); // original height
         attributes.add("Display-Name");
+        attributes.add("hyperfind.thumbnail-display");
         
         Set<String> patchAttributes = new HashSet<String>();
         for (Filter f : filters) {

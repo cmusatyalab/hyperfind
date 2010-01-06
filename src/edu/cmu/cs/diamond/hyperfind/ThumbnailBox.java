@@ -238,7 +238,7 @@ public class ThumbnailBox extends JPanel {
                             byte[] tmp = r
                                     .getValue("hyperfind.thumbnail-display");
                             if (tmp != null) {
-                                String setting = new String(tmp);
+                                String setting = Util.extractString(tmp);
                                 if (setting.equals("icon")) {
                                     d = ResultIconSetting.ICON_ONLY;
                                 } else if (setting.equals("label")) {
