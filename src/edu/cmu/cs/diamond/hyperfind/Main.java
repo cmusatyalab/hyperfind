@@ -214,12 +214,7 @@ public final class Main {
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    m.stopSearch();
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                    Thread.currentThread().interrupt();
-                }
+                m.stopSearch();
             }
         });
 
@@ -323,13 +318,8 @@ public final class Main {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
-                try {
-                    m.stopSearch();
-                    m.popupFrame.dispose();
-                } catch (InterruptedException e1) {
-                    Thread.currentThread().interrupt();
-                    e1.printStackTrace();
-                }
+                m.stopSearch();
+                m.popupFrame.dispose();
             }
         });
         frame.setVisible(true);
@@ -450,7 +440,7 @@ public final class Main {
         return new SearchFactory(filters, appDepends, cookies);
     }
 
-    private void stopSearch() throws InterruptedException {
+    private void stopSearch() {
         results.stop();
     }
 
