@@ -202,7 +202,7 @@ public class PopupPanel extends JPanel {
         } else {
             String str = Util.extractString(value);
             int len = Math.min(str.length(), 1024);
-            return Util.extractString(value).substring(0, len);
+            return str.substring(0, len);
         }
     }
 

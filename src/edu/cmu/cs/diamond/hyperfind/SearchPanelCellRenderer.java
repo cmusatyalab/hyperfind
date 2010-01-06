@@ -59,10 +59,11 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
 
         setHorizontalTextPosition(SwingConstants.CENTER);
         setVerticalTextPosition(SwingConstants.BOTTOM);
-        //
+
+        setHorizontalAlignment(SwingConstants.CENTER);
         // setVerticalAlignment(SwingConstants.CENTER);
 
-        setToolTipText(r.getName());
+        //setToolTipText(r.getName());
 
         setText(null);
         setIcon(null);
@@ -77,10 +78,10 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
             break;
         case LABEL_ONLY:
             setText(r.getName());
+            setHorizontalAlignment(SwingConstants.LEFT);            
             break;
         }
 
-        setHorizontalAlignment(SwingConstants.CENTER);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         return this;
