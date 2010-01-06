@@ -57,16 +57,31 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
 
         ResultIcon r = (ResultIcon) value;
 
-        // setHorizontalTextPosition(SwingConstants.CENTER);
-        // setVerticalTextPosition(SwingConstants.BOTTOM);
+        setHorizontalTextPosition(SwingConstants.CENTER);
+        setVerticalTextPosition(SwingConstants.BOTTOM);
         //
         // setVerticalAlignment(SwingConstants.CENTER);
 
-        setText(null);
         setToolTipText(r.getName());
+
+        setText(null);
+        setIcon(null);
+
+        switch (r.getDisplaySelection()) {
+        case ICON_AND_LABEL:
+            setText(r.getName());
+            setIcon(r.getIcon());
+            break;
+        case ICON_ONLY:
+            setIcon(r.getIcon());
+            break;
+        case LABEL_ONLY:
+            setText(r.getName());
+            break;
+        }
+
         setHorizontalAlignment(SwingConstants.CENTER);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setIcon(r.getIcon());
 
         return this;
     }

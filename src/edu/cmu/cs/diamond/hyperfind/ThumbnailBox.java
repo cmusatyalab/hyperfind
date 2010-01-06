@@ -56,13 +56,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
+import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.opendiamond.*;
 
 public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
 
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
-            null, null);
+            null, null, null);
 
     private Search search;
 
@@ -232,10 +233,25 @@ public class ThumbnailBox extends JPanel {
                             }
                             g.dispose();
 
+                            // check setting from server
+                            ResultIconSetting d = ResultIconSetting.ICON_ONLY;
+                            byte[] tmp = r
+                                    .getValue("hyperfind.thumbnail-display");
+                            if (tmp != null) {
+                                String setting = new String(tmp);
+                                if (setting.equals("icon")) {
+                                    d = ResultIconSetting.ICON_ONLY;
+                                } else if (setting.equals("label")) {
+                                    d = ResultIconSetting.LABEL_ONLY;
+                                } else if (setting.equals("icon-and-label")) {
+                                    d = ResultIconSetting.ICON_AND_LABEL;
+                                }
+                            }
+
                             final ResultIcon resultIcon = new ResultIcon(
                                     new ImageIcon(thumb), r
                                             .getObjectIdentifier(),
-                                    activeSearches, r.getName());
+                                    activeSearches, r.getName(), d);
 
                             publish(resultIcon);
                         }

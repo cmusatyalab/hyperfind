@@ -55,18 +55,26 @@ class ResultIcon {
 
     private final List<ActiveSearch> activeSearches;
 
-	private final String name;
+    private final String name;
+
+    private final ResultIconSetting displaySelection;
 
     public String getName() {
-		return name;
-	}
+        return name;
+    }
 
-	public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
-            List<ActiveSearch> activeSearches, String name) {
+    public enum ResultIconSetting {
+        ICON_ONLY, LABEL_ONLY, ICON_AND_LABEL
+    };
+
+    public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
+            List<ActiveSearch> activeSearches, String name,
+            ResultIconSetting displaySelection) {
         this.icon = icon;
         this.identifier = identifier;
         this.activeSearches = activeSearches;
         this.name = name;
+        this.displaySelection = displaySelection;
     }
 
     public Icon getIcon() {
@@ -79,5 +87,9 @@ class ResultIcon {
 
     public List<ActiveSearch> getActiveSearches() {
         return activeSearches;
+    }
+
+    public ResultIconSetting getDisplaySelection() {
+        return displaySelection;
     }
 }
