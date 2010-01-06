@@ -45,8 +45,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -152,10 +151,20 @@ public final class Main {
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
                         File f = chooser.getSelectedFile();
-                        BufferedImage img = ImageIO.read(f);
-                        List<ActiveSearch> empty = Collections.emptyList();
-                        m.popup(f.getName(), img, empty,
-                                exampleSearchFactories, model);
+                        InputStream in = new BufferedInputStream(
+                                new FileInputStream(f));
+                        try {
+                            byte resultData[] = Util.readFully(in);
+                            BufferedImage img = ImageIO.read(f);
+                            List<ActiveSearch> empty = Collections.emptyList();
+                            m.popup(f.getName(), img, resultData, empty,
+                                    exampleSearchFactories, model);
+                        } finally {
+                            try {
+                                in.close();
+                            } catch (IOException ignore) {
+                            }
+                        }
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -340,11 +349,11 @@ public final class Main {
         return Collections.unmodifiableList(result);
     }
 
-    private void popup(String name, BufferedImage img,
+    private void popup(String name, BufferedImage img, byte resultData[],
             List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
-        popup(name, PopupPanel.createInstance(img, activeSearches,
+        popup(name, PopupPanel.createInstance(img, resultData, activeSearches,
                 exampleSearchFactories, model));
     }
 

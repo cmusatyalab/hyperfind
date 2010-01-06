@@ -263,32 +263,26 @@ public class PopupPanel extends JPanel {
                 attributes.put(k, r.getValue(k));
             }
         }
-        return createInstance(img, activeSearches, exampleSearchFactories,
-                attributes, model);
+        return createInstance(img, r.getData(), activeSearches,
+                exampleSearchFactories, attributes, model);
     }
 
     public static PopupPanel createInstance(BufferedImage img,
-            List<ActiveSearch> activeSearches,
+            byte resultData[], List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
 
-        return createInstance(img, activeSearches, exampleSearchFactories,
-                attributes, model);
+        return createInstance(img, resultData, activeSearches,
+                exampleSearchFactories, attributes, model);
     }
 
     private static PopupPanel createInstance(BufferedImage img,
-            List<ActiveSearch> activeSearches,
+            byte resultData[], List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
         PopupPanel p = new PopupPanel(img);
-
-        // image pane
-        ImagePatchesLabel image = new ImagePatchesLabel(img);
-        JScrollPane imagePane = new JScrollPane(image);
-        imagePane.getHorizontalScrollBar().setUnitIncrement(20);
-        imagePane.getVerticalScrollBar().setUnitIncrement(20);
 
         // sort keys
         final List<String> keys = new ArrayList<String>(attributes.keySet());
@@ -345,15 +339,29 @@ public class PopupPanel extends JPanel {
         Box hBox = Box.createHorizontalBox();
         Box leftSide = Box.createVerticalBox();
 
-        leftSide.add(createPatchesList(activeSearches, attributes, image));
-        leftSide.add(createLocalSearchBox(searchListModel, image, img, p));
-        leftSide.add(createExampleSearchPanel(searchListModel, image, img,
-                exampleSearchFactories));
+        // image pane or text pane
+        JScrollPane scrollPane;
+        if (img != null) {
+            ImagePatchesLabel image = new ImagePatchesLabel(img);
+            scrollPane = new JScrollPane(image);
+            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
+            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+            leftSide.add(createPatchesList(activeSearches, attributes, image));
+            leftSide.add(createLocalSearchBox(searchListModel, image, img, p));
+            leftSide.add(createExampleSearchPanel(searchListModel, image, img,
+                    exampleSearchFactories));
+        } else {
+            String text = new String(resultData);
+            JTextArea textArea = new JTextArea(text, 25, 80);
+            textArea.setEditable(false);
+            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+            scrollPane = new JScrollPane(textArea);
+        }
 
         hBox.add(leftSide);
 
         JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
-                imagePane, propertiesPane);
+                scrollPane, propertiesPane);
 
         Box vBox = Box.createVerticalBox();
         vBox.add(rightSide);
