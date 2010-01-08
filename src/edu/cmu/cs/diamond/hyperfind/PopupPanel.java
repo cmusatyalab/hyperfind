@@ -47,6 +47,7 @@ import java.awt.image.DataBufferInt;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -351,7 +352,13 @@ public class PopupPanel extends JPanel {
             leftSide.add(createExampleSearchPanel(searchListModel, image, img,
                     exampleSearchFactories));
         } else {
-            String text = new String(resultData);
+            String text;
+            try {
+                text = new String(resultData, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+                text = "";
+            }
             JTextArea textArea = new JTextArea(text, 25, 80);
             textArea.setEditable(false);
             textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));

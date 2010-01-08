@@ -44,17 +44,16 @@ import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.nio.charset.Charset;
+import java.util.*;
 
 public class SnapFindSearchFactory extends HyperFindSearchFactory {
 
     private final File pluginRunner;
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getDisplayName()
      */
     @Override
@@ -66,7 +65,9 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return internalName;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getType()
      */
     @Override
@@ -85,13 +86,14 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
     public SnapFindSearchFactory(File pluginRunner, Map<String, byte[]> map) {
         this.pluginRunner = pluginRunner;
 
-        displayName = new String(getOrFail(map, "display-name"));
-        internalName = new String(getOrFail(map, "internal-name"));
+        Charset utf8 = Charset.forName("UTF-8");
+
+        displayName = new String(getOrFail(map, "display-name"), utf8);
+        internalName = new String(getOrFail(map, "internal-name"), utf8);
         needsPatches = Boolean.parseBoolean(new String(getOrFail(map,
-                "needs-patches")));
+                "needs-patches"), utf8));
 
-        String typeString = new String(getOrFail(map, "type"));
-
+        String typeString = new String(getOrFail(map, "type"), utf8);
         try {
             type = HyperFindSearchType.fromString(typeString);
         } catch (IllegalArgumentException e) {
@@ -99,8 +101,12 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         }
     }
 
-    /* (non-Javadoc)
-     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch()
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch
+     * ()
      */
     @Override
     public HyperFindSearch createHyperFindSearch() throws IOException,
@@ -170,7 +176,7 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
                 inMiddle = true;
 
                 int keyLen = readLength(in);
-                String key = new String(readData(in, keyLen));
+                String key = new String(readData(in, keyLen), "UTF-8");
 
                 expect("V ".getBytes(), in);
                 int valueLen = readLength(in);
@@ -227,7 +233,9 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return displayName;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#needsPatches()
      */
     @Override
@@ -235,8 +243,12 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return needsPatches;
     }
 
-    /* (non-Javadoc)
-     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch(java.util.List)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#createHyperFindSearch
+     * (java.util.List)
      */
     @Override
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)

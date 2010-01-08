@@ -112,7 +112,7 @@ class SnapFindSearch extends HyperFindSearch {
 
             Map<String, byte[]> map = SnapFindSearchFactory.readKeyValueSet(in);
             isEditable = Boolean.parseBoolean(new String(SnapFindSearchFactory
-                    .getOrFail(map, "is-editable")));
+                    .getOrFail(map, "is-editable"), "UTF-8"));
 
             readConfigs(map);
             this.patches = new ArrayList<BufferedImage>(patches);
@@ -163,20 +163,21 @@ class SnapFindSearch extends HyperFindSearch {
 
         blob = SnapFindSearchFactory.getOrFail(map, "blob");
         searchletLib = new File(new String(SnapFindSearchFactory.getOrFail(map,
-                "searchlet-lib-path")));
-        instanceName = new String(SnapFindSearchFactory.getOrFail(map, "name"));
+                "searchlet-lib-path"), "UTF-8"));
+        instanceName = new String(SnapFindSearchFactory.getOrFail(map, "name"),
+                "UTF-8");
 
         // fspec and digest
         byte[] fspecBytes = SnapFindSearchFactory.getOrFail(map, "fspec");
         fspecFilterName = digestForFspec(fspecBytes);
 
         // replace the filter name with a hash of the args, etc.
-        fspec = new String(fspecBytes).replace("*", fspecFilterName);
+        fspec = new String(fspecBytes, "UTF-8").replace("*", fspecFilterName);
 
         patches = new ArrayList<BufferedImage>();
         if (map.containsKey("patch-count")) {
-            int patchCount = Integer
-                    .parseInt(new String(map.get("patch-count")));
+            int patchCount = Integer.parseInt(new String(
+                    map.get("patch-count"), "UTF-8"));
             for (int i = 0; i < patchCount; i++) {
                 ByteArrayInputStream in = new ByteArrayInputStream(
                         SnapFindSearchFactory.getOrFail(map, "patch-" + i));
@@ -295,14 +296,15 @@ class SnapFindSearch extends HyperFindSearch {
         return ppmOut.toByteArray();
     }
 
-    private double doubleOrFail(Map<String, byte[]> m, String key) {
+    private double doubleOrFail(Map<String, byte[]> m, String key)
+            throws IOException {
         return Double.parseDouble(new String(SnapFindSearchFactory.getOrFail(m,
-                key)));
+                key), "UTF-8"));
     }
 
-    private int intOrFail(Map<String, byte[]> m, String key) {
+    private int intOrFail(Map<String, byte[]> m, String key) throws IOException {
         return Integer.parseInt(new String(SnapFindSearchFactory.getOrFail(m,
-                key)));
+                key), "UTF-8"));
     }
 
     @Override
