@@ -51,6 +51,8 @@ import java.util.zip.ZipInputStream;
 
 import javax.swing.TransferHandler;
 
+import edu.cmu.cs.diamond.opendiamond.Util;
+
 public class HyperFindTransferHandler extends TransferHandler {
     private final SearchListModel model;
 
@@ -100,21 +102,7 @@ public class HyperFindTransferHandler extends TransferHandler {
                         String name = entry.getName();
 
                         // get value
-                        byte value[] = new byte[(int) entry.getSize()];
-                        int off = 0;
-                        int len = value.length;
-
-                        while (len > 0) {
-                            int bytesRead = zip.read(value, off, len);
-                            if (bytesRead == -1) {
-                                throw new EOFException();
-                            }
-
-                            off += bytesRead;
-                            len -= bytesRead;
-                        }
-
-                        zipMap.put(name, value);
+                        zipMap.put(name, Util.readFully(zip));
                     }
 
                     System.out.println(zipMap);
