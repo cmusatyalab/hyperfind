@@ -173,6 +173,38 @@ public final class Main {
             }
         });
 
+        // add from file
+        JMenuItem fromFileMenuItem = new JMenuItem("From ZIP file...");
+        searches.add(fromFileMenuItem);
+        fromFileMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // get file
+                JFileChooser chooser = new JFileChooser();
+                FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                        "ZIP files", "zip");
+                chooser.setFileFilter(filter);
+                int returnVal = chooser.showOpenDialog(m.frame);
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    try {
+                        HyperFindSearch s = HyperFindSearchFactory
+                                .createHyperFindSearch(chooser
+                                        .getSelectedFile().toURI());
+                        if (s != null) {
+                            model.addSearch(s);
+                        } else {
+                            JOptionPane.showMessageDialog(frame,
+                                    "No search found.");
+                        }
+                    } catch (IOException e2) {
+                        JOptionPane.showMessageDialog(frame, e2
+                                .getLocalizedMessage(), "Error Reading File",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
         final JButton editCodecButton = new JButton("Edit");
@@ -470,7 +502,7 @@ public final class Main {
         attributes.add("_rows.int"); // original height
         attributes.add("Display-Name");
         attributes.add("hyperfind.thumbnail-display");
-        
+
         Set<String> patchAttributes = new HashSet<String>();
         for (Filter f : filters) {
             String n = f.getName();
