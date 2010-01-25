@@ -42,16 +42,13 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.TransferHandler;
-
-import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class HyperFindTransferHandler extends TransferHandler {
     private final SearchListModel model;
@@ -86,50 +83,10 @@ public class HyperFindTransferHandler extends TransferHandler {
         try {
             List<URI> uris = getURIs(support);
             for (URI u : uris) {
-                System.out.println("trying " + u);
-                Map<String, byte[]> zipMap = new HashMap<String, byte[]>();
-                InputStream in = null;
-                try {
-                    in = u.toURL().openStream();
-                    System.out.println("in:" + in);
-                    ZipInputStream zip = new ZipInputStream(in);
-
-                    System.out.println(zip);
-
-                    ZipEntry entry;
-                    while ((entry = zip.getNextEntry()) != null) {
-                        // get the name
-                        String name = entry.getName();
-
-                        // get value
-                        zipMap.put(name, Util.readFully(zip));
-                    }
-
-                    System.out.println(zipMap);
-
-                    byte manifest[] = zipMap.get("hyperfind-manifest.txt");
-                    Properties p = new Properties();
-                    if (manifest != null) {
-                        ByteArrayInputStream bIn = new ByteArrayInputStream(
-                                manifest);
-                        Reader r = new InputStreamReader(bIn, "UTF-8");
-                        p.load(r);
-                    }
-
-                    System.out.println(p);
-
-                    HyperFindSearch s = HyperFindSearchFactory
-                            .createHyperFindSearch(zipMap, p);
-                    if (s != null) {
-                        model.addSearch(s);
-                    }
-                } finally {
-                    try {
-                        if (in != null) {
-                            in.close();
-                        }
-                    } catch (IOException e) {
-                    }
+                HyperFindSearch s = HyperFindSearchFactory
+                        .createHyperFindSearch(u);
+                if (s != null) {
+                    model.addSearch(s);
                 }
             }
         } catch (UnsupportedFlavorException e) {

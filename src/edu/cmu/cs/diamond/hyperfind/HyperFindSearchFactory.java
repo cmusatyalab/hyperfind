@@ -41,11 +41,13 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.ServiceLoader;
+import java.io.*;
+import java.net.URI;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import edu.cmu.cs.diamond.opendiamond.Util;
 
 public abstract class HyperFindSearchFactory {
 
@@ -65,7 +67,7 @@ public abstract class HyperFindSearchFactory {
     public abstract HyperFindSearch createHyperFindSearchFromZipMap(
             Map<String, byte[]> zipMap, Properties p);
 
-    public static HyperFindSearch createHyperFindSearch(
+    private static HyperFindSearch createHyperFindSearch(
             Map<String, byte[]> zipMap, Properties p) {
         for (HyperFindSearchFactory f : factoryLoader) {
             System.out.println(f);
@@ -75,6 +77,53 @@ public abstract class HyperFindSearchFactory {
             }
         }
         return null;
+    }
+
+    public static HyperFindSearch createHyperFindSearch(URI uri)
+            throws IOException {
+        System.out.println("trying " + uri);
+        Map<String, byte[]> zipMap = new HashMap<String, byte[]>();
+        InputStream in = null;
+        try {
+            in = uri.toURL().openStream();
+            System.out.println("in:" + in);
+            ZipInputStream zip = new ZipInputStream(in);
+
+            System.out.println(zip);
+
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                // get the name
+                String name = entry.getName();
+
+                // get value
+                zipMap.put(name, Util.readFully(zip));
+            }
+
+            System.out.println(zipMap);
+
+            byte manifest[] = zipMap.get("hyperfind-manifest.txt");
+            Properties p = new Properties();
+            if (manifest != null) {
+                ByteArrayInputStream bIn = new ByteArrayInputStream(manifest);
+                Reader r = new InputStreamReader(bIn, "UTF-8");
+                p.load(r);
+            }
+
+            System.out.println(p);
+
+            HyperFindSearch s = HyperFindSearchFactory.createHyperFindSearch(
+                    zipMap, p);
+
+            return s;
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException e) {
+            }
+        }
     }
 
     private static ServiceLoader<HyperFindSearchFactory> factoryLoader = ServiceLoader
