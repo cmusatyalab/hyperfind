@@ -63,7 +63,7 @@ public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
 
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
-            null, null, null, false);
+            null, null, null);
 
     private Search search;
 
@@ -251,8 +251,7 @@ public class ThumbnailBox extends JPanel {
                             final ResultIcon resultIcon = new ResultIcon(
                                     new ImageIcon(thumb), r
                                             .getObjectIdentifier(),
-                                    activeSearches, r.getName(), d, r.getKeys()
-                                            .contains("_rgb_image.rgbimage"));
+                                    activeSearches, r.getName(), d);
 
                             publish(resultIcon);
                         }
