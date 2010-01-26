@@ -91,6 +91,7 @@ public final class Main {
 
         resultsList.setModel(new DefaultListModel());
         resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        resultsList.setDragEnabled(true);
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
                 resultsList, stats, 500);
@@ -238,10 +239,40 @@ public final class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    m.startSearch(thumbnailFilter, codecList.get(
-                            codecs.getSelectedIndex()).createFilters(), model
-                            .createFilters(), convertToActiveSearchList(model
-                            .getSelectedSearches()));
+                    // start search
+                    List<Filter> filters = new ArrayList<Filter>(codecList.get(
+                            codecs.getSelectedIndex()).createFilters());
+                    filters.addAll(thumbnailFilter);
+                    filters.addAll(model.createFilters());
+
+                    SearchFactory factory = m.createFactory(filters);
+                    System.out.println(factory);
+                    resultsList
+                            .setTransferHandler(new ResultExportTransferHandler(
+                                    factory));
+
+                    // push attributes
+                    Set<String> attributes = new HashSet<String>();
+                    attributes.add("thumbnail.jpeg"); // thumbnail
+                    attributes.add("_cols.int"); // original width
+                    attributes.add("_rows.int"); // original height
+                    attributes.add("Display-Name");
+                    attributes.add("hyperfind.thumbnail-display");
+
+                    Set<String> patchAttributes = new HashSet<String>();
+                    for (Filter f : filters) {
+                        String n = f.getName();
+                        String p = "_filter." + n + ".patches"; // patches
+                        attributes.add(p);
+                        patchAttributes.add(p);
+                    }
+
+                    m.search = factory.createSearch(attributes);
+
+                    // start
+                    m.results.start(m.search, patchAttributes,
+                            convertToActiveSearchList(model
+                                    .getSelectedSearches()));
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -483,38 +514,6 @@ public final class Main {
 
     private void stopSearch() {
         results.stop();
-    }
-
-    private void startSearch(List<Filter> thumbnail, List<Filter> codec,
-            List<Filter> searches, List<ActiveSearch> activeSearches)
-            throws IOException, InterruptedException {
-        List<Filter> filters = new ArrayList<Filter>(codec);
-        filters.addAll(thumbnail);
-        filters.addAll(searches);
-
-        SearchFactory factory = createFactory(filters);
-        System.out.println(factory);
-
-        // push attributes
-        Set<String> attributes = new HashSet<String>();
-        attributes.add("thumbnail.jpeg"); // thumbnail
-        attributes.add("_cols.int"); // original width
-        attributes.add("_rows.int"); // original height
-        attributes.add("Display-Name");
-        attributes.add("hyperfind.thumbnail-display");
-
-        Set<String> patchAttributes = new HashSet<String>();
-        for (Filter f : filters) {
-            String n = f.getName();
-            String p = "_filter." + n + ".patches"; // patches
-            attributes.add(p);
-            patchAttributes.add(p);
-        }
-
-        search = factory.createSearch(attributes);
-
-        // start
-        results.start(search, patchAttributes, activeSearches);
     }
 
     private static void updateEditCodecButton(final JButton editCodecButton,
