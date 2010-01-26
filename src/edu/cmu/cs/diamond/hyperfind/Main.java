@@ -99,7 +99,7 @@ public final class Main {
         final SearchListModel model = new SearchListModel();
         final SearchList searchList = new SearchList(model);
 
-        searchList.setTransferHandler(new HyperFindTransferHandler(model));
+        searchList.setTransferHandler(new SearchImportTransferHandler(model));
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");

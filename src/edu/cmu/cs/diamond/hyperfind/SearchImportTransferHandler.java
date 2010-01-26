@@ -50,10 +50,10 @@ import java.util.List;
 
 import javax.swing.TransferHandler;
 
-public class HyperFindTransferHandler extends TransferHandler {
+public class SearchImportTransferHandler extends TransferHandler {
     private final SearchListModel model;
 
-    public HyperFindTransferHandler(SearchListModel model) {
+    public SearchImportTransferHandler(SearchListModel model) {
         this.model = model;
     }
 
