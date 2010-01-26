@@ -59,6 +59,8 @@ class ResultIcon {
 
     private final ResultIconSetting displaySelection;
 
+    private final boolean hasRGBImage;
+
     public String getName() {
         return name;
     }
@@ -69,12 +71,13 @@ class ResultIcon {
 
     public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
             List<ActiveSearch> activeSearches, String name,
-            ResultIconSetting displaySelection) {
+            ResultIconSetting displaySelection, boolean hasRGBImage) {
         this.icon = icon;
         this.identifier = identifier;
         this.activeSearches = activeSearches;
         this.name = name;
         this.displaySelection = displaySelection;
+        this.hasRGBImage = hasRGBImage;
     }
 
     public Icon getIcon() {
@@ -91,5 +94,9 @@ class ResultIcon {
 
     public ResultIconSetting getDisplaySelection() {
         return displaySelection;
+    }
+
+    public boolean hasRGBImage() {
+        return hasRGBImage;
     }
 }
