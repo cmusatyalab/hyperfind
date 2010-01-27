@@ -71,6 +71,7 @@ public class SearchImportTransferHandler extends TransferHandler {
 
     @Override
     public boolean canImport(TransferSupport support) {
+        // System.out.println(Arrays.toString(support.getDataFlavors()));
         return support.isDataFlavorSupported(uriListFlavor);
     }
 
@@ -106,6 +107,7 @@ public class SearchImportTransferHandler extends TransferHandler {
             throws UnsupportedFlavorException, IOException, URISyntaxException {
         String ss = (String) support.getTransferable().getTransferData(
                 uriListFlavor);
+        // System.out.println("\"" + ss + "\"");
         String uriList[] = ss.split("\r\n");
 
         List<URI> result = new ArrayList<URI>();
