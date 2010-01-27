@@ -49,6 +49,10 @@ import java.io.*;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -88,6 +92,10 @@ public final class Main {
         JButton defineScopeButton = new JButton("Define Scope");
         final JList resultsList = new JList();
         StatisticsBar stats = new StatisticsBar();
+
+        final ExecutorService executor = new ThreadPoolExecutor(0,
+                Integer.MAX_VALUE, 500, TimeUnit.MILLISECONDS,
+                new SynchronousQueue<Runnable>());
 
         resultsList.setModel(new DefaultListModel());
         resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -249,7 +257,7 @@ public final class Main {
                     System.out.println(factory);
                     resultsList
                             .setTransferHandler(new ResultExportTransferHandler(
-                                    factory));
+                                    factory, executor));
 
                     // push attributes
                     Set<String> attributes = new HashSet<String>();

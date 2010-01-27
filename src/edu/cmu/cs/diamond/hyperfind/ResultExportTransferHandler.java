@@ -44,8 +44,17 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.TransferHandler;
@@ -55,10 +64,112 @@ import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class ResultExportTransferHandler extends TransferHandler {
 
+    private class ExportTransferable implements Transferable {
+        private final Future<BufferedImage> futureImage;
+
+        private final Future<String> futureURIList;
+
+        public ExportTransferable(final ResultIcon r) {
+            futureImage = executor.submit(new Callable<BufferedImage>() {
+                @Override
+                public BufferedImage call() throws Exception {
+                    // get the picture
+                    // System.out.println("Extracting...");
+                    BufferedImage img = Util.extractImageFromResultIdentifier(r
+                            .getObjectIdentifier(), factory);
+                    // System.out.println("done");
+                    return img;
+                }
+            });
+            futureURIList = executor.submit(new Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    File f = File.createTempFile("hyperfind-export-", ".png");
+                    f.deleteOnExit();
+                    // System.out.println(f);
+
+                    // get the picture
+                    BufferedImage img = futureImage.get();
+
+                    // write and return
+                    // System.out.println("writing");
+                    ImageIO.write(img, "png", f);
+                    // System.out.println("done");
+
+                    URI u = f.toURI();
+                    String uriList = u.toASCIIString() + "\r\n";
+                    return uriList;
+                }
+            });
+        }
+
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            // System.out.println(flavor);
+            return flavors.contains(flavor);
+        }
+
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return flavors.toArray(new DataFlavor[0]);
+        }
+
+        @Override
+        public Object getTransferData(DataFlavor flavor)
+                throws UnsupportedFlavorException, IOException {
+            // System.out.println(flavor);
+
+            try {
+                if (flavor.equals(DataFlavor.imageFlavor)) {
+                    return futureImage.get();
+                } else if (flavor.equals(uriListFlavor)) {
+                    String uriList = futureURIList.get();
+                    // System.out.println(uriList);
+                    return uriList;
+                } else if (flavor.equals(textPlainFlavor)) {
+                    String uriList = futureURIList.get();
+                    // System.out.println(uriList);
+                    return uriList;
+                } else {
+                    throw new UnsupportedFlavorException(flavor);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            } catch (ExecutionException e) {
+                Throwable c = e.getCause();
+                if (c instanceof RuntimeException) {
+                    throw (RuntimeException) c;
+                } else if (c instanceof IOException) {
+                    throw (IOException) c;
+                }
+                e.printStackTrace();
+                return null;
+            }
+        }
+    }
+
+    private static final DataFlavor uriListFlavor = new DataFlavor(
+            "text/uri-list; class=java.lang.String", "URI list");
+
+    private static final DataFlavor textPlainFlavor = new DataFlavor(
+            "text/plain; class=java.lang.String", "Plain text");
+
+    private static final List<DataFlavor> flavors = new ArrayList<DataFlavor>();
+    static {
+        flavors.add(DataFlavor.imageFlavor);
+        flavors.add(uriListFlavor);
+        flavors.add(textPlainFlavor);
+    }
+
     private final SearchFactory factory;
 
-    public ResultExportTransferHandler(SearchFactory factory) {
+    private final ExecutorService executor;
+
+    public ResultExportTransferHandler(SearchFactory factory,
+            ExecutorService executor) {
         this.factory = factory;
+        this.executor = executor;
     }
 
     @Override
@@ -68,6 +179,8 @@ public class ResultExportTransferHandler extends TransferHandler {
 
     @Override
     protected Transferable createTransferable(JComponent c) {
+        // System.out.println("****create transferable");
+
         JList list = (JList) c;
 
         final Object o = list.getSelectedValue();
@@ -75,39 +188,9 @@ public class ResultExportTransferHandler extends TransferHandler {
             return null;
         }
 
-        Transferable t = new Transferable() {
-            @Override
-            public boolean isDataFlavorSupported(DataFlavor flavor) {
-                System.out.println(flavor);
-                return flavor.equals(DataFlavor.imageFlavor);
-            }
+        ResultIcon r = (ResultIcon) o;
 
-            @Override
-            public DataFlavor[] getTransferDataFlavors() {
-                return new DataFlavor[] { DataFlavor.imageFlavor };
-            }
-
-            @Override
-            public Object getTransferData(DataFlavor flavor)
-                    throws UnsupportedFlavorException, IOException {
-                System.out.println(flavor);
-                if (flavor.equals(DataFlavor.imageFlavor)) {
-                    ResultIcon r = (ResultIcon) o;
-
-                    // get the picture
-                    final BufferedImage img = Util
-                            .extractImageFromResultIdentifier(r
-                                    .getObjectIdentifier(), factory, r
-                                    .hasRGBImage());
-
-                    return img;
-                } else {
-                    throw new UnsupportedFlavorException(flavor);
-                }
-            }
-        };
-
-        System.out.println(t);
+        Transferable t = new ExportTransferable(r);
         return t;
     }
 }
