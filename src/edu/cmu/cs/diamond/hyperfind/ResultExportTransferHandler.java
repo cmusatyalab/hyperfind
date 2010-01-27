@@ -65,40 +65,48 @@ import edu.cmu.cs.diamond.opendiamond.Util;
 public class ResultExportTransferHandler extends TransferHandler {
 
     private class ExportTransferable implements Transferable {
-        private final Future<BufferedImage> futureImage;
+        private final List<Future<BufferedImage>> futureImages;
 
         private final Future<String> futureURIList;
 
-        public ExportTransferable(final ResultIcon r) {
-            futureImage = executor.submit(new Callable<BufferedImage>() {
-                @Override
-                public BufferedImage call() throws Exception {
-                    // get the picture
-                    // System.out.println("Extracting...");
-                    BufferedImage img = Util.extractImageFromResultIdentifier(r
-                            .getObjectIdentifier(), factory);
-                    // System.out.println("done");
-                    return img;
-                }
-            });
+        public ExportTransferable(final List<ResultIcon> results) {
+            futureImages = new ArrayList<Future<BufferedImage>>();
+
+            for (final ResultIcon r : results) {
+                futureImages.add(executor.submit(new Callable<BufferedImage>() {
+                    @Override
+                    public BufferedImage call() throws Exception {
+                        BufferedImage img = Util
+                                .extractImageFromResultIdentifier(r
+                                        .getObjectIdentifier(), factory);
+                        // System.out.println("done");
+                        return img;
+                    }
+                }));
+            }
             futureURIList = executor.submit(new Callable<String>() {
                 @Override
                 public String call() throws Exception {
-                    File f = File.createTempFile("hyperfind-export-", ".png");
-                    f.deleteOnExit();
                     // System.out.println(f);
 
-                    // get the picture
-                    BufferedImage img = futureImage.get();
+                    StringBuilder sb = new StringBuilder();
 
-                    // write and return
-                    // System.out.println("writing");
-                    ImageIO.write(img, "png", f);
-                    // System.out.println("done");
+                    for (Future<BufferedImage> future : futureImages) {
+                        // get the picture
+                        BufferedImage img = future.get();
 
-                    URI u = f.toURI();
-                    String uriList = u.toASCIIString() + "\r\n";
-                    return uriList;
+                        File f = File.createTempFile("hyperfind-export-",
+                                ".png");
+                        f.deleteOnExit();
+
+                        ImageIO.write(img, "png", f);
+
+                        // System.out.println("done");
+
+                        URI u = f.toURI();
+                        sb.append(u.toASCIIString() + "\r\n");
+                    }
+                    return sb.toString();
                 }
             });
         }
@@ -121,7 +129,7 @@ public class ResultExportTransferHandler extends TransferHandler {
 
             try {
                 if (flavor.equals(DataFlavor.imageFlavor)) {
-                    return futureImage.get();
+                    return futureImages.get(0).get();
                 } else if (flavor.equals(uriListFlavor)) {
                     String uriList = futureURIList.get();
                     // System.out.println(uriList);
@@ -183,14 +191,16 @@ public class ResultExportTransferHandler extends TransferHandler {
 
         JList list = (JList) c;
 
-        final Object o = list.getSelectedValue();
-        if (o == null) {
-            return null;
+        final Object[] values = list.getSelectedValues();
+
+        List<ResultIcon> results = new ArrayList<ResultIcon>();
+
+        for (Object o : values) {
+            ResultIcon r = (ResultIcon) o;
+            results.add(r);
         }
 
-        ResultIcon r = (ResultIcon) o;
-
-        Transferable t = new ExportTransferable(r);
+        Transferable t = new ExportTransferable(results);
         return t;
     }
 }
