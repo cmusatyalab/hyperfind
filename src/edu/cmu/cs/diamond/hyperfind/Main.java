@@ -50,7 +50,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -93,9 +93,10 @@ public final class Main {
         final JList resultsList = new JList();
         StatisticsBar stats = new StatisticsBar();
 
-        final ExecutorService executor = new ThreadPoolExecutor(0,
-                Integer.MAX_VALUE, 500, TimeUnit.MILLISECONDS,
-                new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
+                500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+        threadPoolExecutor.allowCoreThreadTimeOut(true);
+        final ExecutorService executor = threadPoolExecutor;
 
         resultsList.setModel(new DefaultListModel());
         resultsList
