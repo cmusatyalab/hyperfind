@@ -57,17 +57,8 @@ public class SearchImportTransferHandler extends TransferHandler {
         this.model = model;
     }
 
-    private static final DataFlavor uriListFlavor;
-    static {
-        DataFlavor z = null;
-        try {
-            z = new DataFlavor("text/uri-list; class=java.lang.String");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        uriListFlavor = z;
-    }
+    private static final DataFlavor uriListFlavor = new DataFlavor(
+            "text/uri-list; class=java.lang.String", "URI list");
 
     @Override
     public boolean canImport(TransferSupport support) {
@@ -108,6 +99,7 @@ public class SearchImportTransferHandler extends TransferHandler {
         String ss = (String) support.getTransferable().getTransferData(
                 uriListFlavor);
         // System.out.println("\"" + ss + "\"");
+
         String uriList[] = ss.split("\r\n");
 
         List<URI> result = new ArrayList<URI>();
