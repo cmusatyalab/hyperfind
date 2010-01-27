@@ -98,7 +98,8 @@ public final class Main {
                 new SynchronousQueue<Runnable>());
 
         resultsList.setModel(new DefaultListModel());
-        resultsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        resultsList
+                .setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         resultsList.setDragEnabled(true);
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
@@ -314,7 +315,7 @@ public final class Main {
         resultsList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 1) {
+                if (e.getClickCount() == 2) {
                     int index = resultsList.locationToIndex(e.getPoint());
                     if (index == -1) {
                         return;
