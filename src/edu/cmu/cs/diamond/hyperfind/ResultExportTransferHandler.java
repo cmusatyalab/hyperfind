@@ -63,38 +63,37 @@ import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class ResultExportTransferHandler extends TransferHandler {
+    private static final DataFlavor uriListFlavor = new DataFlavor(
+            "text/uri-list; class=java.lang.String", "URI list");
+
+    private static final DataFlavor textPlainFlavor = new DataFlavor(
+            "text/plain; class=java.lang.String", "Plain text");
+
+    private static final List<DataFlavor> flavors = new ArrayList<DataFlavor>();
+    static {
+        flavors.add(uriListFlavor);
+        flavors.add(textPlainFlavor);
+    }
+
+    private final SearchFactory factory;
+
+    private final ExecutorService executor;
 
     private class ExportTransferable implements Transferable {
-        private final List<Future<BufferedImage>> futureImages;
+        private final List<Future<File>> futureFiles;
 
         private final Future<String> futureURIList;
 
         public ExportTransferable(final List<ResultIcon> results) {
-            futureImages = new ArrayList<Future<BufferedImage>>();
-
+            futureFiles = new ArrayList<Future<File>>();
             for (final ResultIcon r : results) {
-                futureImages.add(executor.submit(new Callable<BufferedImage>() {
+                futureFiles.add(executor.submit(new Callable<File>() {
                     @Override
-                    public BufferedImage call() throws Exception {
+                    public File call() throws Exception {
+                        // System.out.println("running...");
                         BufferedImage img = Util
                                 .extractImageFromResultIdentifier(r
                                         .getObjectIdentifier(), factory);
-                        // System.out.println("done");
-                        return img;
-                    }
-                }));
-            }
-            futureURIList = executor.submit(new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    // System.out.println(f);
-
-                    StringBuilder sb = new StringBuilder();
-
-                    for (Future<BufferedImage> future : futureImages) {
-                        // get the picture
-                        BufferedImage img = future.get();
-
                         File f = File.createTempFile("hyperfind-export-",
                                 ".png");
                         f.deleteOnExit();
@@ -103,6 +102,20 @@ public class ResultExportTransferHandler extends TransferHandler {
 
                         // System.out.println("done");
 
+                        return f;
+                    }
+                }));
+            }
+
+            futureURIList = executor.submit(new Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    // System.out.println(f);
+
+                    StringBuilder sb = new StringBuilder();
+
+                    for (Future<File> future : futureFiles) {
+                        File f = future.get();
                         URI u = f.toURI();
                         sb.append(u.toASCIIString() + "\r\n");
                     }
@@ -128,13 +141,8 @@ public class ResultExportTransferHandler extends TransferHandler {
             // System.out.println(flavor);
 
             try {
-                if (flavor.equals(DataFlavor.imageFlavor)) {
-                    return futureImages.get(0).get();
-                } else if (flavor.equals(uriListFlavor)) {
-                    String uriList = futureURIList.get();
-                    // System.out.println(uriList);
-                    return uriList;
-                } else if (flavor.equals(textPlainFlavor)) {
+                if (flavor.equals(uriListFlavor)
+                        || flavor.equals(textPlainFlavor)) {
                     String uriList = futureURIList.get();
                     // System.out.println(uriList);
                     return uriList;
@@ -156,23 +164,6 @@ public class ResultExportTransferHandler extends TransferHandler {
             }
         }
     }
-
-    private static final DataFlavor uriListFlavor = new DataFlavor(
-            "text/uri-list; class=java.lang.String", "URI list");
-
-    private static final DataFlavor textPlainFlavor = new DataFlavor(
-            "text/plain; class=java.lang.String", "Plain text");
-
-    private static final List<DataFlavor> flavors = new ArrayList<DataFlavor>();
-    static {
-        flavors.add(DataFlavor.imageFlavor);
-        flavors.add(uriListFlavor);
-        flavors.add(textPlainFlavor);
-    }
-
-    private final SearchFactory factory;
-
-    private final ExecutorService executor;
 
     public ResultExportTransferHandler(SearchFactory factory,
             ExecutorService executor) {
