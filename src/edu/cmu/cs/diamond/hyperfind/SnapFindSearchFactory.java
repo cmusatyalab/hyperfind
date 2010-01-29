@@ -145,7 +145,7 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
             throw new IOException("Bad result for list-plugins");
         }
 
-        System.out.println(result);
+        // System.out.println(result);
         return result;
     }
 

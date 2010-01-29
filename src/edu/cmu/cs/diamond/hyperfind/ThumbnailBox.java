@@ -256,7 +256,7 @@ public class ThumbnailBox extends JPanel {
                             publish(resultIcon);
                         }
                     } finally {
-                        System.out.println("STOP");
+                        // System.out.println("STOP");
 
                         // update stats one more time
                         updateStats();

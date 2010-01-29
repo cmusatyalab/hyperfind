@@ -98,7 +98,7 @@ public abstract class HyperFindSearch {
                 m.update(data);
             }
             byte[] digest = m.digest();
-            System.out.println(digest.length);
+            // System.out.println(digest.length);
             Formatter f = new Formatter();
             for (byte b : digest) {
                 f.format("%02x", b & 0xFF);

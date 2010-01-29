@@ -52,6 +52,7 @@ import edu.cmu.cs.diamond.opendiamond.Filter;
 
 class SearchListModel extends AbstractListModel {
     private static final boolean INITIALLY_SELECTED = true;
+
     private final List<SelectableSearch> searches = new ArrayList<SelectableSearch>();
 
     @Override
@@ -103,7 +104,7 @@ class SearchListModel extends AbstractListModel {
                 set.add(s.getSearch());
         }
 
-        System.out.println("set: " + set);
+        // System.out.println("set: " + set);
 
         List<Filter> result = new ArrayList<Filter>();
         for (HyperFindSearch s : set) {

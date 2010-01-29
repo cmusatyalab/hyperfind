@@ -70,7 +70,7 @@ public abstract class HyperFindSearchFactory {
     private static HyperFindSearch createHyperFindSearch(
             Map<String, byte[]> zipMap, Properties p) {
         for (HyperFindSearchFactory f : factoryLoader) {
-            System.out.println(f);
+            // System.out.println(f);
             HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap, p);
             if (s != null) {
                 return s;
@@ -81,15 +81,15 @@ public abstract class HyperFindSearchFactory {
 
     public static HyperFindSearch createHyperFindSearch(URI uri)
             throws IOException {
-        System.out.println("trying " + uri);
+        // System.out.println("trying " + uri);
         Map<String, byte[]> zipMap = new HashMap<String, byte[]>();
         InputStream in = null;
         try {
             in = uri.toURL().openStream();
-            System.out.println("in:" + in);
+            // System.out.println("in:" + in);
             ZipInputStream zip = new ZipInputStream(in);
 
-            System.out.println(zip);
+            // System.out.println(zip);
 
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
@@ -100,7 +100,7 @@ public abstract class HyperFindSearchFactory {
                 zipMap.put(name, Util.readFully(zip));
             }
 
-            System.out.println(zipMap);
+            // System.out.println(zipMap);
 
             byte manifest[] = zipMap.get("hyperfind-manifest.txt");
             Properties p = new Properties();
@@ -110,7 +110,7 @@ public abstract class HyperFindSearchFactory {
                 p.load(r);
             }
 
-            System.out.println(p);
+            // System.out.println(p);
 
             HyperFindSearch s = HyperFindSearchFactory.createHyperFindSearch(
                     zipMap, p);

@@ -425,7 +425,7 @@ public class PopupPanel extends JPanel {
                 SelectableSearch item = (SelectableSearch) existingSearchComboModel
                         .getSelectedItem();
                 try {
-                    System.out.println(item);
+                    // System.out.println(item);
                     item.getSearch().addPatches(createPatches(image, img));
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
@@ -635,9 +635,9 @@ public class PopupPanel extends JPanel {
 
             String key = "_filter." + mName + ".patches";
 
-            System.out.println(key);
+            // System.out.println(key);
             if (attributes.containsKey(key)) {
-                System.out.println(" YES");
+                // System.out.println(" YES");
                 // patches found, add them
                 final List<BoundingBox> bb = BoundingBox
                         .fromPatchesList(ByteBuffer.wrap(attributes.get(key)));

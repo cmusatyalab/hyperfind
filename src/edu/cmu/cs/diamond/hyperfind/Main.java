@@ -256,7 +256,7 @@ public final class Main {
                     filters.addAll(model.createFilters());
 
                     SearchFactory factory = m.createFactory(filters);
-                    System.out.println(factory);
+                    // System.out.println(factory);
                     resultsList
                             .setTransferHandler(new ResultExportTransferHandler(
                                     factory, executor));
@@ -305,7 +305,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     m.cookies = CookieMap.createDefaultCookieMap();
-                    System.out.println(m.cookies);
+                    // System.out.println(m.cookies);
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();

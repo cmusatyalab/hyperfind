@@ -45,7 +45,6 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -102,7 +101,7 @@ class SnapFindSearch extends HyperFindSearch {
         // populate the configs
         ProcessBuilder pb = new ProcessBuilder(pluginRunner.getPath(),
                 "get-plugin-initial-config", type.toString(), internalName);
-        System.out.println(pb.command());
+        // System.out.println(pb.command());
 
         Process p = null;
         try {
@@ -214,7 +213,7 @@ class SnapFindSearch extends HyperFindSearch {
 
     private static void writeKey(OutputStream out, String key, byte[] value)
             throws IOException {
-        System.out.println(key + " " + value.length);
+        // System.out.println(key + " " + value.length);
         byte[] bytes = key.getBytes();
         String k = "K " + bytes.length + "\n";
         out.write(k.getBytes());
@@ -235,7 +234,7 @@ class SnapFindSearch extends HyperFindSearch {
     @Override
     public List<BoundingBox> runLocally(BufferedImage image)
             throws IOException, InterruptedException {
-        System.out.println(Arrays.toString(ImageIO.getWriterFormatNames()));
+        // System.out.println(Arrays.toString(ImageIO.getWriterFormatNames()));
 
         // convert to PPM
         byte ppmOut[] = encodePNM(image);
@@ -289,7 +288,7 @@ class SnapFindSearch extends HyperFindSearch {
         g2.dispose();
 
         ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
-        System.out.println(buf);
+        // System.out.println(buf);
         if (!ImageIO.write(buf, "PNM", ppmOut)) {
             throw new IOException("Can't write out PNM");
         }
@@ -343,7 +342,7 @@ class SnapFindSearch extends HyperFindSearch {
             String cmd = tokens[0];
             String arg = tokens[1];
 
-            System.out.println(" " + cmd + " " + arg);
+            // System.out.println(" " + cmd + " " + arg);
 
             if (cmd.equals("FILTER")) {
                 if (name != null) {
