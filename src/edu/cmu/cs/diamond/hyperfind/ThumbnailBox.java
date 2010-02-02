@@ -150,7 +150,6 @@ public class ThumbnailBox extends JPanel {
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
 
-        stats.setIndeterminateMessage("Initializing Search");
         startStatsTimer();
 
         final DefaultListModel model = new DefaultListModel();
