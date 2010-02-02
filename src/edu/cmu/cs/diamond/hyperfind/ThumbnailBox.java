@@ -287,8 +287,13 @@ public class ThumbnailBox extends JPanel {
                             }
                         });
                     }
-                } catch (IOException e) {
-                    // TODO pop up something?
+                } catch (final IOException e) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            stats.showException(e.getCause());
+                        }
+                    });
                     e.printStackTrace();
                 }
                 return null;
