@@ -191,7 +191,22 @@ public class ResultExportTransferHandler extends TransferHandler {
             results.add(r);
         }
 
-        Transferable t = new ExportTransferable(results);
+        ExportTransferable t = new ExportTransferable(results);
+
+        // force the computation in the UI thread here to avoid terrible
+        // drag and drop race conditions
+        try {
+            t.futureURIList.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            Throwable th = e.getCause();
+            if (th instanceof RuntimeException) {
+                throw (RuntimeException) th;
+            }
+            e.printStackTrace();
+        }
+
         return t;
     }
 }
