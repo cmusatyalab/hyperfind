@@ -59,8 +59,10 @@ public class StatisticsBar extends JProgressBar {
 
     private void setNumbers(int total, int searched, int dropped) {
         setIndeterminate(false);
-        setString("Total: " + total + ", Searched: " + searched + ", Dropped: "
-                + dropped);
+        String str = "Total: " + total + ", Searched: " + searched
+                + ", Dropped: " + dropped;
+        setString(str);
+        setToolTipText(null);
         setMaximum(total);
         setValue(searched);
     }
@@ -80,5 +82,17 @@ public class StatisticsBar extends JProgressBar {
     public void setIndeterminateMessage(String message) {
         setIndeterminate(true);
         setString(message);
+        setToolTipText(null);
+    }
+
+    public void showException(Throwable e) {
+        setIndeterminate(false);
+        setToolTipText(getString());
+        Throwable c = e.getCause();
+        String msg = e.getLocalizedMessage();
+        if (c != null) {
+            msg += ": " + c;
+        }
+        setString(msg);
     }
 }
