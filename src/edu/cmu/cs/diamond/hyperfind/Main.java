@@ -476,7 +476,7 @@ public final class Main {
 
     private void popup(Result r, List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
-            SearchListModel model) throws IOException {
+            SearchListModel model) {
         popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
                 exampleSearchFactories, model));
     }
