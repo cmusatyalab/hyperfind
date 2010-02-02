@@ -91,7 +91,7 @@ public final class Main {
         JButton stopButton = new JButton("Stop");
         JButton defineScopeButton = new JButton("Define Scope");
         final JList resultsList = new JList();
-        StatisticsBar stats = new StatisticsBar();
+        final StatisticsBar stats = new StatisticsBar();
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
@@ -284,7 +284,7 @@ public final class Main {
                             convertToActiveSearchList(model
                                     .getSelectedSearches()));
                 } catch (IOException e1) {
-                    // TODO Auto-generated catch block
+                    stats.showException(e1.getCause());
                     e1.printStackTrace();
                 } catch (InterruptedException e1) {
                     // TODO Auto-generated catch block
