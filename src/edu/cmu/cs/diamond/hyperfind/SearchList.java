@@ -56,10 +56,8 @@ import javax.swing.event.ListDataListener;
 
 final class SearchList extends JPanel implements ListDataListener {
     private static class ListElement {
-        public ListElement(JCheckBox cb, JButton edit, JButton delete, Box box) {
+        public ListElement(JCheckBox cb, Box box) {
             this.cb = cb;
-            this.edit = edit;
-            this.delete = delete;
             this.box = box;
 
         }
@@ -68,21 +66,12 @@ final class SearchList extends JPanel implements ListDataListener {
             return cb;
         }
 
-        public JButton getEdit() {
-            return edit;
-        }
-
-        public JButton getDelete() {
-            return delete;
-        }
-
         public Box getBox() {
             return box;
         }
 
         private final JCheckBox cb;
-        private final JButton edit;
-        private final JButton delete;
+
         private final Box box;
     }
 
@@ -182,7 +171,7 @@ final class SearchList extends JPanel implements ListDataListener {
 
         box.add(item);
 
-        elements.add(e.getIndex0(), new ListElement(cb, edit, delete, item));
+        elements.add(e.getIndex0(), new ListElement(cb, item));
 
         cb.addItemListener(new ItemListener() {
             @Override
