@@ -92,4 +92,11 @@ public class StatisticsBar extends JProgressBar {
         }
         setString(msg);
     }
+
+    public void setDone() {
+        if (isIndeterminate()) {
+            setString("");
+            setIndeterminate(false);
+        }
+    }
 }

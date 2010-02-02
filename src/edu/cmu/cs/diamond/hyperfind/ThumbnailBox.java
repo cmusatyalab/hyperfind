@@ -359,6 +359,12 @@ public class ThumbnailBox extends JPanel {
                 });
             }
         } catch (SearchClosedException ignore) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    stats.setDone();
+                }
+            });
         }
     }
 }
