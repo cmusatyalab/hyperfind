@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2009 Carnegie Mellon University
+ *  Copyright (c) 2008-2010 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -63,7 +63,7 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
         setHorizontalAlignment(SwingConstants.CENTER);
         // setVerticalAlignment(SwingConstants.CENTER);
 
-        //setToolTipText(r.getName());
+        // setToolTipText(r.getName());
 
         setText(null);
         setIcon(null);
@@ -78,7 +78,7 @@ public class SearchPanelCellRenderer extends DefaultListCellRenderer {
             break;
         case LABEL_ONLY:
             setText(r.getName());
-            setHorizontalAlignment(SwingConstants.LEFT);            
+            setHorizontalAlignment(SwingConstants.LEFT);
             break;
         }
 
