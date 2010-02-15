@@ -283,6 +283,7 @@ public class ThumbnailBox extends JPanel {
                                 startButton.setEnabled(true);
                                 stopButton.setEnabled(false);
                                 moreResultsButton.setVisible(false);
+                                stats.setDone();
                             }
                         });
                     }

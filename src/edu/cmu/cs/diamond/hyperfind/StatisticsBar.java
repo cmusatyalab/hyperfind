@@ -95,7 +95,7 @@ public class StatisticsBar extends JProgressBar {
 
     public void setDone() {
         if (isIndeterminate()) {
-            setString("");
+            clear();
             setIndeterminate(false);
         }
     }
