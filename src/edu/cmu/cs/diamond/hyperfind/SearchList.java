@@ -53,6 +53,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 
@@ -156,6 +158,13 @@ final class SearchList extends JPanel implements ListDataListener {
         final SelectableSearch ss = (SelectableSearch) model.getElementAt(e
                 .getIndex0());
         final HyperFindSearch s = ss.getSearch();
+
+        s.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                model.updated(ss);
+            }
+        });
 
         JCheckBox cb = new JCheckBox("", ss.isSelected());
 

@@ -194,6 +194,7 @@ class SnapFindSearch extends HyperFindSearch {
     public void edit(Component parentComponent) throws IOException,
             InterruptedException {
         reprocessConfig("edit-plugin-config");
+        fireChangeEvent();
     }
 
     private void writeConfig(OutputStream out) throws IOException {
@@ -407,6 +408,7 @@ class SnapFindSearch extends HyperFindSearch {
             InterruptedException {
         this.patches.addAll(patches);
         reprocessConfig("normalize-plugin-config");
+        fireChangeEvent();
     }
 
     @Override

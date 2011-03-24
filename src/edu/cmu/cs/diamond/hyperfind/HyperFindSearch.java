@@ -47,10 +47,15 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
 import java.util.List;
+import java.util.ArrayList;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
 public abstract class HyperFindSearch {
+    private List<ChangeListener> listeners = new ArrayList<ChangeListener>();
+
     public abstract boolean isEditable();
 
     public abstract boolean needsPatches();
@@ -73,6 +78,21 @@ public abstract class HyperFindSearch {
             throws IOException, InterruptedException;
 
     public abstract void dispose();
+
+    public void addChangeListener(ChangeListener l) {
+        listeners.add(l);
+    }
+
+    public void removeChangeListener(ChangeListener l) {
+        listeners.remove(l);
+    }
+
+    protected void fireChangeEvent() {
+        ChangeEvent ev = new ChangeEvent(this);
+        for (ChangeListener l : listeners) {
+            l.stateChanged(ev);
+        }
+    }
 
     @Override
     public String toString() {
