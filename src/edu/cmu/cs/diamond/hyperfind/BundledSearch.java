@@ -127,4 +127,8 @@ public class BundledSearch extends HyperFindSearch {
     public void addPatches(List<BufferedImage> patches)
             throws IOException, InterruptedException {
     }
+
+    @Override
+    public void dispose() {
+    }
 }

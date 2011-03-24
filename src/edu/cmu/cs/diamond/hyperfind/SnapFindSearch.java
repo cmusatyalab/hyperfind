@@ -408,4 +408,8 @@ class SnapFindSearch extends HyperFindSearch {
         this.patches.addAll(patches);
         reprocessConfig("normalize-plugin-config");
     }
+
+    @Override
+    public void dispose() {
+    }
 }

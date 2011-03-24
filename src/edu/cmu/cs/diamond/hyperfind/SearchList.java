@@ -44,6 +44,8 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
@@ -85,7 +87,7 @@ final class SearchList extends JPanel implements ListDataListener {
 
     private final List<ListElement> elements = new ArrayList<ListElement>();
 
-    public SearchList(SearchListModel model) {
+    public SearchList(final SearchListModel model) {
         this.model = model;
         model.addListDataListener(this);
 
@@ -102,6 +104,23 @@ final class SearchList extends JPanel implements ListDataListener {
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 
         add(jsp);
+
+        // Ensure all filters are disposed when the containing window is
+        // closed
+        addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if (!e.getComponent().isDisplayable()) {
+                    while (model.getSize() > 0) {
+                        SelectableSearch ss = (SelectableSearch)
+                                model.getElementAt(0);
+                        HyperFindSearch s = ss.getSearch();
+                        model.remove(ss);
+                        s.dispose();
+                    }
+                }
+            }
+        });
     }
 
     static void updateCheckBox(JCheckBox cb, String searchName,
@@ -185,6 +204,7 @@ final class SearchList extends JPanel implements ListDataListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 model.remove(ss);
+                s.dispose();
             }
         });
 

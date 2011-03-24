@@ -72,6 +72,8 @@ public abstract class HyperFindSearch {
     public abstract void addPatches(List<BufferedImage> patches)
             throws IOException, InterruptedException;
 
+    public abstract void dispose();
+
     @Override
     public String toString() {
         return getSearchName();
