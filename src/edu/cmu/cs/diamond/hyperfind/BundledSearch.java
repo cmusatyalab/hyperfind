@@ -44,6 +44,8 @@ import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import edu.cmu.cs.diamond.opendiamond.Filter;
 import edu.cmu.cs.diamond.opendiamond.FilterCode;
@@ -52,30 +54,36 @@ public class BundledSearch extends HyperFindSearch {
 
     private final String searchName;
 
-    private String digestedName;
-
-    private int threshold;
-
     private final ArrayList<String> dependencies;
 
     private final byte[] filter;
 
     private final byte[] blob;
 
+    private SearchSettingsFrame settings;
+
     /* @blob may be null */
-    BundledSearch(String filterName, byte[] filter, int threshold,
-            Collection<String> dependencies, byte[] blob) {
+    BundledSearch(String filterName, SearchSettingsFrame settings,
+            byte[] filter, byte[] blob, Collection<String> dependencies) {
         this.searchName = filterName;
+        this.settings = settings;
         this.filter = filter;
-        this.threshold = threshold;
-        this.dependencies = new ArrayList<String>(dependencies);
         this.blob = blob;
-        updateDigestedName();
+        this.dependencies = new ArrayList<String>(dependencies);
+
+        // Pass settings changes along to our listeners
+        final BundledSearch search = this;
+        settings.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                search.fireChangeEvent();
+            }
+        });
     }
 
     @Override
     public boolean isEditable() {
-        return false;
+        return settings.isEditable();
     }
 
     @Override
@@ -86,6 +94,7 @@ public class BundledSearch extends HyperFindSearch {
     @Override
     public void edit(Component parentComponent) throws IOException,
             InterruptedException {
+        settings.setVisible(true);
     }
 
     @Override
@@ -98,15 +107,15 @@ public class BundledSearch extends HyperFindSearch {
     @Override
     public List<Filter> createFilters() throws IOException {
         List<Filter> filters = new ArrayList<Filter>();
-        List<String> arguments = Collections.emptyList();
-        filters.add(new Filter(digestedName, new FilterCode(filter),
-                threshold, dependencies, arguments, blob));
+        filters.add(new Filter(getDigestedName(), new FilterCode(filter),
+                settings.getThreshold(), dependencies,
+                settings.getFilterArguments(), blob));
         return filters;
     }
 
     @Override
     public String getInstanceName() {
-        return "filter";
+        return settings.getInstanceName();
     }
 
     @Override
@@ -116,11 +125,24 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public String getDigestedName() {
-        return digestedName;
-    }
+        // Build a single byte array for all arguments
+        List<String> args = settings.getFilterArguments();
+        int count = 0;
+        for (String arg : args) {
+            count += arg.getBytes().length + 2;
+        }
+        byte[] buf = new byte[count];
+        int i = 0;
+        for (String arg : args) {
+            byte[] argbuf = arg.getBytes();
+            System.arraycopy(argbuf, 0, buf, i, argbuf.length);
+            i += argbuf.length;
+            buf[i++] = 1;
+            buf[i++] = 0;
+        }
 
-    private void updateDigestedName() {
-        digestedName = digest(searchName.getBytes(), filter, blob);
+        return digest(searchName.getBytes(), buf.toString().getBytes(),
+                filter, blob);
     }
 
     @Override
@@ -130,5 +152,6 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public void dispose() {
+        settings.dispose();
     }
 }

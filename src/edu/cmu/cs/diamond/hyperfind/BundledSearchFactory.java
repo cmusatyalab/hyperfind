@@ -73,21 +73,18 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
         return null;
     }
 
+    /* Format of hyperfind-manifest.txt:
+       Filter: display name of filter code
+       Dependencies: comma-separated list of filter dependencies
+       <other keys as described in SearchSettingsFrame>
+    */
     @Override
     public HyperFindSearch createHyperFindSearchFromZipMap(
             Map<String, byte[]> zipMap, Properties p) {
-        /* Format of hyperfind-manifest.txt:
-           Filter: display name of filter code
-           Threshold: the drop threshold
-           Dependencies: comma-separated list of filter dependencies
-        */
-
         String name = p.getProperty("Filter");
         if (name == null) {
             return null;
         }
-
-        int threshold = Integer.parseInt(p.getProperty("Threshold"));
 
         ArrayList<String> dependencies = new ArrayList<String>();
         String deplist = p.getProperty("Dependencies");
@@ -102,6 +99,15 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
             blob = new byte[0];
         }
 
-        return new BundledSearch(name, filter, threshold, dependencies, blob);
+        SearchSettingsFrame settings;
+        try {
+            settings = SearchSettingsFrame.createFromProperties(name, p);
+        } catch (IllegalArgumentException e) {
+            /* Parse error reading properties */
+            e.printStackTrace();
+            return null;
+        }
+
+        return new BundledSearch(name, settings, filter, blob, dependencies);
     }
 }
