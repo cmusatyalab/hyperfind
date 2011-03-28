@@ -243,6 +243,12 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return needsPatches;
     }
 
+    @Override
+    public boolean needsBundle() {
+        // SnapFind plugins never accept ZIP bundles
+        return false;
+    }
+
     /*
      * (non-Javadoc)
      * 

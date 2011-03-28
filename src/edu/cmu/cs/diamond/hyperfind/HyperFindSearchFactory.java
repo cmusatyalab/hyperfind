@@ -60,6 +60,8 @@ public abstract class HyperFindSearchFactory {
 
     public abstract boolean needsPatches();
 
+    public abstract boolean needsBundle();
+
     public abstract HyperFindSearch createHyperFindSearch(
             List<BufferedImage> patches) throws IOException,
             InterruptedException;
@@ -68,8 +70,9 @@ public abstract class HyperFindSearchFactory {
             Map<String, byte[]> zipMap, Properties p);
 
     private static HyperFindSearch createHyperFindSearch(
+            List<HyperFindSearchFactory> factories,
             Map<String, byte[]> zipMap, Properties p) {
-        for (HyperFindSearchFactory f : factoryLoader) {
+        for (HyperFindSearchFactory f : factories) {
             // System.out.println(f);
             HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap, p);
             if (s != null) {
@@ -79,7 +82,8 @@ public abstract class HyperFindSearchFactory {
         return null;
     }
 
-    public static HyperFindSearch createHyperFindSearch(URI uri)
+    public static HyperFindSearch createHyperFindSearch(
+            List<HyperFindSearchFactory> factories, URI uri)
             throws IOException {
         // System.out.println("trying " + uri);
         Map<String, byte[]> zipMap = new HashMap<String, byte[]>();
@@ -113,7 +117,7 @@ public abstract class HyperFindSearchFactory {
             // System.out.println(p);
 
             HyperFindSearch s = HyperFindSearchFactory.createHyperFindSearch(
-                    zipMap, p);
+                    factories, zipMap, p);
 
             return s;
         } finally {
@@ -124,6 +128,28 @@ public abstract class HyperFindSearchFactory {
             } catch (IOException e) {
             }
         }
+    }
+
+    public static List<HyperFindSearchFactory>
+            createHyperFindSearchFactories(File pluginRunner)
+            throws IOException, InterruptedException {
+        List<HyperFindSearchFactory> factories =
+                new ArrayList<HyperFindSearchFactory>();
+
+        for (HyperFindSearchFactory f : factoryLoader) {
+            factories.add(f);
+        }
+        factories.addAll(SnapFindSearchFactory
+                .createHyperFindSearchFactories(pluginRunner));
+
+        Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
+            @Override
+            public int compare(HyperFindSearchFactory o1,
+                    HyperFindSearchFactory o2) {
+                return o1.getDisplayName().compareTo(o2.getDisplayName());
+            }
+        });
+        return factories;
     }
 
     private static ServiceLoader<HyperFindSearchFactory> factoryLoader = ServiceLoader

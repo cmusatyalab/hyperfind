@@ -48,7 +48,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     @Override
     public String getDisplayName() {
-        return null;
+        return "Bundled Search";
     }
 
     @Override
@@ -65,6 +65,11 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     @Override
     public boolean needsPatches() {
         return false;
+    }
+
+    @Override
+    public boolean needsBundle() {
+        return true;
     }
 
     @Override

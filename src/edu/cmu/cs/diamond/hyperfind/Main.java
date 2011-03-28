@@ -82,7 +82,7 @@ public final class Main {
     }
 
     public static Main createMain(File pluginRunner,
-            List<HyperFindSearchFactory> factories) throws IOException,
+            final List<HyperFindSearchFactory> factories) throws IOException,
             InterruptedException {
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -108,7 +108,8 @@ public final class Main {
         final SearchListModel model = new SearchListModel();
         final SearchList searchList = new SearchList(model);
 
-        searchList.setTransferHandler(new SearchImportTransferHandler(model));
+        searchList.setTransferHandler(new SearchImportTransferHandler(model,
+                factories));
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");
@@ -197,7 +198,7 @@ public final class Main {
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
                         HyperFindSearch s = HyperFindSearchFactory
-                                .createHyperFindSearch(chooser
+                                .createHyperFindSearch(factories, chooser
                                         .getSelectedFile().toURI());
                         if (s != null) {
                             model.addSearch(s);
@@ -444,7 +445,7 @@ public final class Main {
             case FILTER:
                 if (f.needsPatches()) {
                     exampleSearchFactories.add(f);
-                } else {
+                } else if (!f.needsBundle()) {
                     JMenuItem jm = new JMenuItem(f.getDisplayName());
                     jm.addActionListener(new ActionListener() {
                         @Override
@@ -549,15 +550,8 @@ public final class Main {
                             + pluginRunner);
         }
 
-        final List<HyperFindSearchFactory> factories = SnapFindSearchFactory
+        final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner);
-        Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
-            @Override
-            public int compare(HyperFindSearchFactory o1,
-                    HyperFindSearchFactory o2) {
-                return o1.getDisplayName().compareTo(o2.getDisplayName());
-            }
-        });
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override

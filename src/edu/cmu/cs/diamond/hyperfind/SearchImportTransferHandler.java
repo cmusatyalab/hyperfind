@@ -53,8 +53,12 @@ import javax.swing.TransferHandler;
 public class SearchImportTransferHandler extends TransferHandler {
     private final SearchListModel model;
 
-    public SearchImportTransferHandler(SearchListModel model) {
+    private final List<HyperFindSearchFactory> factories;
+
+    public SearchImportTransferHandler(SearchListModel model,
+            List<HyperFindSearchFactory> factories) {
         this.model = model;
+        this.factories = factories;
     }
 
     private static final DataFlavor uriListFlavor = new DataFlavor(
@@ -76,7 +80,7 @@ public class SearchImportTransferHandler extends TransferHandler {
             List<URI> uris = getURIs(support);
             for (URI u : uris) {
                 HyperFindSearch s = HyperFindSearchFactory
-                        .createHyperFindSearch(u);
+                        .createHyperFindSearch(factories, u);
                 if (s != null) {
                     model.addSearch(s);
                 }
