@@ -81,9 +81,11 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(File pluginRunner,
-            final List<HyperFindSearchFactory> factories) throws IOException,
-            InterruptedException {
+    public static Main createMain(File pluginRunner, File pluginDirectory)
+            throws IOException, InterruptedException {
+        final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
+                .createHyperFindSearchFactories(pluginRunner, pluginDirectory);
+
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
@@ -533,12 +535,12 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " snapfind-plugin-runner");
+                + " snapfind-plugin-runner hyperfind-plugin-directory");
     }
 
     public static void main(String[] args) throws IOException,
             InterruptedException {
-        if (args.length != 1) {
+        if (args.length != 2) {
             printUsage();
             System.exit(1);
         }
@@ -550,14 +552,17 @@ public final class Main {
                             + pluginRunner);
         }
 
-        final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
-                .createHyperFindSearchFactories(pluginRunner);
+        final File pluginDirectory = new File(args[1]);
+        if (!pluginDirectory.isDirectory()) {
+            throw new IOException(
+                    "plugin directory does not exist: " + pluginDirectory);
+        }
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(pluginRunner, factories);
+                    createMain(pluginRunner, pluginDirectory);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
