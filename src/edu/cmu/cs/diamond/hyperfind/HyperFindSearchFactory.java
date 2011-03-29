@@ -141,6 +141,7 @@ public abstract class HyperFindSearchFactory {
         }
         factories.addAll(SnapFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner));
+        factories.add(new BundledSearchFactory());
         /* Now that we've enumerated all "real" factories, add a replicator
            for every ZIP file in the plugin directory that can be accepted
            by any of the factories */
