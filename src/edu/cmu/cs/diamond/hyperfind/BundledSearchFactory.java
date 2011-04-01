@@ -78,7 +78,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
         return null;
     }
 
-    /* Format of hyperfind-manifest.txt:
+    /* Format of opendiamond-manifest.txt:
        Filter: display name of filter code
        Dependencies: comma-separated list of filter dependencies
        <other keys as described in SearchSettingsFrame>

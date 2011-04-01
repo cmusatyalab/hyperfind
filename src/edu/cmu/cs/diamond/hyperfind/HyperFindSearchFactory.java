@@ -107,6 +107,9 @@ public abstract class HyperFindSearchFactory {
             // System.out.println(zipMap);
 
             byte manifest[] = zipMap.get("hyperfind-manifest.txt");
+            if (manifest == null) {
+                manifest = zipMap.get("opendiamond-manifest.txt");
+            }
             Properties p = new Properties();
             if (manifest != null) {
                 ByteArrayInputStream bIn = new ByteArrayInputStream(manifest);
