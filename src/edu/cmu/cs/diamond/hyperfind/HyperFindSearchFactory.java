@@ -106,9 +106,11 @@ public abstract class HyperFindSearchFactory {
 
             // System.out.println(zipMap);
 
-            byte manifest[] = zipMap.get("hyperfind-manifest.txt");
+            byte manifest[] = zipMap.remove("hyperfind-manifest.txt");
             if (manifest == null) {
-                manifest = zipMap.get("opendiamond-manifest.txt");
+                manifest = zipMap.remove("opendiamond-manifest.txt");
+            } else {
+                zipMap.remove("opendiamond-manifest.txt");
             }
             Properties p = new Properties();
             if (manifest != null) {
