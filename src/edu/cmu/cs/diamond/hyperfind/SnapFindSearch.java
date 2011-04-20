@@ -327,9 +327,6 @@ class SnapFindSearch extends HyperFindSearch {
         // parse fspec (boo)
         int threshold = -1;
         String name = null;
-        String evalFunction = null;
-        String initFunction = null;
-        String finiFunction = null;
         List<String> dependencies = null;
         List<String> arguments = null;
 
@@ -348,37 +345,27 @@ class SnapFindSearch extends HyperFindSearch {
             if (cmd.equals("FILTER")) {
                 if (name != null) {
                     // commit last filter, if there is one
-                    filters.add(new Filter(name, fc, evalFunction,
-                            initFunction, finiFunction, threshold,
+                    filters.add(new Filter(name, fc, threshold,
                             dependencies, arguments));
                 }
 
                 // init anew
                 threshold = -1;
                 name = arg;
-                evalFunction = null;
-                initFunction = null;
-                finiFunction = null;
                 dependencies = new ArrayList<String>();
                 arguments = new ArrayList<String>();
             } else if (cmd.equals("THRESHOLD") || cmd.equals("THRESHHOLD")) {
                 threshold = Integer.parseInt(arg);
             } else if (cmd.equals("ARG")) {
                 arguments.add(arg);
-            } else if (cmd.equals("EVAL_FUNCTION")) {
-                evalFunction = arg;
-            } else if (cmd.equals("INIT_FUNCTION")) {
-                initFunction = arg;
-            } else if (cmd.equals("FINI_FUNCTION")) {
-                finiFunction = arg;
             } else if (cmd.equals("REQUIRES")) {
                 dependencies.add(arg);
             }
         }
 
         // finally, commit
-        filters.add(new Filter(name, fc, evalFunction, initFunction,
-                finiFunction, threshold, dependencies, arguments, blob));
+        filters.add(new Filter(name, fc, threshold, dependencies, arguments,
+                blob));
 
         return filters;
     }
