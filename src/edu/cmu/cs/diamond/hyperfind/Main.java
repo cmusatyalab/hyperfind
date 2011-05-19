@@ -517,10 +517,7 @@ public final class Main {
     }
 
     private SearchFactory createFactory(List<Filter> filters) {
-        List<String> appDepends = new ArrayList<String>();
-        appDepends.add("RGB");
-
-        return new SearchFactory(filters, appDepends, cookies);
+        return new SearchFactory(filters, cookies);
     }
 
     private void stopSearch() {
