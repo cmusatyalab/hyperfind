@@ -66,7 +66,7 @@ public class SearchSettingsFrame extends JFrame {
     private int currentRow;
 
     public SearchSettingsFrame(String filterName, String instanceName,
-            boolean instanceEditable, int threshold,
+            boolean instanceEditable, double threshold,
             boolean thresholdEditable) {
         super("Edit " + filterName);
 
@@ -99,7 +99,7 @@ public class SearchSettingsFrame extends JFrame {
 
         // Threshold.  Always create the field, sometimes display it.
         thresholdField = new SpinnerField(this, new Double(threshold),
-                new Double(0), null, 1);
+                new Double(0), null, 0.1);
         if (thresholdEditable) {
             addField("Threshold", thresholdField);
         }
@@ -297,9 +297,9 @@ public class SearchSettingsFrame extends JFrame {
         return instanceNameField.getText();
     }
 
-    public int getThreshold() {
+    public double getThreshold() {
         Double val = (Double) thresholdField.getValue();
-        return val.intValue();
+        return val.doubleValue();
     }
 
     public boolean isEditable() {
@@ -384,7 +384,7 @@ public class SearchSettingsFrame extends JFrame {
         boolean instanceEditable = instanceEditableStr == null ||
                 ! instanceEditableStr.equals("false");
 
-        int threshold = Integer.parseInt(p.getProperty("Threshold"));
+        double threshold = Double.parseDouble(p.getProperty("Threshold"));
 
         String threshEditableStr = p.getProperty("Threshold-Editable");
         boolean threshEditable = threshEditableStr != null &&
