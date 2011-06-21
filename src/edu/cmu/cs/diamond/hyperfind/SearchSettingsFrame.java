@@ -59,7 +59,7 @@ public class SearchSettingsFrame extends JFrame {
 
     private StringField instanceNameField;
 
-    private SpinnerField thresholdField;
+    private NumberField thresholdField;
 
     private ArrayList<JComponent> arguments = new ArrayList<JComponent>();
 
@@ -98,8 +98,8 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         // Threshold.  Always create the field, sometimes display it.
-        thresholdField = new SpinnerField(this, new Double(threshold),
-                new Double(0), null, 0.1);
+        thresholdField = new NumberField(this, new Double(threshold),
+                new Double(0), new Double(100), 0.1);
         if (thresholdEditable) {
             addField("Threshold", thresholdField);
         }
@@ -209,11 +209,31 @@ public class SearchSettingsFrame extends JFrame {
         addArgumentField(label, new StringField(this, defl));
     }
 
-    private class SpinnerField extends JSpinner {
+    private class NumberField extends JPanel {
 
-        public SpinnerField(final SearchSettingsFrame settings, Double defl,
+        private final JSpinner spinner;
+
+        private final JSlider slider;
+
+        private final int sliderMin;
+
+        private final int sliderMax;
+
+        private final double increment;
+
+        private static final int SLIDER_DEFAULT_MIN = 0;
+
+        private static final int SLIDER_DEFAULT_MAX = 100;
+
+        private static final int FIELD_WIDTH = 8;
+
+        public NumberField(final SearchSettingsFrame settings, Double defl,
                 Double min, Double max, double increment) {
 
+            super(new GridBagLayout());
+            this.increment = increment;
+
+            // Normalize parameters
             if (defl == null) {
                 defl = new Double(0);
                 if (min != null && defl.compareTo(min) < 0) {
@@ -222,22 +242,75 @@ public class SearchSettingsFrame extends JFrame {
                     defl = max;
                 }
             }
+            if (min != null) {
+                sliderMin = (int) (min.doubleValue() / increment);
+            } else {
+                sliderMin = SLIDER_DEFAULT_MIN;
+            }
+            if (max != null) {
+                sliderMax = (int) (max.doubleValue() / increment);
+            } else {
+                sliderMax = SLIDER_DEFAULT_MAX;
+            }
 
-            SpinnerNumberModel model = new SpinnerNumberModel(defl, min,
-                    max, new Double(increment));
-            setModel(model);
+            // Create spinner
+            SpinnerNumberModel spinnerModel = new SpinnerNumberModel(defl,
+                    min, max, new Double(increment));
+            spinner = new JSpinner(spinnerModel);
+            ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField().
+                    setColumns(FIELD_WIDTH);
 
-            addChangeListener(new ChangeListener() {
+            // Create slider
+            slider = new JSlider(sliderMin, sliderMax, sliderIndex(defl));
+            slider.setPaintLabels(false);
+            slider.setPaintTicks(false);
+            slider.setSnapToTicks(false);
+
+            // Add listeners.  The spinner is the master and the slider is
+            // the slave.
+            final double f_increment = increment;
+            spinner.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
+                    int newIndex = sliderIndex((Double) spinner.getValue());
+                    if (slider.getValue() != newIndex) {
+                        slider.setValue(newIndex);
+                    }
                     settings.fireChangeEvent();
                 }
             });
+            slider.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    int newIndex = slider.getValue();
+                    if (newIndex != sliderIndex((Double) spinner.getValue())) {
+                        spinner.setValue(new Double(newIndex * f_increment));
+                    }
+                }
+            });
+
+            // Add to the panel
+            add(spinner);
+            GridBagConstraints c = new GridBagConstraints();
+            c.insets = new Insets(0, 8, 0, 0);
+            c.fill = GridBagConstraints.HORIZONTAL;
+            add(slider, c);
+        }
+
+        private int sliderIndex(Double value) {
+            int ret = (int) (value.doubleValue() / increment);
+            ret = Math.min(ret, sliderMax);
+            ret = Math.max(ret, sliderMin);
+            return ret;
+        }
+
+        public double getValue() {
+            return ((Double) spinner.getValue()).doubleValue();
         }
 
         @Override
         public String toString() {
-            double d = ((Double) getValue()).doubleValue();
+            double d = getValue();
             int i = (int) d;
             if (d == i) {
                 // Avoid trailing .0 if possible
@@ -250,7 +323,7 @@ public class SearchSettingsFrame extends JFrame {
 
     public void addNumber(String label, Double defl, Double min, Double max,
             double increment) {
-        addArgumentField(label, new SpinnerField(this, defl, min, max,
+        addArgumentField(label, new NumberField(this, defl, min, max,
                 increment));
     }
 
@@ -298,8 +371,7 @@ public class SearchSettingsFrame extends JFrame {
     }
 
     public double getThreshold() {
-        Double val = (Double) thresholdField.getValue();
-        return val.doubleValue();
+        return thresholdField.getValue();
     }
 
     public boolean isEditable() {
