@@ -325,7 +325,7 @@ class SnapFindSearch extends HyperFindSearch {
         }
 
         // parse fspec (boo)
-        int threshold = -1;
+        double threshold = Double.NaN;
         String name = null;
         List<String> dependencies = null;
         List<String> arguments = null;
@@ -350,12 +350,12 @@ class SnapFindSearch extends HyperFindSearch {
                 }
 
                 // init anew
-                threshold = -1;
+                threshold = Double.NaN;
                 name = arg;
                 dependencies = new ArrayList<String>();
                 arguments = new ArrayList<String>();
             } else if (cmd.equals("THRESHOLD") || cmd.equals("THRESHHOLD")) {
-                threshold = Integer.parseInt(arg);
+                threshold = Double.parseDouble(arg);
             } else if (cmd.equals("ARG")) {
                 arguments.add(arg);
             } else if (cmd.equals("REQUIRES")) {
