@@ -48,19 +48,26 @@ import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 
 public class ActiveSearchSet {
 
+    private final Main main;
+
     // Display-name -> filter bindings for the searches listed in the UI
     private final List<ActiveSearch> searches;
 
     private final SearchFactory factory;
 
-    public ActiveSearchSet(List<HyperFindSearch> selectedSearches,
+    public ActiveSearchSet(Main main, List<HyperFindSearch> selectedSearches,
             SearchFactory factory) {
+        this.main = main;
         this.searches = new ArrayList<ActiveSearch>(selectedSearches.size());
         for (HyperFindSearch h : selectedSearches) {
             this.searches.add(new ActiveSearch(h.getSearchName(),
                     h.getInstanceName(), h.getDigestedName()));
         }
         this.factory = factory;
+    }
+
+    Main getMain() {
+        return main;
     }
 
     public List<ActiveSearch> getActiveSearches() {

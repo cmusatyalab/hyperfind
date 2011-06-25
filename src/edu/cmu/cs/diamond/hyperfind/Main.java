@@ -289,7 +289,7 @@ public final class Main {
 
                     // start
                     m.results.start(m.search, patchAttributes,
-                            new ActiveSearchSet(model.getSelectedSearches(),
+                            new ActiveSearchSet(m, model.getSelectedSearches(),
                                     factory));
                 } catch (IOException e1) {
                     stats.showException(e1.getCause());

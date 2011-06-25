@@ -40,6 +40,8 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import javax.swing.SwingUtilities;
+
 import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class HyperFindResult {
@@ -51,6 +53,16 @@ public class HyperFindResult {
     public HyperFindResult(ActiveSearchSet searchSet, Result result) {
         this.searchSet = searchSet;
         this.result = result;
+    }
+
+    public void popup() {
+        final HyperFindResult r = this;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                searchSet.getMain().reexecute(r);
+            }
+        });
     }
 
     public ActiveSearchSet getActiveSearchSet() {
