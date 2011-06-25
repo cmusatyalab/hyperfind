@@ -168,8 +168,7 @@ public final class Main {
                         try {
                             byte resultData[] = Util.readFully(in);
                             BufferedImage img = ImageIO.read(f);
-                            List<ActiveSearch> empty = Collections.emptyList();
-                            m.popup(f.getName(), img, resultData, empty,
+                            m.popup(f.getName(), img, resultData,
                                     exampleSearchFactories, model);
                         } finally {
                             try {
@@ -424,10 +423,9 @@ public final class Main {
     }
 
     private void popup(String name, BufferedImage img, byte resultData[],
-            List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
-        popup(name, PopupPanel.createInstance(img, resultData, activeSearches,
+        popup(name, PopupPanel.createInstance(img, resultData,
                 exampleSearchFactories, model));
     }
 

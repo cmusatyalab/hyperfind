@@ -225,10 +225,11 @@ public class PopupPanel extends JPanel {
     }
 
     public static PopupPanel createInstance(BufferedImage img,
-            byte resultData[], List<ActiveSearch> activeSearches,
+            byte resultData[],
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
+        List<ActiveSearch> activeSearches = Collections.emptyList();
 
         return createInstance(img, resultData, activeSearches,
                 exampleSearchFactories, attributes, model);
