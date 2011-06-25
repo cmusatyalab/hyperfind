@@ -145,7 +145,7 @@ public class ThumbnailBox extends JPanel {
 
     // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
-            final List<ActiveSearch> activeSearches) {
+            final ActiveSearchSet activeSearchSet) {
         search = s;
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
@@ -250,7 +250,7 @@ public class ThumbnailBox extends JPanel {
                             final ResultIcon resultIcon = new ResultIcon(
                                     new ImageIcon(thumb), r
                                             .getObjectIdentifier(),
-                                    activeSearches, r.getName(), d);
+                                    activeSearchSet, r.getName(), d);
 
                             publish(resultIcon);
                         }

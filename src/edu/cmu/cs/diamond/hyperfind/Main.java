@@ -281,8 +281,8 @@ public final class Main {
 
                     // start
                     m.results.start(m.search, patchAttributes,
-                            convertToActiveSearchList(model
-                                    .getSelectedSearches()));
+                            new ActiveSearchSet(model.getSelectedSearches(),
+                                    factory));
                 } catch (IOException e1) {
                     stats.showException(e1.getCause());
                     e1.printStackTrace();
@@ -326,12 +326,11 @@ public final class Main {
                             .getElementAt(index);
                     if (r != null) {
                         ObjectIdentifier id = r.getObjectIdentifier();
+                        SearchFactory factory = r.getActiveSearchSet().
+                                getSearchFactory();
                         try {
-                            Result newR = m.reexecute(id, thumbnailFilter,
-                                    codecList.get(codecs.getSelectedIndex())
-                                            .createFilters(), model
-                                            .createFilters());
-                            m.popup(newR, r.getActiveSearches(),
+                            Result newR = m.reexecute(factory, id);
+                            m.popup(newR, r.getActiveSearchSet(),
                                     exampleSearchFactories, model);
                         } catch (IOException e1) {
                             e1.printStackTrace();
@@ -409,19 +408,6 @@ public final class Main {
         return m;
     }
 
-    private static List<ActiveSearch> convertToActiveSearchList(
-            List<HyperFindSearch> selectedSearches) {
-        List<ActiveSearch> result = new ArrayList<ActiveSearch>(
-                selectedSearches.size());
-
-        for (HyperFindSearch h : selectedSearches) {
-            result.add(new ActiveSearch(h.getSearchName(), h.getInstanceName(),
-                    h.getDigestedName()));
-        }
-
-        return Collections.unmodifiableList(result);
-    }
-
     private void popup(String name, BufferedImage img, byte resultData[],
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
@@ -473,11 +459,12 @@ public final class Main {
         }
     }
 
-    private void popup(Result r, List<ActiveSearch> activeSearches,
+    private void popup(Result r, ActiveSearchSet activeSearchSet,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
-        popup(r.getName(), PopupPanel.createInstance(r, activeSearches,
-                exampleSearchFactories, model));
+        popup(r.getName(), PopupPanel.createInstance(r,
+                activeSearchSet.getActiveSearches(), exampleSearchFactories,
+                model));
     }
 
     private void popup(String title, PopupPanel p) {
@@ -495,18 +482,13 @@ public final class Main {
         popupFrame.setVisible(true);
     }
 
-    private Result reexecute(ObjectIdentifier id, List<Filter> thumbnail,
-            List<Filter> codec, List<Filter> searches) throws IOException {
+    private Result reexecute(SearchFactory factory, ObjectIdentifier id)
+            throws IOException {
         Cursor oldCursor = frame.getCursor();
 
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            List<Filter> filters = new ArrayList<Filter>(codec);
-            filters.addAll(thumbnail);
-            filters.addAll(searches);
-
-            SearchFactory factory = createFactory(filters);
             Set<String> attributes = Collections.emptySet();
             return factory.generateResult(id, attributes);
         } finally {

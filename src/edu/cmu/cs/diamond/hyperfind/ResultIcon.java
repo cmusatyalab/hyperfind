@@ -53,7 +53,7 @@ class ResultIcon {
 
     private final ObjectIdentifier identifier;
 
-    private final List<ActiveSearch> activeSearches;
+    private final ActiveSearchSet activeSearchSet;
 
     private final String name;
 
@@ -68,11 +68,11 @@ class ResultIcon {
     };
 
     public ResultIcon(ImageIcon icon, ObjectIdentifier identifier,
-            List<ActiveSearch> activeSearches, String name,
+            ActiveSearchSet activeSearchSet, String name,
             ResultIconSetting displaySelection) {
         this.icon = icon;
         this.identifier = identifier;
-        this.activeSearches = activeSearches;
+        this.activeSearchSet = activeSearchSet;
         this.name = name;
         this.displaySelection = displaySelection;
     }
@@ -85,8 +85,8 @@ class ResultIcon {
         return identifier;
     }
 
-    public List<ActiveSearch> getActiveSearches() {
-        return activeSearches;
+    public ActiveSearchSet getActiveSearchSet() {
+        return activeSearchSet;
     }
 
     public ResultIconSetting getDisplaySelection() {
