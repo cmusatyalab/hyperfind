@@ -333,17 +333,7 @@ public final class Main {
                     ResultIcon r = (ResultIcon) resultsList.getModel()
                             .getElementAt(index);
                     if (r != null) {
-                        HyperFindResult hr = r.getResult();
-                        ObjectIdentifier id = hr.getResult().
-                                getObjectIdentifier();
-                        ActiveSearchSet ss = hr.getActiveSearchSet();
-                        SearchFactory factory = ss.getSearchFactory();
-                        try {
-                            Result newR = m.reexecute(factory, id);
-                            m.popup(newR, ss);
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                        m.reexecute(r.getResult());
                     }
                 }
             }
@@ -487,15 +477,17 @@ public final class Main {
         popupFrame.setVisible(true);
     }
 
-    private Result reexecute(SearchFactory factory, ObjectIdentifier id)
-            throws IOException {
+    void reexecute(HyperFindResult result) {
+        ObjectIdentifier id = result.getResult().getObjectIdentifier();
+        ActiveSearchSet ss = result.getActiveSearchSet();
+        SearchFactory factory = ss.getSearchFactory();
         Cursor oldCursor = frame.getCursor();
-
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
             Set<String> attributes = Collections.emptySet();
-            return factory.generateResult(id, attributes);
+            popup(factory.generateResult(id, attributes), ss);
+        } catch (IOException e1) {
+            e1.printStackTrace();
         } finally {
             frame.setCursor(oldCursor);
         }
