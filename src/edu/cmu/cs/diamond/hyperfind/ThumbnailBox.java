@@ -63,7 +63,7 @@ public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
 
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
-            null, null, null);
+            null, null);
 
     private Search search;
 
@@ -192,6 +192,8 @@ public class ThumbnailBox extends JPanel {
                             if (r == null) {
                                 break;
                             }
+                            HyperFindResult hr = new HyperFindResult(
+                                    activeSearchSet, r);
                             // System.out.println(r);
 
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
@@ -248,9 +250,7 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             final ResultIcon resultIcon = new ResultIcon(
-                                    new ImageIcon(thumb), r
-                                            .getObjectIdentifier(),
-                                    activeSearchSet, r.getName(), d);
+                                    hr, r.getName(), new ImageIcon(thumb), d);
 
                             publish(resultIcon);
                         }

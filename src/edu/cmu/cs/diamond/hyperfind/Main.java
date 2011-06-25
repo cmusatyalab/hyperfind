@@ -325,13 +325,14 @@ public final class Main {
                     ResultIcon r = (ResultIcon) resultsList.getModel()
                             .getElementAt(index);
                     if (r != null) {
-                        ObjectIdentifier id = r.getObjectIdentifier();
-                        SearchFactory factory = r.getActiveSearchSet().
-                                getSearchFactory();
+                        HyperFindResult hr = r.getResult();
+                        ObjectIdentifier id = hr.getResult().
+                                getObjectIdentifier();
+                        ActiveSearchSet ss = hr.getActiveSearchSet();
+                        SearchFactory factory = ss.getSearchFactory();
                         try {
                             Result newR = m.reexecute(factory, id);
-                            m.popup(newR, r.getActiveSearchSet(),
-                                    exampleSearchFactories, model);
+                            m.popup(newR, ss, exampleSearchFactories, model);
                         } catch (IOException e1) {
                             e1.printStackTrace();
                         }

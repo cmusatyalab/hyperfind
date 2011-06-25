@@ -93,6 +93,7 @@ public class ResultExportTransferHandler extends TransferHandler {
                         // System.out.println("running...");
                         BufferedImage img = Util
                                 .extractImageFromResultIdentifier(r
+                                        .getResult().getResult()
                                         .getObjectIdentifier(), factory);
                         File f = File.createTempFile("hyperfind-export-",
                                 ".png");

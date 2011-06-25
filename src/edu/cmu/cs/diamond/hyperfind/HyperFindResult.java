@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2009-2010 Carnegie Mellon University
+ *  Copyright (c) 2009-2011 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -40,48 +40,24 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.util.List;
+import edu.cmu.cs.diamond.opendiamond.Result;
 
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
+public class HyperFindResult {
 
-import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
+    private final ActiveSearchSet searchSet;
 
-class ResultIcon {
+    private final Result result;
 
-    private final HyperFindResult result;
-
-    private final String name;
-
-    private final ImageIcon icon;
-
-    private final ResultIconSetting displaySelection;
-
-    public String getName() {
-        return name;
-    }
-
-    public enum ResultIconSetting {
-        ICON_ONLY, LABEL_ONLY, ICON_AND_LABEL
-    };
-
-    public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
-            ResultIconSetting displaySelection) {
+    public HyperFindResult(ActiveSearchSet searchSet, Result result) {
+        this.searchSet = searchSet;
         this.result = result;
-        this.name = name;
-        this.icon = icon;
-        this.displaySelection = displaySelection;
     }
 
-    public HyperFindResult getResult() {
+    public ActiveSearchSet getActiveSearchSet() {
+        return searchSet;
+    }
+
+    public Result getResult() {
         return result;
-    }
-
-    public Icon getIcon() {
-        return icon;
-    }
-
-    public ResultIconSetting getDisplaySelection() {
-        return displaySelection;
     }
 }
