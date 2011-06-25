@@ -68,14 +68,22 @@ public final class Main {
 
     private Search search;
 
+    private final SearchListModel model;
+
+    private final List<HyperFindSearchFactory> exampleSearchFactories;
+
     private final JFrame frame;
 
     private final JFrame popupFrame;
 
-    private Main(JFrame frame, ThumbnailBox results, CookieMap initialCookieMap) {
+    private Main(JFrame frame, ThumbnailBox results, SearchListModel model,
+            CookieMap initialCookieMap,
+            List<HyperFindSearchFactory> exampleSearchFactories) {
         this.frame = frame;
         this.results = results;
+        this.model = model;
         this.cookies = initialCookieMap;
+        this.exampleSearchFactories = exampleSearchFactories;
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
@@ -132,13 +140,14 @@ public final class Main {
             e.printStackTrace();
         }
 
-        final Main m = new Main(frame, results, defaultCookieMap);
-
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
         final List<HyperFindSearchFactory> exampleSearchFactories = new ArrayList<HyperFindSearchFactory>();
         final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         initSearchFactories(factories, model, searches, thumbnailFilter,
                 exampleSearchFactories, codecList);
+
+        final Main m = new Main(frame, results, model, defaultCookieMap,
+                exampleSearchFactories);
 
         // add import
         searches.add(new JSeparator());
@@ -168,8 +177,7 @@ public final class Main {
                         try {
                             byte resultData[] = Util.readFully(in);
                             BufferedImage img = ImageIO.read(f);
-                            m.popup(f.getName(), img, resultData,
-                                    exampleSearchFactories, model);
+                            m.popup(f.getName(), img, resultData);
                         } finally {
                             try {
                                 in.close();
@@ -332,7 +340,7 @@ public final class Main {
                         SearchFactory factory = ss.getSearchFactory();
                         try {
                             Result newR = m.reexecute(factory, id);
-                            m.popup(newR, ss, exampleSearchFactories, model);
+                            m.popup(newR, ss);
                         } catch (IOException e1) {
                             e1.printStackTrace();
                         }
@@ -409,9 +417,7 @@ public final class Main {
         return m;
     }
 
-    private void popup(String name, BufferedImage img, byte resultData[],
-            List<HyperFindSearchFactory> exampleSearchFactories,
-            SearchListModel model) {
+    private void popup(String name, BufferedImage img, byte resultData[]) {
         popup(name, PopupPanel.createInstance(img, resultData,
                 exampleSearchFactories, model));
     }
@@ -460,9 +466,7 @@ public final class Main {
         }
     }
 
-    private void popup(Result r, ActiveSearchSet activeSearchSet,
-            List<HyperFindSearchFactory> exampleSearchFactories,
-            SearchListModel model) {
+    private void popup(Result r, ActiveSearchSet activeSearchSet) {
         popup(r.getName(), PopupPanel.createInstance(r,
                 activeSearchSet.getActiveSearches(), exampleSearchFactories,
                 model));
