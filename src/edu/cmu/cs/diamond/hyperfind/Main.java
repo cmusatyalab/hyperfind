@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL or the
@@ -269,6 +269,9 @@ public final class Main {
                             .setTransferHandler(new ResultExportTransferHandler(
                                     factory, executor));
 
+                    List<HyperFindSearchMonitor> monitors = HyperFindSearchMonitorFactory
+                            .getInterestedSearchMonitors(m.cookies, filters);
+
                     // push attributes
                     Set<String> attributes = new HashSet<String>();
                     attributes.add("thumbnail.jpeg"); // thumbnail
@@ -276,6 +279,10 @@ public final class Main {
                     attributes.add("_rows.int"); // original height
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
+
+                    for (HyperFindSearchMonitor m : monitors) {
+                        attributes.addAll(m.getPushAttributes());
+                    }
 
                     Set<String> patchAttributes = new HashSet<String>();
                     for (Filter f : filters) {
@@ -287,10 +294,13 @@ public final class Main {
 
                     m.search = factory.createSearch(attributes);
 
+                    // clear old state
+                    m.results.terminate();
+
                     // start
                     m.results.start(m.search, patchAttributes,
                             new ActiveSearchSet(m, model.getSelectedSearches(),
-                                    factory));
+                                    factory), monitors);
                 } catch (IOException e1) {
                     stats.showException(e1.getCause());
                     e1.printStackTrace();
@@ -399,6 +409,8 @@ public final class Main {
             @Override
             public void windowClosed(WindowEvent e) {
                 m.stopSearch();
+                // clear state from previous search
+                m.results.terminate();
                 m.popupFrame.dispose();
             }
         });

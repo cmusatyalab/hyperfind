@@ -83,6 +83,8 @@ public class ThumbnailBox extends JPanel {
 
     private SwingWorker<?, ?> workerFuture;
 
+    private List<HyperFindSearchMonitor> searchMonitors;
+
     public ThumbnailBox(JButton stopButton, JButton startButton, JList list,
             StatisticsBar stats, final int resultsPerScreen) {
         super();
@@ -143,10 +145,19 @@ public class ThumbnailBox extends JPanel {
         }
     }
 
+    public void terminate() {
+        if (searchMonitors != null) {
+            for (HyperFindSearchMonitor sm : searchMonitors) {
+                sm.terminated();
+            }
+        }
+    }
+
     // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
-            final ActiveSearchSet activeSearchSet) {
+            final ActiveSearchSet activeSearchSet, final List<HyperFindSearchMonitor> monitors) {
         search = s;
+        searchMonitors = monitors;
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
 
@@ -194,6 +205,11 @@ public class ThumbnailBox extends JPanel {
                             }
                             HyperFindResult hr = new HyperFindResult(
                                     activeSearchSet, r);
+
+                            for (HyperFindSearchMonitor m : searchMonitors) {
+                                m.notify(hr);
+                            }
+
                             // System.out.println(r);
 
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
@@ -259,6 +275,10 @@ public class ThumbnailBox extends JPanel {
 
                         // update stats one more time
                         updateStats();
+
+                        for (HyperFindSearchMonitor sm : searchMonitors) {
+                            sm.stopped();
+                        }
 
                         SwingUtilities.invokeLater(new Runnable() {
                             @Override
