@@ -118,9 +118,6 @@ public final class Main {
         final SearchListModel model = new SearchListModel();
         final SearchList searchList = new SearchList(model);
 
-        searchList.setTransferHandler(new SearchImportTransferHandler(model,
-                factories));
-
         // codecs / menu
         JButton addSearchButton = new JButton("+");
         final JPopupMenu searches = new JPopupMenu();
@@ -148,6 +145,9 @@ public final class Main {
 
         final Main m = new Main(frame, results, model, defaultCookieMap,
                 exampleSearchFactories);
+
+        searchList.setTransferHandler(new SearchImportTransferHandler(m,
+                model, factories));
 
         // add import
         searches.add(new JSeparator());
@@ -457,7 +457,7 @@ public final class Main {
         return m;
     }
 
-    private void popup(String name, BufferedImage img) {
+    void popup(String name, BufferedImage img) {
         popup(name, PopupPanel.createInstance(img, null,
                 exampleSearchFactories, model));
     }

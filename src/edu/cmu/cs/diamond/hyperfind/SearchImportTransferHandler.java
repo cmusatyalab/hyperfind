@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2010 Carnegie Mellon University
+ *  Copyright (c) 2008-2011 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -42,21 +42,26 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.TransferHandler;
 
 public class SearchImportTransferHandler extends TransferHandler {
+    private final Main main;
+
     private final SearchListModel model;
 
     private final List<HyperFindSearchFactory> factories;
 
-    public SearchImportTransferHandler(SearchListModel model,
+    public SearchImportTransferHandler(Main main, SearchListModel model,
             List<HyperFindSearchFactory> factories) {
+        this.main = main;
         this.model = model;
         this.factories = factories;
     }
@@ -79,11 +84,18 @@ public class SearchImportTransferHandler extends TransferHandler {
         try {
             List<URI> uris = getURIs(support);
             for (URI u : uris) {
+                // first see if any HyperFindSearchFactories will accept the
+                // URI
                 HyperFindSearch s = HyperFindSearchFactory
                         .createHyperFindSearch(factories, u);
                 if (s != null) {
                     model.addSearch(s);
+                    continue;
                 }
+
+                // now try to read it as an example image
+                BufferedImage img = ImageIO.read(u.toURL());
+                main.popup(u.toString(), img);
             }
         } catch (UnsupportedFlavorException e) {
             return false;
