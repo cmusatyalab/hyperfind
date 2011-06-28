@@ -172,18 +172,8 @@ public final class Main {
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
                         File f = chooser.getSelectedFile();
-                        InputStream in = new BufferedInputStream(
-                                new FileInputStream(f));
-                        try {
-                            byte resultData[] = Util.readFully(in);
-                            BufferedImage img = ImageIO.read(f);
-                            m.popup(f.getName(), img, resultData);
-                        } finally {
-                            try {
-                                in.close();
-                            } catch (IOException ignore) {
-                            }
-                        }
+                        BufferedImage img = ImageIO.read(f);
+                        m.popup(f.getName(), img);
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -228,12 +218,9 @@ public final class Main {
 
                     // load it
                     BufferedImage img = ImageIO.read(snapFile);
-                    FileInputStream fi = new FileInputStream(snapFile);
-                    byte data[] = Util.readFully(fi);
-                    fi.close();
 
                     // display it
-                    m.popup(snapFile.getAbsolutePath(), img, data);
+                    m.popup(snapFile.getAbsolutePath(), img);
                 } catch (IOException e1) {
                     // ignore
                 } catch (InterruptedException e2) {
@@ -470,8 +457,8 @@ public final class Main {
         return m;
     }
 
-    private void popup(String name, BufferedImage img, byte resultData[]) {
-        popup(name, PopupPanel.createInstance(img, resultData,
+    private void popup(String name, BufferedImage img) {
+        popup(name, PopupPanel.createInstance(img, null,
                 exampleSearchFactories, model));
     }
 
