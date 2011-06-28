@@ -519,10 +519,11 @@ public final class Main {
         }
     }
 
-    private void popup(Result r, ActiveSearchSet activeSearchSet) {
-        popup(r.getName(), PopupPanel.createInstance(r,
-                activeSearchSet.getActiveSearches(), exampleSearchFactories,
-                model));
+    private void popup(HyperFindResult r) {
+        List<ActiveSearch> activeSearches = r.getActiveSearchSet()
+                .getActiveSearches();
+        popup(r.getResult().getName(), PopupPanel.createInstance(
+                r.getResult(), activeSearches, exampleSearchFactories, model));
     }
 
     private void popup(String title, PopupPanel p) {
@@ -548,7 +549,8 @@ public final class Main {
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
-            popup(factory.generateResult(id, attributes), ss);
+            popup(new HyperFindResult(ss, factory.generateResult(id,
+                    attributes)));
         } catch (IOException e1) {
             e1.printStackTrace();
         } finally {
