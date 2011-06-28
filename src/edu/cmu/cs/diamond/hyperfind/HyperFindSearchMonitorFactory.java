@@ -63,7 +63,8 @@ public abstract class HyperFindSearchMonitorFactory {
 
     public static List<HyperFindSearchMonitor> getInterestedSearchMonitors(
             CookieMap cookies, List<Filter> filters) {
-        List<HyperFindSearchMonitor> interestedFactories = new ArrayList<HyperFindSearchMonitor>();
+        List<HyperFindSearchMonitor> interestedFactories = new
+                ArrayList<HyperFindSearchMonitor>();
         for (HyperFindSearchMonitorFactory f : factories) {
             HyperFindSearchMonitor sm = f.createSearchMonitor(filters);
             if (sm != null)
@@ -73,9 +74,10 @@ public abstract class HyperFindSearchMonitorFactory {
     }
 
     private static List<HyperFindSearchMonitorFactory> generateFactories() {
-        List<HyperFindSearchMonitorFactory> factories = new ArrayList<HyperFindSearchMonitorFactory>();
-        ServiceLoader<HyperFindSearchMonitorFactory> factoryLoader = ServiceLoader
-                .load(HyperFindSearchMonitorFactory.class);
+        List<HyperFindSearchMonitorFactory> factories = new
+                ArrayList<HyperFindSearchMonitorFactory>();
+        ServiceLoader<HyperFindSearchMonitorFactory> factoryLoader =
+                ServiceLoader.load(HyperFindSearchMonitorFactory.class);
         for (HyperFindSearchMonitorFactory f : factoryLoader) {
             factories.add(f);
         }

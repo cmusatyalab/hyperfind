@@ -155,7 +155,8 @@ public class ThumbnailBox extends JPanel {
 
     // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
-            final ActiveSearchSet activeSearchSet, final List<HyperFindSearchMonitor> monitors) {
+            final ActiveSearchSet activeSearchSet,
+            final List<HyperFindSearchMonitor> monitors) {
         search = s;
         searchMonitors = monitors;
         startButton.setEnabled(false);

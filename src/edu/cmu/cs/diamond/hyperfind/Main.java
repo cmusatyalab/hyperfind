@@ -269,7 +269,8 @@ public final class Main {
                             .setTransferHandler(new ResultExportTransferHandler(
                                     factory, executor));
 
-                    List<HyperFindSearchMonitor> monitors = HyperFindSearchMonitorFactory
+                    List<HyperFindSearchMonitor> monitors =
+                            HyperFindSearchMonitorFactory
                             .getInterestedSearchMonitors(m.cookies, filters);
 
                     // push attributes
