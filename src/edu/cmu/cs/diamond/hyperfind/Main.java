@@ -192,6 +192,56 @@ public final class Main {
             }
         });
 
+        // add example from screenshot (requires ImageMagick)
+        JMenuItem importScreenshotMenuItem =
+                new JMenuItem("From Screenshot...");
+        searches.add(importScreenshotMenuItem);
+        importScreenshotMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    // safely create a unique filename
+                    File baseDir = new File(System.getProperty("user.home"),
+                            "hyperfind-screenshots");
+                    baseDir.mkdir();
+                    File snapFile;
+                    do {
+                        snapFile = new File(baseDir, new Formatter()
+                                .format("%1$tF-%1$tT.%1$tL.png", new Date())
+                                .toString());
+                    } while (!snapFile.createNewFile());
+
+                    // save screenshot into it for future use
+                    try {
+                        Process p = new ProcessBuilder("import",
+                                snapFile.getAbsolutePath()).start();
+                        if (p.waitFor() != 0) {
+                            throw new IOException();
+                        }
+                    } catch (IOException e1) {
+                        snapFile.delete();
+                        JOptionPane.showMessageDialog(frame,
+                                "Could not execute ImageMagick.", "HyperFind",
+                                JOptionPane.ERROR_MESSAGE);
+                        throw e1;
+                    }
+
+                    // load it
+                    BufferedImage img = ImageIO.read(snapFile);
+                    FileInputStream fi = new FileInputStream(snapFile);
+                    byte data[] = Util.readFully(fi);
+                    fi.close();
+
+                    // display it
+                    m.popup(snapFile.getAbsolutePath(), img, data);
+                } catch (IOException e1) {
+                    // ignore
+                } catch (InterruptedException e2) {
+                    e2.printStackTrace();
+                }
+            }
+        });
+
         // add from file
         JMenuItem fromFileMenuItem = new JMenuItem("From ZIP file...");
         searches.add(fromFileMenuItem);
