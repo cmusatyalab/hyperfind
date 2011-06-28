@@ -326,6 +326,9 @@ public class PopupPanel extends JPanel {
 
         JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                 scrollPane, propertiesPane);
+        int scrollPaneHeight = Math.min(700,
+                (int) scrollPane.getPreferredSize().getHeight() + 1);
+        rightSide.setDividerLocation(scrollPaneHeight);
 
         Box vBox = Box.createVerticalBox();
         vBox.add(rightSide);
