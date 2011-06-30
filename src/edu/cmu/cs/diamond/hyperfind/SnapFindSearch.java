@@ -325,7 +325,8 @@ class SnapFindSearch extends HyperFindSearch {
         }
 
         // parse fspec (boo)
-        double threshold = Double.NaN;
+        double min_score = Double.NaN;
+        double max_score = Double.POSITIVE_INFINITY;
         String name = null;
         List<String> dependencies = null;
         List<String> arguments = null;
@@ -345,17 +346,20 @@ class SnapFindSearch extends HyperFindSearch {
             if (cmd.equals("FILTER")) {
                 if (name != null) {
                     // commit last filter, if there is one
-                    filters.add(new Filter(name, fc, threshold,
+                    filters.add(new Filter(name, fc, min_score, max_score,
                             dependencies, arguments));
                 }
 
                 // init anew
-                threshold = Double.NaN;
+                min_score = Double.NaN;
+                max_score = Double.POSITIVE_INFINITY;
                 name = arg;
                 dependencies = new ArrayList<String>();
                 arguments = new ArrayList<String>();
             } else if (cmd.equals("THRESHOLD") || cmd.equals("THRESHHOLD")) {
-                threshold = Double.parseDouble(arg);
+                min_score = Double.parseDouble(arg);
+            } else if (cmd.equals("UPPERTHRESHOLD")) {
+                max_score = Double.parseDouble(arg);
             } else if (cmd.equals("ARG")) {
                 arguments.add(arg);
             } else if (cmd.equals("REQUIRES")) {
@@ -364,8 +368,8 @@ class SnapFindSearch extends HyperFindSearch {
         }
 
         // finally, commit
-        filters.add(new Filter(name, fc, threshold, dependencies, arguments,
-                blob));
+        filters.add(new Filter(name, fc, min_score, max_score, dependencies,
+                arguments, blob));
 
         return filters;
     }
