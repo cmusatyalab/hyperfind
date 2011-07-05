@@ -61,7 +61,8 @@ public class SearchSettingsFrame extends JFrame {
 
     private NumberField thresholdField;
 
-    private ArrayList<JComponent> arguments = new ArrayList<JComponent>();
+    private ArrayList<SettingsField> arguments = new
+            ArrayList<SettingsField>();
 
     private int currentRow;
 
@@ -107,7 +108,7 @@ public class SearchSettingsFrame extends JFrame {
         pack();
     }
 
-    private void addField(String label, JComponent field) {
+    private void addField(String label, SettingsField field) {
         // Add label
         JLabel l = new JLabel(label + ":");
         GridBagConstraints c = new GridBagConstraints();
@@ -124,14 +125,14 @@ public class SearchSettingsFrame extends JFrame {
         c.fill = GridBagConstraints.BOTH;
         c.insets = new Insets(2, 2, 2, 2);
         c.anchor = GridBagConstraints.LINE_START;
-        content.add(field, c);
+        content.add(field.getComponent(), c);
 
         // Update state
         currentRow++;
         pack();
     }
 
-    private void addArgumentField(String label, JComponent field) {
+    private void addArgumentField(String label, SettingsField field) {
         // If this is the first argument field, we need a separator
         if (arguments.size() == 0) {
             GridBagConstraints c = new GridBagConstraints();
@@ -147,11 +148,20 @@ public class SearchSettingsFrame extends JFrame {
         arguments.add(field);
     }
 
-    private class BooleanField extends JCheckBox {
+    private abstract class SettingsField {
+        public abstract JComponent getComponent();
+
+        public abstract String toString();
+    }
+
+    private class BooleanField extends SettingsField {
+
+        private final JCheckBox checkbox;
 
         public BooleanField(final SearchSettingsFrame settings, boolean defl) {
-            setSelected(defl);
-            addChangeListener(new ChangeListener() {
+            checkbox = new JCheckBox();
+            checkbox.setSelected(defl);
+            checkbox.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
                     settings.fireChangeEvent();
@@ -160,8 +170,13 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
+        public JComponent getComponent() {
+            return checkbox;
+        }
+
+        @Override
         public String toString() {
-            return (getSelectedObjects() != null) ? "true" : "false";
+            return (checkbox.getSelectedObjects() != null) ? "true" : "false";
         }
     }
 
@@ -169,13 +184,16 @@ public class SearchSettingsFrame extends JFrame {
         addArgumentField(label, new BooleanField(this, defl));
     }
 
-    private class StringField extends JTextField {
+    private class StringField extends SettingsField {
+
+        private final JTextField field;
+
         private final int FIELD_WIDTH = 15;
 
         public StringField(final SearchSettingsFrame settings, String defl) {
-            super(defl);
-            setColumns(FIELD_WIDTH);
-            getDocument().addDocumentListener(new DocumentListener() {
+            field = new JTextField(defl);
+            field.setColumns(FIELD_WIDTH);
+            field.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
                     settings.fireChangeEvent();
@@ -194,6 +212,11 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
+        public JComponent getComponent() {
+            return field;
+        }
+
+        @Override
         public String toString() {
             // Base64-encode the string to get around fspec parser problems.
             // Zero-length strings become "*" for the same reason.
@@ -203,13 +226,19 @@ public class SearchSettingsFrame extends JFrame {
                 return Util.base64Encode(getText().getBytes());
             }
         }
+
+        public String getText() {
+            return field.getText();
+        }
     }
 
     public void addString(String label, String defl) {
         addArgumentField(label, new StringField(this, defl));
     }
 
-    private class NumberField extends JPanel {
+    private class NumberField extends SettingsField {
+
+        private final JPanel panel;
 
         private final JSpinner spinner;
 
@@ -230,7 +259,7 @@ public class SearchSettingsFrame extends JFrame {
         public NumberField(final SearchSettingsFrame settings, Double defl,
                 Double min, Double max, double increment) {
 
-            super(new GridBagLayout());
+            panel = new JPanel(new GridBagLayout());
             this.increment = increment;
 
             // Normalize parameters
@@ -290,11 +319,11 @@ public class SearchSettingsFrame extends JFrame {
             });
 
             // Add to the panel
-            add(spinner);
+            panel.add(spinner);
             GridBagConstraints c = new GridBagConstraints();
             c.insets = new Insets(0, 8, 0, 0);
             c.fill = GridBagConstraints.HORIZONTAL;
-            add(slider, c);
+            panel.add(slider, c);
         }
 
         private int sliderIndex(Double value) {
@@ -306,6 +335,11 @@ public class SearchSettingsFrame extends JFrame {
 
         public double getValue() {
             return ((Double) spinner.getValue()).doubleValue();
+        }
+
+        @Override
+        public JComponent getComponent() {
+            return panel;
         }
 
         @Override
@@ -327,14 +361,16 @@ public class SearchSettingsFrame extends JFrame {
                 increment));
     }
 
-    private class ChoiceField extends JComboBox {
+    private class ChoiceField extends SettingsField {
+        private final JComboBox comboBox;
+
         public ChoiceField(final SearchSettingsFrame settings,
                 List<String> choices, Integer defl) {
-            super(choices.toArray());
+            comboBox = new JComboBox(choices.toArray());
             if (defl != null) {
-                setSelectedIndex(defl.intValue());
+                comboBox.setSelectedIndex(defl.intValue());
             }
-            addActionListener(new ActionListener() {
+            comboBox.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     settings.fireChangeEvent();
@@ -343,8 +379,13 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
+        public JComponent getComponent() {
+            return comboBox;
+        }
+
+        @Override
         public String toString() {
-            return Integer.toString(getSelectedIndex());
+            return Integer.toString(comboBox.getSelectedIndex());
         }
     }
 
@@ -360,7 +401,7 @@ public class SearchSettingsFrame extends JFrame {
 
     public List<String> getFilterArguments() {
         List<String> ret = new ArrayList<String>();
-        for (JComponent arg : arguments) {
+        for (SettingsField arg : arguments) {
             ret.add(arg.toString());
         }
         return ret;
@@ -377,8 +418,8 @@ public class SearchSettingsFrame extends JFrame {
     public boolean isEditable() {
         // we are editable if the instance name or threshold is, or if
         // we have editable arguments
-        return instanceNameField.isDisplayable() ||
-                thresholdField.isDisplayable() ||
+        return instanceNameField.getComponent().isDisplayable() ||
+                thresholdField.getComponent().isDisplayable() ||
                 arguments.size() > 0;
     }
 
