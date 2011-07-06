@@ -53,15 +53,16 @@ import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class SearchSettingsFrame extends JFrame {
 
-    private List<ChangeListener> listeners = new ArrayList<ChangeListener>();
+    private final List<ChangeListener> listeners =
+            new ArrayList<ChangeListener>();
 
-    private JComponent content;
+    private final JComponent content;
 
-    private StringField instanceNameField;
+    private final StringField instanceNameField;
 
-    private NumberField thresholdField;
+    private final NumberField thresholdField;
 
-    private ArrayList<SettingsField> arguments = new
+    private final ArrayList<SettingsField> arguments = new
             ArrayList<SettingsField>();
 
     private int currentRow;
