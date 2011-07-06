@@ -60,7 +60,9 @@ public class SearchSettingsFrame extends JFrame {
 
     private final StringField instanceNameField;
 
-    private final NumberField thresholdField;
+    private final NumberField minScoreField;
+
+    private final NumberField maxScoreField;
 
     private final ArrayList<SettingsField> arguments = new
             ArrayList<SettingsField>();
@@ -68,8 +70,8 @@ public class SearchSettingsFrame extends JFrame {
     private int currentRow;
 
     public SearchSettingsFrame(String filterName, String instanceName,
-            boolean instanceEditable, double threshold,
-            boolean thresholdEditable) {
+            boolean instanceEditable, double minScore, double maxScore,
+            boolean thresholdsEditable) {
         super("Edit " + filterName);
 
         setResizable(false);
@@ -99,11 +101,27 @@ public class SearchSettingsFrame extends JFrame {
             addField("Filter name", instanceNameField);
         }
 
-        // Threshold.  Always create the field, sometimes display it.
-        thresholdField = new NumberField(this, new Double(threshold),
-                new Double(0), new Double(100), 0.1, null, 0);
-        if (thresholdEditable) {
-            addField("Threshold", thresholdField);
+        // Threshold fields.  Always create the fields, sometimes display
+        // them.
+        Boolean minScoreEnabled = Boolean.TRUE;
+        Boolean maxScoreEnabled = Boolean.TRUE;
+        if (minScore == Double.NEGATIVE_INFINITY) {
+            minScore = 0;
+            minScoreEnabled = Boolean.FALSE;
+        }
+        if (maxScore == Double.POSITIVE_INFINITY) {
+            maxScore = 100;
+            maxScoreEnabled = Boolean.FALSE;
+        }
+        minScoreField = new NumberField(this, new Double(minScore),
+                new Double(0), new Double(100), 0.1, minScoreEnabled,
+                Double.NEGATIVE_INFINITY);
+        maxScoreField = new NumberField(this, new Double(maxScore),
+                new Double(0), new Double(100), 0.1, maxScoreEnabled,
+                Double.POSITIVE_INFINITY);
+        if (thresholdsEditable) {
+            addField("Minimum score", minScoreField);
+            addField("Maximum score", maxScoreField);
         }
 
         pack();
@@ -514,15 +532,19 @@ public class SearchSettingsFrame extends JFrame {
         return instanceNameField.getText();
     }
 
-    public double getThreshold() {
-        return thresholdField.getValue();
+    public double getMinScore() {
+        return minScoreField.getValue();
+    }
+
+    public double getMaxScore() {
+        return maxScoreField.getValue();
     }
 
     public boolean isEditable() {
-        // we are editable if the instance name or threshold is, or if
+        // we are editable if the instance name or thresholds are, or if
         // we have editable arguments
         return instanceNameField.getComponent().isDisplayable() ||
-                thresholdField.getComponent().isDisplayable() ||
+                minScoreField.getComponent().isDisplayable() ||
                 arguments.size() > 0;
     }
 
@@ -569,8 +591,11 @@ public class SearchSettingsFrame extends JFrame {
        Instance: the default filter instance name (optional)
        Instance-Editable: "false" if the instance name should not be editable
            (optional, and should usually be omitted)
-       Threshold: the Diamond drop threshold
-       Threshold-Editable: "true" if threshold should be editable (optional)
+       Min-Score: the minimum filter score to pass (optional)
+       Max-Score: the maximum filter score to pass (optional)
+       Threshold: historical alias for Min-Score (optional)
+       Thresholds-Editable: "true" if min/max should be editable (optional)
+       Threshold-Editable: historical alias for Thresholds-Editable (optional)
 
        In addition, there can be parameter descriptions, arranged in a
        zero-indexed array.  Each parameter corresponds to a single argument
@@ -617,14 +642,27 @@ public class SearchSettingsFrame extends JFrame {
         boolean instanceEditable = instanceEditableStr == null ||
                 ! instanceEditableStr.equals("false");
 
-        double threshold = parseDouble(p.getProperty("Threshold"));
+        String minScoreStr = p.getProperty("Min-Score");
+        if (minScoreStr == null) {
+            minScoreStr = p.getProperty("Threshold");
+        }
+        double minScore = (minScoreStr != null) ? parseDouble(minScoreStr) :
+                Double.NEGATIVE_INFINITY;
 
-        String threshEditableStr = p.getProperty("Threshold-Editable");
+        String maxScoreStr = p.getProperty("Max-Score");
+        double maxScore = (maxScoreStr != null) ? parseDouble(maxScoreStr) :
+                Double.POSITIVE_INFINITY;
+
+        String threshEditableStr = p.getProperty("Thresholds-Editable");
+        if (threshEditableStr == null) {
+            threshEditableStr = p.getProperty("Threshold-Editable");
+        }
         boolean threshEditable = threshEditableStr != null &&
                 threshEditableStr.equals("true");
 
         SearchSettingsFrame fr = new SearchSettingsFrame(filterName,
-                instanceName, instanceEditable, threshold, threshEditable);
+                instanceName, instanceEditable, minScore, maxScore,
+                threshEditable);
 
         for (int i = 0; ; i++) {
             String type = getProperty(p, "Type", i);
@@ -718,7 +756,10 @@ public class SearchSettingsFrame extends JFrame {
                                 e.getSource();
                         System.out.println("Instance: " +
                                 fr.getInstanceName());
-                        System.out.println("Threshold: " + fr.getThreshold());
+                        System.out.println("Minimum score: " +
+                                fr.getMinScore());
+                        System.out.println("Maximum score: " +
+                                fr.getMaxScore());
                         System.out.println("Arguments:");
                         for (String arg : fr.getFilterArguments()) {
                             System.out.println(arg);

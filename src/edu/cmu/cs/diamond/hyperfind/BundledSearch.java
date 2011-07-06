@@ -108,7 +108,7 @@ public class BundledSearch extends HyperFindSearch {
     public List<Filter> createFilters() throws IOException {
         List<Filter> filters = new ArrayList<Filter>();
         filters.add(new Filter(getDigestedName(), new FilterCode(filter),
-                settings.getThreshold(), dependencies,
+                settings.getMinScore(), settings.getMaxScore(), dependencies,
                 settings.getFilterArguments(), blob));
         return filters;
     }
