@@ -553,6 +553,18 @@ public class SearchSettingsFrame extends JFrame {
         return p.getProperty(key);
     }
 
+    private static double parseDouble(String str) {
+        // Handle more forms of infinity than Double.parseDouble()
+        if (str.equalsIgnoreCase("inf") || str.equalsIgnoreCase("infinity")) {
+            return Double.POSITIVE_INFINITY;
+        }
+        if (str.equalsIgnoreCase("-inf") ||
+                str.equalsIgnoreCase("-infinity")) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        return Double.parseDouble(str);
+    }
+
     /* Accepted properties:
        Instance: the default filter instance name (optional)
        Instance-Editable: "false" if the instance name should not be editable
@@ -605,7 +617,7 @@ public class SearchSettingsFrame extends JFrame {
         boolean instanceEditable = instanceEditableStr == null ||
                 ! instanceEditableStr.equals("false");
 
-        double threshold = Double.parseDouble(p.getProperty("Threshold"));
+        double threshold = parseDouble(p.getProperty("Threshold"));
 
         String threshEditableStr = p.getProperty("Threshold-Editable");
         boolean threshEditable = threshEditableStr != null &&
@@ -654,9 +666,9 @@ public class SearchSettingsFrame extends JFrame {
                 Double f_min = (min != null) ? new Double(min) : null;
                 Double f_max = (max != null) ? new Double(max) : null;
                 double f_increment = (increment != null) ?
-                        Double.parseDouble(increment) : 1;
+                        parseDouble(increment) : 1;
                 double f_disabledValue = (disabledValue != null) ?
-                        Double.parseDouble(disabledValue) : 0;
+                        parseDouble(disabledValue) : 0;
                 fr.addNumber(label, f_defl, f_min, f_max, f_increment,
                         initiallyEnabled, f_disabledValue);
             } else if (type.equals("choice")) {
