@@ -93,14 +93,14 @@ public class SearchSettingsFrame extends JFrame {
         content.add(close_button, c);
 
         // Filter name.  Always create the field, sometimes display it.
-        instanceNameField = new StringField(this, instanceName);
+        instanceNameField = new StringField(this, instanceName, null, null);
         if (instanceEditable) {
             addField("Filter name", instanceNameField);
         }
 
         // Threshold.  Always create the field, sometimes display it.
         thresholdField = new NumberField(this, new Double(threshold),
-                new Double(0), new Double(100), 0.1);
+                new Double(0), new Double(100), 0.1, null, 0);
         if (thresholdEditable) {
             addField("Threshold", thresholdField);
         }
@@ -118,9 +118,20 @@ public class SearchSettingsFrame extends JFrame {
         c.anchor = GridBagConstraints.LINE_START;
         content.add(l, c);
 
+        // Add enable checkbox
+        if (field.getEnableToggle() != null) {
+            c = new GridBagConstraints();
+            c.gridx = 1;
+            c.gridy = currentRow;
+            c.fill = GridBagConstraints.BOTH;
+            c.insets = new Insets(2, 2, 2, 2);
+            c.anchor = GridBagConstraints.LINE_START;
+            content.add(field.getEnableToggle(), c);
+        }
+
         // Add field
         c = new GridBagConstraints();
-        c.gridx = 1;
+        c.gridx = 2;
         c.gridy = currentRow;
         c.fill = GridBagConstraints.BOTH;
         c.insets = new Insets(2, 2, 2, 2);
@@ -138,7 +149,7 @@ public class SearchSettingsFrame extends JFrame {
             GridBagConstraints c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = currentRow++;
-            c.gridwidth = 2;
+            c.gridwidth = 3;
             c.fill = GridBagConstraints.HORIZONTAL;
             c.insets = new Insets(3, 0, 3, 0);
             content.add(new JSeparator(), c);
@@ -149,6 +160,41 @@ public class SearchSettingsFrame extends JFrame {
     }
 
     private abstract class SettingsField {
+        private JCheckBox enable = null;
+
+        protected void configureEnableToggle(
+                final SearchSettingsFrame settings, Boolean initiallyEnabled,
+                final List<JComponent> components) {
+
+            if (initiallyEnabled != null) {
+                this.enable = new JCheckBox();
+                boolean enabled = initiallyEnabled.booleanValue();
+                this.enable.setSelected(enabled);
+                for (JComponent c : components) {
+                    c.setEnabled(enabled);
+                }
+
+                final SettingsField f = this;
+                this.enable.addChangeListener(new ChangeListener() {
+                    @Override
+                    public void stateChanged(ChangeEvent e) {
+                        for (JComponent c : components) {
+                            c.setEnabled(f.isEnabled());
+                        }
+                        settings.fireChangeEvent();
+                    }
+                });
+            }
+        }
+
+        public JCheckBox getEnableToggle() {
+            return enable;
+        }
+
+        public boolean isEnabled() {
+            return enable == null || enable.getSelectedObjects() != null;
+        }
+
         public abstract JComponent getComponent();
 
         public abstract String toString();
@@ -190,7 +236,10 @@ public class SearchSettingsFrame extends JFrame {
 
         private final int FIELD_WIDTH = 15;
 
-        public StringField(final SearchSettingsFrame settings, String defl) {
+        private final String valueIfDisabled;
+
+        public StringField(final SearchSettingsFrame settings, String defl,
+                Boolean initiallyEnabled, String valueIfDisabled) {
             field = new JTextField(defl);
             field.setColumns(FIELD_WIDTH);
             field.getDocument().addDocumentListener(new DocumentListener() {
@@ -209,6 +258,10 @@ public class SearchSettingsFrame extends JFrame {
                     settings.fireChangeEvent();
                 }
             });
+
+            this.valueIfDisabled = valueIfDisabled;
+            configureEnableToggle(settings, initiallyEnabled,
+                    Arrays.asList((JComponent) field));
         }
 
         @Override
@@ -228,12 +281,22 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         public String getText() {
-            return field.getText();
+            if (isEnabled()) {
+                return field.getText();
+            } else {
+                return valueIfDisabled;
+            }
         }
     }
 
     public void addString(String label, String defl) {
-        addArgumentField(label, new StringField(this, defl));
+        addArgumentField(label, new StringField(this, defl, null, null));
+    }
+
+    public void addString(String label, String defl, Boolean initiallyEnabled,
+            String valueIfDisabled) {
+        addArgumentField(label, new StringField(this, defl, initiallyEnabled,
+                valueIfDisabled));
     }
 
     private class NumberField extends SettingsField {
@@ -250,6 +313,8 @@ public class SearchSettingsFrame extends JFrame {
 
         private final double increment;
 
+        private final double valueIfDisabled;
+
         private static final int SLIDER_DEFAULT_MIN = 0;
 
         private static final int SLIDER_DEFAULT_MAX = 100;
@@ -257,10 +322,12 @@ public class SearchSettingsFrame extends JFrame {
         private static final int FIELD_WIDTH = 8;
 
         public NumberField(final SearchSettingsFrame settings, Double defl,
-                Double min, Double max, double increment) {
+                Double min, Double max, double increment,
+                Boolean initiallyEnabled, double valueIfDisabled) {
 
             panel = new JPanel(new GridBagLayout());
             this.increment = increment;
+            this.valueIfDisabled = valueIfDisabled;
 
             // Normalize parameters
             if (defl == null) {
@@ -318,6 +385,10 @@ public class SearchSettingsFrame extends JFrame {
                 }
             });
 
+            // Create enable checkbox
+            configureEnableToggle(settings, initiallyEnabled,
+                    Arrays.asList((JComponent) spinner, slider));
+
             // Add to the panel
             panel.add(spinner);
             GridBagConstraints c = new GridBagConstraints();
@@ -334,7 +405,11 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         public double getValue() {
-            return ((Double) spinner.getValue()).doubleValue();
+            if (isEnabled()) {
+                return ((Double) spinner.getValue()).doubleValue();
+            } else {
+                return valueIfDisabled;
+            }
         }
 
         @Override
@@ -358,14 +433,25 @@ public class SearchSettingsFrame extends JFrame {
     public void addNumber(String label, Double defl, Double min, Double max,
             double increment) {
         addArgumentField(label, new NumberField(this, defl, min, max,
-                increment));
+                increment, null, 0));
+    }
+
+    public void addNumber(String label, Double defl, Double min, Double max,
+            double increment, Boolean initiallyEnabled,
+            double valueIfDisabled) {
+        addArgumentField(label, new NumberField(this, defl, min, max,
+                increment, initiallyEnabled, valueIfDisabled));
     }
 
     private class ChoiceField extends SettingsField {
+
         private final JComboBox comboBox;
 
+        private int valueIfDisabled;
+
         public ChoiceField(final SearchSettingsFrame settings,
-                List<String> choices, Integer defl) {
+                List<String> choices, Integer defl, Boolean initiallyEnabled,
+                int valueIfDisabled) {
             comboBox = new JComboBox(choices.toArray());
             if (defl != null) {
                 comboBox.setSelectedIndex(defl.intValue());
@@ -376,6 +462,10 @@ public class SearchSettingsFrame extends JFrame {
                     settings.fireChangeEvent();
                 }
             });
+
+            this.valueIfDisabled = valueIfDisabled;
+            configureEnableToggle(settings, initiallyEnabled,
+                    Arrays.asList((JComponent) comboBox));
         }
 
         @Override
@@ -385,18 +475,30 @@ public class SearchSettingsFrame extends JFrame {
 
         @Override
         public String toString() {
-            return Integer.toString(comboBox.getSelectedIndex());
+            int val;
+            if (isEnabled()) {
+                val = comboBox.getSelectedIndex();
+            } else {
+                val = valueIfDisabled;
+            }
+            return Integer.toString(val);
         }
     }
 
     public void addChoice(String label, List<String> choices, Integer defl) {
+        addChoice(label, choices, defl, null, 0);
+    }
+
+    public void addChoice(String label, List<String> choices, Integer defl,
+            Boolean initiallyEnabled, int valueIfDisabled) {
         if (choices.size() == 0) {
             throw new IllegalArgumentException("No choices");
         }
         if (defl != null && defl.intValue() >= choices.size()) {
             throw new IllegalArgumentException("Default out of range");
         }
-        addArgumentField(label, new ChoiceField(this, choices, defl));
+        addArgumentField(label, new ChoiceField(this, choices, defl,
+                initiallyEnabled, valueIfDisabled));
     }
 
     public List<String> getFilterArguments() {
@@ -464,6 +566,11 @@ public class SearchSettingsFrame extends JFrame {
        Type-II: {boolean, string, number, choice}
        Label-II: field label for this argument
        Default-II: default value (optional)
+       Disabled-Value-II: add an enable checkbox and return this value if
+               it is disabled (optional)
+       Initially-Enabled-II: if Disabled-Value-II is specified and this
+               property is present and not "true", enable checkbox defaults
+               to disabled (optional)
 
        boolean produces a filter argument of "true" or "false".  The Default
        value, if any, should be "true" or "false".
@@ -520,10 +627,24 @@ public class SearchSettingsFrame extends JFrame {
 
             String defl = getProperty(p, "Default", i);
 
+            String disabledValue = getProperty(p, "Disabled-Value", i);
+
+            String s_initiallyEnabled = getProperty(p, "Initially-Enabled", i);
+            Boolean initiallyEnabled = null;
+            if (disabledValue != null) {
+                if (s_initiallyEnabled != null &&
+                        !s_initiallyEnabled.equals("true")) {
+                    initiallyEnabled = Boolean.FALSE;
+                } else {
+                    initiallyEnabled = Boolean.TRUE;
+                }
+            }
+
             if (type.equals("boolean")) {
                 fr.addBoolean(label, defl != null && defl.equals("true"));
             } else if (type.equals("string")) {
-                fr.addString(label, defl != null ? defl : "");
+                fr.addString(label, defl != null ? defl : "", initiallyEnabled,
+                        disabledValue);
             } else if (type.equals("number")) {
                 String min = getProperty(p, "Minimum", i);
                 String max = getProperty(p, "Maximum", i);
@@ -533,10 +654,15 @@ public class SearchSettingsFrame extends JFrame {
                 Double f_max = (max != null) ? new Double(max) : null;
                 double f_increment = (increment != null) ?
                         Double.parseDouble(increment) : 1;
-                fr.addNumber(label, f_defl, f_min, f_max, f_increment);
+                double f_disabledValue = (disabledValue != null) ?
+                        Double.parseDouble(disabledValue) : 0;
+                fr.addNumber(label, f_defl, f_min, f_max, f_increment,
+                        initiallyEnabled, f_disabledValue);
             } else if (type.equals("choice")) {
                 List<String> choices = new ArrayList<String>();
                 Integer i_defl = (defl != null) ? new Integer(defl) : null;
+                int i_disabledValue = (disabledValue != null) ?
+                        Integer.parseInt(disabledValue) : 0;
                 for (int j = 0; ; j++) {
                     String cur = getProperty(p, "Choice", i, j);
                     if (cur == null) {
@@ -544,7 +670,8 @@ public class SearchSettingsFrame extends JFrame {
                     }
                     choices.add(cur);
                 }
-                fr.addChoice(label, choices, i_defl);
+                fr.addChoice(label, choices, i_defl, initiallyEnabled,
+                        i_disabledValue);
             } else {
                 throw new IllegalArgumentException("Unknown type " + type);
             }
