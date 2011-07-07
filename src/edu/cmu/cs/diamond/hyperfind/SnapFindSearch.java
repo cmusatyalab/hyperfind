@@ -296,9 +296,22 @@ class SnapFindSearch extends HyperFindSearch {
         return ppmOut.toByteArray();
     }
 
+    private static double parseDouble(String str) {
+        // Handle more forms of infinity than Double.parseDouble().
+        // Copy-n-pasted from SearchSettingsFrame.
+        if (str.equalsIgnoreCase("inf") || str.equalsIgnoreCase("infinity")) {
+            return Double.POSITIVE_INFINITY;
+        }
+        if (str.equalsIgnoreCase("-inf") ||
+                str.equalsIgnoreCase("-infinity")) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        return Double.parseDouble(str);
+    }
+
     private double doubleOrFail(Map<String, byte[]> m, String key)
             throws IOException {
-        return Double.parseDouble(new String(SnapFindSearchFactory.getOrFail(m,
+        return parseDouble(new String(SnapFindSearchFactory.getOrFail(m,
                 key), "UTF-8"));
     }
 
@@ -357,9 +370,9 @@ class SnapFindSearch extends HyperFindSearch {
                 dependencies = new ArrayList<String>();
                 arguments = new ArrayList<String>();
             } else if (cmd.equals("THRESHOLD") || cmd.equals("THRESHHOLD")) {
-                min_score = Double.parseDouble(arg);
+                min_score = parseDouble(arg);
             } else if (cmd.equals("UPPERTHRESHOLD")) {
-                max_score = Double.parseDouble(arg);
+                max_score = parseDouble(arg);
             } else if (cmd.equals("ARG")) {
                 arguments.add(arg);
             } else if (cmd.equals("REQUIRES")) {
