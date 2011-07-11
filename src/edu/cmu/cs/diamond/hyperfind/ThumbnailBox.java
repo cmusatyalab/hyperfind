@@ -47,7 +47,9 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -55,6 +57,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.opendiamond.*;
@@ -94,6 +98,23 @@ public class ThumbnailBox extends JPanel {
         this.stats = stats;
         this.list = list;
         this.resultsPerScreen = resultsPerScreen;
+
+        final ThumbnailBox tb = this;
+        list.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                List<HyperFindResult> results = new
+                        ArrayList<HyperFindResult>();
+                for (Object o : tb.list.getSelectedValues()) {
+                    ResultIcon icon = (ResultIcon) o;
+                    results.add(icon.getResult());
+                }
+                results = Collections.unmodifiableList(results);
+                for (HyperFindSearchMonitor sm : tb.searchMonitors) {
+                    sm.selectionChanged(results);
+                }
+            }
+        });
 
         setLayout(new BorderLayout());
 

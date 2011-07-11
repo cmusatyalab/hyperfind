@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.util.List;
 import java.util.Set;
 
 /*
@@ -65,6 +66,13 @@ public abstract class HyperFindSearchMonitor {
      * browsing, such as when a new search is started.
      */
     public void terminated() {
+    }
+
+    /*
+     * Called when the list of selected results in the ThumbnailBox has
+     * changed.
+     */
+    public void selectionChanged(List<HyperFindResult> selected) {
     }
 
     /*
