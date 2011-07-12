@@ -290,16 +290,6 @@ public class SearchSettingsFrame extends JFrame {
 
         @Override
         public String toString() {
-            // Base64-encode the string to get around fspec parser problems.
-            // Zero-length strings become "*" for the same reason.
-            if (getText().equals("")) {
-                return "*";
-            } else {
-                return Util.base64Encode(getText().getBytes());
-            }
-        }
-
-        public String getText() {
             if (isEnabled()) {
                 return field.getText();
             } else {
@@ -529,7 +519,7 @@ public class SearchSettingsFrame extends JFrame {
     }
 
     public String getInstanceName() {
-        return instanceNameField.getText();
+        return instanceNameField.toString();
     }
 
     public double getMinScore() {
