@@ -603,10 +603,7 @@ public class SearchSettingsFrame extends JFrame {
        boolean produces a filter argument of "true" or "false".  The Default
        value, if any, should be "true" or "false".
 
-       string produces a filter argument consisting of a Base64-encoded string
-       (to get around fspec parsing issues).  The Default value, if any,
-       should not be Base64-encoded.  Empty strings are encoded into a
-       filter argument of "*", again to work around the fspec parser.
+       string produces a filter argument consisting of a string.
 
        number produces a filter argument consisting of the text
        representation of the selected number.  Additional properties:
