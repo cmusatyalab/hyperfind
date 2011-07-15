@@ -44,8 +44,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import edu.cmu.cs.diamond.opendiamond.Util;
 
@@ -86,53 +84,12 @@ public abstract class HyperFindSearchFactory {
             List<HyperFindSearchFactory> factories, URI uri)
             throws IOException {
         // System.out.println("trying " + uri);
-        Map<String, byte[]> zipMap = new HashMap<String, byte[]>();
-        InputStream in = null;
-        try {
-            in = uri.toURL().openStream();
-            // System.out.println("in:" + in);
-            ZipInputStream zip = new ZipInputStream(in);
-
-            // System.out.println(zip);
-
-            ZipEntry entry;
-            while ((entry = zip.getNextEntry()) != null) {
-                // get the name
-                String name = entry.getName();
-
-                // get value
-                zipMap.put(name, Util.readFully(zip));
-            }
-
-            // System.out.println(zipMap);
-
-            byte manifest[] = zipMap.remove("hyperfind-manifest.txt");
-            if (manifest == null) {
-                manifest = zipMap.remove("opendiamond-manifest.txt");
-            } else {
-                zipMap.remove("opendiamond-manifest.txt");
-            }
-            Properties p = new Properties();
-            if (manifest != null) {
-                ByteArrayInputStream bIn = new ByteArrayInputStream(manifest);
-                Reader r = new InputStreamReader(bIn, "UTF-8");
-                p.load(r);
-            }
-
-            // System.out.println(p);
-
-            HyperFindSearch s = HyperFindSearchFactory.createHyperFindSearch(
-                    factories, zipMap, p);
-
-            return s;
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-            }
-        }
+        InputStream in = uri.toURL().openStream();
+        // readZipFile will close in
+        Map<String, byte[]> zipMap = Util.readZipFile(in);
+        Properties p = Util.extractManifest(zipMap);
+        return HyperFindSearchFactory.createHyperFindSearch(factories,
+                zipMap, p);
     }
 
     public static List<HyperFindSearchFactory>
