@@ -575,7 +575,12 @@ public final class Main {
         }
 
         // Generate bounding boxes
-        return BoundingBox.fromPatchesList(r.getValue(attr));
+        byte[] patches = r.getValue(attr);
+        if (patches != null) {
+            return BoundingBox.fromPatchesList(patches);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     List<BoundingBox> getPatches(HyperFindSearch search,
