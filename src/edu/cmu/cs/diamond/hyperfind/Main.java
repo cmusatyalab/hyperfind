@@ -552,9 +552,9 @@ public final class Main {
         }
     }
 
+    // returns null if object was dropped
     private List<BoundingBox> getPatches(HyperFindSearch search,
-            ObjectIdentifier objectID, byte[] data)
-            throws IOException {
+            ObjectIdentifier objectID, byte[] data) throws IOException {
         // Create factory
         HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
         List<Filter> filters = new ArrayList<Filter>(s.createFilters());
@@ -572,6 +572,12 @@ public final class Main {
             r = factory.generateResult(objectID, attributes);
         } else {
             r = factory.generateResult(data, attributes);
+        }
+
+        // Check if object was dropped
+        String scoreAttr = "_filter." + search.getDigestedName() + "_score";
+        if (r.getValue(scoreAttr) == null) {
+            return null;
         }
 
         // Generate bounding boxes

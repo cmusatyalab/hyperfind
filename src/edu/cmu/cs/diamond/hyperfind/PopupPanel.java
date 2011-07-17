@@ -652,6 +652,8 @@ public class PopupPanel extends JPanel {
 
         private final PopupPanel pp;
 
+        private final JLabel label;
+
         private HyperFindSearch selected;
 
         public TestSearchPanel(Main m, SearchListModel model,
@@ -665,10 +667,13 @@ public class PopupPanel extends JPanel {
             this.img = img;
             this.pp = pp;
 
+            Box vBox = Box.createVerticalBox();
+            add(vBox);
+
             final JComboBox c = new JComboBox(new TestSearchComboModel(model));
             c.setRenderer(new SearchInstanceCellRenderer());
             c.setSelectedIndex(0);
-            add(c);
+            vBox.add(c);
 
             c.addHierarchyListener(new HierarchyListener() {
                 @Override
@@ -686,7 +691,7 @@ public class PopupPanel extends JPanel {
             final ChangeListener listener = new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
-                    updatePatches();
+                    updateResult();
                 }
             };
             c.addActionListener(new ActionListener() {
@@ -705,7 +710,7 @@ public class PopupPanel extends JPanel {
                         selected = ss.getSearch();
                         selected.addChangeListener(listener);
                     }
-                    updatePatches();
+                    updateResult();
                 }
             });
             c.addHierarchyListener(new HierarchyListener() {
@@ -718,11 +723,18 @@ public class PopupPanel extends JPanel {
                     }
                 }
             });
+
+            label = new JLabel();
+            label.setAlignmentX(0.5f);
+            vBox.add(label);
+
+            updateResult();
         }
 
-        private void updatePatches() {
+        private void updateResult() {
             if (selected == null) {
                 // clear
+                label.setText(" ");
                 List<BoundingBox> patches = Collections.emptyList();
                 image.setTestResultPatches(patches);
             } else {
@@ -737,6 +749,12 @@ public class PopupPanel extends JPanel {
                         bb = m.getPatches(selected, objectID);
                     } else {
                         bb = m.getPatches(selected, encodePNM());
+                    }
+                    if (bb != null) {
+                        label.setText("Object passed");
+                    } else {
+                        label.setText("Object dropped");
+                        bb = Collections.emptyList();
                     }
                     image.setTestResultPatches(bb);
                 } catch (IOException e1) {
