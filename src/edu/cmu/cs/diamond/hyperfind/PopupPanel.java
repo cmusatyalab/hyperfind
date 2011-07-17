@@ -74,7 +74,6 @@ public class PopupPanel extends JPanel {
         public ExistingSearchComboModel(SearchListModel model) {
             this.model = model;
 
-            // XXX leaking
             model.addListDataListener(this);
 
             // copy the elements out and keep a shadow copy
@@ -175,6 +174,10 @@ public class PopupPanel extends JPanel {
             if (item != null) {
                 fireIntervalRemoved(this, index, index);
             }
+        }
+
+        public void destroy() {
+            model.removeListDataListener(this);
         }
     }
 
@@ -413,8 +416,7 @@ public class PopupPanel extends JPanel {
         final JLabel countLabel = new JLabel();
         updateCountLabel(countLabel, model);
 
-        // XXX leaky
-        model.addListDataListener(new ListDataListener() {
+        final ListDataListener listener = new ListDataListener() {
             @Override
             public void contentsChanged(ListDataEvent e) {
             }
@@ -427,6 +429,17 @@ public class PopupPanel extends JPanel {
             @Override
             public void intervalRemoved(ListDataEvent e) {
                 updateCountLabel(countLabel, model);
+            }
+        };
+        model.addListDataListener(listener);
+        countLabel.addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                        !countLabel.isDisplayable()) {
+                    // System.out.println("removing count label listener");
+                    model.removeListDataListener(listener);
+                }
             }
         });
 
@@ -442,6 +455,17 @@ public class PopupPanel extends JPanel {
         final JComboBox addToExistingCombo = new JComboBox(
                 existingSearchComboModel);
         addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
+
+        addToExistingCombo.addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                        !addToExistingCombo.isDisplayable()) {
+                    // System.out.println("destroying ExistingSearchComboModel");
+                    existingSearchComboModel.destroy();
+                }
+            }
+        });
 
         addToExistingButton.addActionListener(new ActionListener() {
             @Override
@@ -536,7 +560,6 @@ public class PopupPanel extends JPanel {
         public TestSearchComboModel(SearchListModel model) {
             this.model = model;
 
-            // XXX leaking
             model.addListDataListener(this);
         }
 
@@ -581,6 +604,10 @@ public class PopupPanel extends JPanel {
         public void intervalRemoved(ListDataEvent e) {
             fireIntervalRemoved(this, e.getIndex0() + 1, e.getIndex1() + 1);
         }
+
+        public void destroy() {
+            model.removeListDataListener(this);
+        }
     }
 
     private static JPanel createTestSearchBox(final Main m,
@@ -594,6 +621,19 @@ public class PopupPanel extends JPanel {
         c.setRenderer(new SearchInstanceCellRenderer());
         c.setSelectedIndex(0);
         p.add(c);
+
+        c.addHierarchyListener(new HierarchyListener() {
+            @Override
+            public void hierarchyChanged(HierarchyEvent e) {
+                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                        !c.isDisplayable()) {
+                    // System.out.println("destroying TestSearchComboModel");
+                    TestSearchComboModel model = (TestSearchComboModel)
+                            c.getModel();
+                    model.destroy();
+                }
+            }
+        });
 
         c.addActionListener(new ActionListener() {
             @Override
