@@ -134,8 +134,7 @@ public class BundledSearch extends HyperFindSearch {
             buf[i++] = 0;
         }
 
-        return digest(searchName.getBytes(), buf.toString().getBytes(),
-                filter, blob);
+        return digest(searchName.getBytes(), buf, filter, blob);
     }
 
     @Override
