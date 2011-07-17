@@ -43,10 +43,13 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
@@ -54,6 +57,7 @@ import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
+import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
@@ -220,7 +224,7 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    public static PopupPanel createInstance(Result r,
+    public static PopupPanel createInstance(Main m, Result r,
             List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
@@ -234,23 +238,24 @@ public class PopupPanel extends JPanel {
                 attributes.put(k, r.getValue(k));
             }
         }
-        return createInstance(img, r.getData(), activeSearches,
-                exampleSearchFactories, attributes, model);
+        return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
+                activeSearches, exampleSearchFactories, attributes, model);
     }
 
-    public static PopupPanel createInstance(BufferedImage img,
+    public static PopupPanel createInstance(Main m, BufferedImage img,
             byte resultData[],
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
         List<ActiveSearch> activeSearches = Collections.emptyList();
 
-        return createInstance(img, resultData, activeSearches,
+        return createInstance(m, null, img, resultData, activeSearches,
                 exampleSearchFactories, attributes, model);
     }
 
-    private static PopupPanel createInstance(BufferedImage img,
-            byte resultData[], List<ActiveSearch> activeSearches,
+    private static PopupPanel createInstance(Main m,
+            ObjectIdentifier objectID, BufferedImage img, byte resultData[],
+            List<ActiveSearch> activeSearches,
             List<HyperFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
@@ -319,7 +324,8 @@ public class PopupPanel extends JPanel {
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             leftSide.add(createPatchesList(activeSearches, attributes, image));
-            leftSide.add(createTestSearchBox(searchListModel, image, img, p));
+            leftSide.add(createTestSearchBox(m, searchListModel, image,
+                    objectID, img, p));
             leftSide.add(createExampleSearchPanel(searchListModel, image, img,
                     exampleSearchFactories));
         } else {
@@ -577,8 +583,9 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static JPanel createTestSearchBox(final SearchListModel model,
-            final ImagePatchesLabel image, final BufferedImage img,
+    private static JPanel createTestSearchBox(final Main m,
+            final SearchListModel model, final ImagePatchesLabel image,
+            final ObjectIdentifier objectID, final BufferedImage img,
             final PopupPanel pp) {
         JPanel p = new JPanel();
         p.setBorder(BorderFactory.createTitledBorder("Filter Test"));
@@ -606,13 +613,15 @@ public class PopupPanel extends JPanel {
                         pp.setCursor(Cursor
                                 .getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-                        image.setTestResultPatches(s.runLocally(img));
+                        List<BoundingBox> bb;
+                        if (objectID != null) {
+                            bb = m.getPatches(s, objectID);
+                        } else {
+                            bb = m.getPatches(s, encodePNM(img));
+                        }
+                        image.setTestResultPatches(bb);
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    } catch (InterruptedException e1) {
-                        // TODO Auto-generated catch block
-                        Thread.currentThread().interrupt();
                         e1.printStackTrace();
                     } finally {
                         pp.setCursor(oldCursor);
@@ -704,5 +713,20 @@ public class PopupPanel extends JPanel {
             patches.add(b);
         }
         return patches;
+    }
+
+    private static byte[] encodePNM(BufferedImage image) throws IOException {
+        BufferedImage buf = new BufferedImage(image.getWidth(), image
+                .getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2 = buf.createGraphics();
+        g2.drawImage(image, 0, 0, null);
+        g2.dispose();
+
+        ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
+        // System.out.println(buf);
+        if (!ImageIO.write(buf, "PNM", ppmOut)) {
+            throw new IOException("Can't write out PNM");
+        }
+        return ppmOut.toByteArray();
     }
 }

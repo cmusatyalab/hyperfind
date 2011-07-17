@@ -465,7 +465,7 @@ public final class Main {
     }
 
     void popup(String name, BufferedImage img) {
-        popup(name, PopupPanel.createInstance(img, null,
+        popup(name, PopupPanel.createInstance(this, img, null,
                 exampleSearchFactories, model));
     }
 
@@ -516,7 +516,7 @@ public final class Main {
     private void popup(HyperFindResult r) {
         List<ActiveSearch> activeSearches = r.getActiveSearchSet()
                 .getActiveSearches();
-        popup(r.getResult().getName(), PopupPanel.createInstance(
+        popup(r.getResult().getName(), PopupPanel.createInstance(this,
                 r.getResult(), activeSearches, exampleSearchFactories, model));
     }
 
@@ -550,6 +550,42 @@ public final class Main {
         } finally {
             frame.setCursor(oldCursor);
         }
+    }
+
+    private List<BoundingBox> getPatches(HyperFindSearch search,
+            ObjectIdentifier objectID, byte[] data)
+            throws IOException {
+        // Create factory
+        HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
+        List<Filter> filters = new ArrayList<Filter>(s.createFilters());
+        filters.addAll(search.createFilters());
+        SearchFactory factory = createFactory(filters);
+
+        // Set push attributes
+        String attr = "_filter." + search.getDigestedName() + ".patches";
+        Set<String> attributes = new HashSet<String>();
+        attributes.add(attr);
+
+        // Generate result
+        Result r;
+        if (objectID != null) {
+            r = factory.generateResult(objectID, attributes);
+        } else {
+            r = factory.generateResult(data, attributes);
+        }
+
+        // Generate bounding boxes
+        return BoundingBox.fromPatchesList(r.getValue(attr));
+    }
+
+    List<BoundingBox> getPatches(HyperFindSearch search,
+            ObjectIdentifier objectID) throws IOException {
+        return getPatches(search, objectID, null);
+    }
+
+    List<BoundingBox> getPatches(HyperFindSearch search, byte[] data)
+            throws IOException {
+        return getPatches(search, null, data);
     }
 
     private SearchFactory createFactory(List<Filter> filters) {
