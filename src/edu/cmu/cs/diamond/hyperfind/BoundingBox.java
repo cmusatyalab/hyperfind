@@ -81,8 +81,8 @@ public class BoundingBox {
         return distance;
     }
 
-    public static List<BoundingBox> fromPatchesList(ByteBuffer buf) {
-        ByteBuffer bb = buf.duplicate();
+    public static List<BoundingBox> fromPatchesList(byte[] patches) {
+        ByteBuffer bb = ByteBuffer.wrap(patches);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         int count = bb.getInt();

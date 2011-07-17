@@ -46,7 +46,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -359,8 +358,7 @@ public class ThumbnailBox extends JPanel {
     }
 
     private void drawPatches(Graphics2D g, byte[] patches) {
-        ByteBuffer bb = ByteBuffer.wrap(patches);
-        List<BoundingBox> boxes = BoundingBox.fromPatchesList(bb);
+        List<BoundingBox> boxes = BoundingBox.fromPatchesList(patches);
 
         for (BoundingBox b : boxes) {
             int x0 = b.getX0();

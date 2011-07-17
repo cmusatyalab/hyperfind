@@ -45,7 +45,6 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
 
@@ -213,8 +212,7 @@ public class PopupPanel extends JPanel {
         } else if (name.endsWith(".rgbimage")) {
             return "RGBImage";
         } else if (name.endsWith(".patches")) {
-            return BoundingBox.fromPatchesList(ByteBuffer.wrap(value))
-                    .toString();
+            return BoundingBox.fromPatchesList(value).toString();
         } else {
             String str = Util.extractString(value);
             int len = Math.min(str.length(), 1024);
@@ -662,7 +660,7 @@ public class PopupPanel extends JPanel {
                 // System.out.println(" YES");
                 // patches found, add them
                 final List<BoundingBox> bb = BoundingBox
-                        .fromPatchesList(ByteBuffer.wrap(attributes.get(key)));
+                        .fromPatchesList(attributes.get(key));
 
                 JCheckBox cb = new JCheckBox();
                 Formatter f = new Formatter();
