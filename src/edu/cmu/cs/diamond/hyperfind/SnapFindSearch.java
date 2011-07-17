@@ -232,55 +232,6 @@ class SnapFindSearch extends HyperFindSearch {
         return isEditable;
     }
 
-    @Override
-    public List<BoundingBox> runLocally(BufferedImage image)
-            throws IOException, InterruptedException {
-        // System.out.println(Arrays.toString(ImageIO.getWriterFormatNames()));
-
-        // convert to PPM
-        byte ppmOut[] = encodePNM(image);
-
-        // process
-        Process p = null;
-        try {
-            p = new ProcessBuilder(pluginRunner.getPath(), "run-plugin", type
-                    .toString(), internalName).start();
-
-            OutputStream out = p.getOutputStream();
-
-            DataInputStream in = new DataInputStream(p.getInputStream());
-
-            writeConfig(out);
-            writeKey(out, "target-image", ppmOut);
-            out.close();
-
-            List<Map<String, byte[]>> list = SnapFindSearchFactory
-                    .readKeyValueSetList(in);
-
-            if (p.waitFor() != 0) {
-                throw new IOException("Bad result for run-plugin");
-            }
-
-            // convert to boundingboxes
-            List<BoundingBox> result = new ArrayList<BoundingBox>(list.size());
-            for (Map<String, byte[]> m : list) {
-                int x0 = intOrFail(m, "min-x");
-                int y0 = intOrFail(m, "min-y");
-                int x1 = intOrFail(m, "max-x");
-                int y1 = intOrFail(m, "max-y");
-                double distance = doubleOrFail(m, "distance");
-
-                result.add(new BoundingBox(x0, y0, x1, y1, distance));
-            }
-
-            return result;
-        } finally {
-            if (p != null) {
-                p.destroy();
-            }
-        }
-    }
-
     private byte[] encodePNM(BufferedImage image) throws IOException {
         BufferedImage buf = new BufferedImage(image.getWidth(), image
                 .getHeight(), BufferedImage.TYPE_INT_RGB);
@@ -307,12 +258,6 @@ class SnapFindSearch extends HyperFindSearch {
             return Double.NEGATIVE_INFINITY;
         }
         return Double.parseDouble(str);
-    }
-
-    private double doubleOrFail(Map<String, byte[]> m, String key)
-            throws IOException {
-        return parseDouble(new String(SnapFindSearchFactory.getOrFail(m,
-                key), "UTF-8"));
     }
 
     private int intOrFail(Map<String, byte[]> m, String key) throws IOException {

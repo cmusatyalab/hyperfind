@@ -63,9 +63,6 @@ public abstract class HyperFindSearch {
     public abstract void edit(Component parentComponent) throws IOException,
             InterruptedException;
 
-    public abstract List<BoundingBox> runLocally(BufferedImage image)
-            throws IOException, InterruptedException;
-
     public abstract List<Filter> createFilters() throws IOException;
 
     public abstract String getInstanceName();

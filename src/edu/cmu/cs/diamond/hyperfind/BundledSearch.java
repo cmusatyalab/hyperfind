@@ -98,13 +98,6 @@ public class BundledSearch extends HyperFindSearch {
     }
 
     @Override
-    public List<BoundingBox> runLocally(BufferedImage image)
-            throws IOException, InterruptedException {
-        List<BoundingBox> empty = Collections.emptyList();
-        return empty;
-    }
-
-    @Override
     public List<Filter> createFilters() throws IOException {
         List<Filter> filters = new ArrayList<Filter>();
         filters.add(new Filter(getDigestedName(), new FilterCode(filter),
