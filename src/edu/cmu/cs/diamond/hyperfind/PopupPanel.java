@@ -326,7 +326,8 @@ public class PopupPanel extends JPanel {
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-            leftSide.add(createPatchesList(activeSearches, attributes, image));
+            leftSide.add(new PatchesListPanel(activeSearches, attributes,
+                    image));
             leftSide.add(new TestSearchPanel(m, searchListModel, image,
                     objectID, img, p));
             leftSide.add(new ExampleSearchPanel(searchListModel, image, img,
@@ -719,65 +720,64 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static JPanel createPatchesList(List<ActiveSearch> activeSearches,
-            Map<String, byte[]> attributes, final ImagePatchesLabel image) {
-        Box box = Box.createVerticalBox();
+    private static class PatchesListPanel extends JPanel {
+        public PatchesListPanel(List<ActiveSearch> activeSearches,
+                Map<String, byte[]> attributes,
+                final ImagePatchesLabel image) {
+            Box box = Box.createVerticalBox();
 
-        JPanel p = new JPanel();
+            setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                    PATCH_LIST_MINIMUM_HEIGHT));
+            setPreferredSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                    PATCH_LIST_MINIMUM_HEIGHT));
+            setMaximumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+                    Integer.MAX_VALUE));
+            setLayout(new BorderLayout());
 
-        p.setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
-                PATCH_LIST_MINIMUM_HEIGHT));
-        p.setPreferredSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
-                PATCH_LIST_MINIMUM_HEIGHT));
-        p.setMaximumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
-                Integer.MAX_VALUE));
-        p.setLayout(new BorderLayout());
+            JScrollPane jsp = new JScrollPane(box,
+                    ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            jsp.setBorder(BorderFactory.createTitledBorder("Patch Results"));
+            jsp.getHorizontalScrollBar().setUnitIncrement(20);
+            jsp.getVerticalScrollBar().setUnitIncrement(20);
 
-        JScrollPane jsp = new JScrollPane(box,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jsp.setBorder(BorderFactory.createTitledBorder("Patch Results"));
-        jsp.getHorizontalScrollBar().setUnitIncrement(20);
-        jsp.getVerticalScrollBar().setUnitIncrement(20);
+            add(jsp);
 
-        p.add(jsp);
+            for (ActiveSearch h : activeSearches) {
+                // extract patches
+                String searchName = h.getSearchName();
+                String name = h.getInstanceName();
+                String mName = h.getMangledName();
 
-        for (ActiveSearch h : activeSearches) {
-            // extract patches
-            String searchName = h.getSearchName();
-            String name = h.getInstanceName();
-            String mName = h.getMangledName();
+                String key = "_filter." + mName + ".patches";
 
-            String key = "_filter." + mName + ".patches";
+                // System.out.println(key);
+                if (attributes.containsKey(key)) {
+                    // System.out.println(" YES");
+                    // patches found, add them
+                    final List<BoundingBox> bb = BoundingBox
+                            .fromPatchesList(attributes.get(key));
 
-            // System.out.println(key);
-            if (attributes.containsKey(key)) {
-                // System.out.println(" YES");
-                // patches found, add them
-                final List<BoundingBox> bb = BoundingBox
-                        .fromPatchesList(attributes.get(key));
+                    JCheckBox cb = new JCheckBox();
+                    Formatter f = new Formatter();
+                    f.format("%s (similarity %.0f%%)", searchName,
+                            100 - 100.0 * bb.get(0).getDistance());
+                    SearchList.updateCheckBox(cb, f.toString(), name);
 
-                JCheckBox cb = new JCheckBox();
-                Formatter f = new Formatter();
-                f.format("%s (similarity %.0f%%)", searchName, 100 - 100.0 * bb
-                        .get(0).getDistance());
-                SearchList.updateCheckBox(cb, f.toString(), name);
-
-                cb.addItemListener(new ItemListener() {
-                    @Override
-                    public void itemStateChanged(ItemEvent e) {
-                        if (e.getStateChange() == ItemEvent.SELECTED) {
-                            image.addResultPatch(bb);
-                        } else {
-                            image.removeResultPatch(bb);
+                    cb.addItemListener(new ItemListener() {
+                        @Override
+                        public void itemStateChanged(ItemEvent e) {
+                            if (e.getStateChange() == ItemEvent.SELECTED) {
+                                image.addResultPatch(bb);
+                            } else {
+                                image.removeResultPatch(bb);
+                            }
                         }
-                    }
-                });
-                box.add(cb);
+                    });
+                    box.add(cb);
+                }
             }
         }
-
-        return p;
     }
 
     public Image getImage() {
