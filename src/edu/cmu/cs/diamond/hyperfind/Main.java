@@ -76,14 +76,18 @@ public final class Main {
 
     private final JFrame popupFrame;
 
+    private final JComboBox codecs;
+
     private Main(JFrame frame, ThumbnailBox results, SearchListModel model,
             CookieMap initialCookieMap,
-            List<HyperFindSearchFactory> exampleSearchFactories) {
+            List<HyperFindSearchFactory> exampleSearchFactories,
+            JComboBox codecs) {
         this.frame = frame;
         this.results = results;
         this.model = model;
         this.cookies = initialCookieMap;
         this.exampleSearchFactories = exampleSearchFactories;
+        this.codecs = codecs;
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
@@ -138,13 +142,16 @@ public final class Main {
         }
 
         final List<Filter> thumbnailFilter = new ArrayList<Filter>();
-        final List<HyperFindSearchFactory> exampleSearchFactories = new ArrayList<HyperFindSearchFactory>();
-        final List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
+        List<HyperFindSearchFactory> exampleSearchFactories =
+                new ArrayList<HyperFindSearchFactory>();
+        List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
         initSearchFactories(factories, model, searches, thumbnailFilter,
                 exampleSearchFactories, codecList);
 
+        final JComboBox codecs = new JComboBox(codecList.toArray());
+
         final Main m = new Main(frame, results, model, defaultCookieMap,
-                exampleSearchFactories);
+                exampleSearchFactories, codecs);
 
         searchList.setTransferHandler(new SearchImportTransferHandler(m,
                 model, factories));
@@ -261,13 +268,11 @@ public final class Main {
             }
         });
 
-        final JComboBox codecs = new JComboBox(codecList.toArray());
-
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                HyperFindSearch s = codecList.get(codecs.getSelectedIndex());
+                HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
                 try {
                     s.edit(frame);
                 } catch (IOException e1) {
@@ -280,11 +285,11 @@ public final class Main {
             }
         });
 
-        updateEditCodecButton(editCodecButton, codecList, codecs);
+        m.updateEditCodecButton(editCodecButton);
         codecs.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateEditCodecButton(editCodecButton, codecList, codecs);
+                m.updateEditCodecButton(editCodecButton);
             }
         });
 
@@ -295,8 +300,10 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     // start search
-                    List<Filter> filters = new ArrayList<Filter>(codecList.get(
-                            codecs.getSelectedIndex()).createFilters());
+                    HyperFindSearch s = (HyperFindSearch) codecs
+                            .getSelectedItem();
+                    List<Filter> filters = new ArrayList<Filter>(
+                            s.createFilters());
                     filters.addAll(thumbnailFilter);
                     filters.addAll(model.createFilters());
 
@@ -553,9 +560,8 @@ public final class Main {
         results.stop();
     }
 
-    private static void updateEditCodecButton(final JButton editCodecButton,
-            final List<HyperFindSearch> codecList, final JComboBox codecs) {
-        HyperFindSearch s = codecList.get(codecs.getSelectedIndex());
+    private void updateEditCodecButton(final JButton editCodecButton) {
+        HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
         editCodecButton.setEnabled(s.isEditable());
     }
 
