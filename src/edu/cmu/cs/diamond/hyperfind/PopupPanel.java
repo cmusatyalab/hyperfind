@@ -319,7 +319,7 @@ public class PopupPanel extends JPanel {
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             leftSide.add(createPatchesList(activeSearches, attributes, image));
-            leftSide.add(createLocalSearchBox(searchListModel, image, img, p));
+            leftSide.add(createTestSearchBox(searchListModel, image, img, p));
             leftSide.add(createExampleSearchPanel(searchListModel, image, img,
                     exampleSearchFactories));
         } else {
@@ -520,14 +520,14 @@ public class PopupPanel extends JPanel {
         countLabel.setText("Search count: " + count);
     }
 
-    private static class LocalSearchComboModel extends AbstractListModel
+    private static class TestSearchComboModel extends AbstractListModel
             implements ComboBoxModel, ListDataListener {
 
         private final SearchListModel model;
 
         private Object selectedItem;
 
-        public LocalSearchComboModel(SearchListModel model) {
+        public TestSearchComboModel(SearchListModel model) {
             this.model = model;
 
             // XXX leaking
@@ -577,13 +577,13 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static JPanel createLocalSearchBox(final SearchListModel model,
+    private static JPanel createTestSearchBox(final SearchListModel model,
             final ImagePatchesLabel image, final BufferedImage img,
             final PopupPanel pp) {
         JPanel p = new JPanel();
-        p.setBorder(BorderFactory.createTitledBorder("Local Execution"));
+        p.setBorder(BorderFactory.createTitledBorder("Filter Test"));
 
-        final JComboBox c = new JComboBox(new LocalSearchComboModel(model));
+        final JComboBox c = new JComboBox(new TestSearchComboModel(model));
         c.setRenderer(new SearchInstanceCellRenderer());
         c.setSelectedIndex(0);
         p.add(c);
@@ -594,7 +594,7 @@ public class PopupPanel extends JPanel {
                 if (c.getSelectedIndex() <= 0) {
                     // clear
                     List<BoundingBox> patches = Collections.emptyList();
-                    image.setLocalResultPatches(patches);
+                    image.setTestResultPatches(patches);
                 } else {
                     SelectableSearch ss = (SelectableSearch) c
                             .getSelectedItem();
@@ -606,7 +606,7 @@ public class PopupPanel extends JPanel {
                         pp.setCursor(Cursor
                                 .getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-                        image.setLocalResultPatches(s.runLocally(img));
+                        image.setTestResultPatches(s.runLocally(img));
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();

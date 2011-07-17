@@ -68,7 +68,7 @@ class ImagePatchesLabel extends JLabel {
 
     int mouseDownY;
 
-    final private List<BoundingBox> localResultPatches = new ArrayList<BoundingBox>();
+    final private List<BoundingBox> testResultPatches = new ArrayList<BoundingBox>();
 
     public ImagePatchesLabel(BufferedImage img) {
         super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
@@ -150,9 +150,9 @@ class ImagePatchesLabel extends JLabel {
         repaint();
     }
 
-    public void setLocalResultPatches(List<BoundingBox> rr) {
-        localResultPatches.clear();
-        localResultPatches.addAll(rr);
+    public void setTestResultPatches(List<BoundingBox> rr) {
+        testResultPatches.clear();
+        testResultPatches.addAll(rr);
         repaint();
     }
 
@@ -174,7 +174,7 @@ class ImagePatchesLabel extends JLabel {
             }
         }
 
-        for (BoundingBox r : localResultPatches) {
+        for (BoundingBox r : testResultPatches) {
             int x0 = r.getX0();
             int y0 = r.getY0();
             int x1 = r.getX1();
