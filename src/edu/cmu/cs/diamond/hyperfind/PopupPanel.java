@@ -329,7 +329,7 @@ public class PopupPanel extends JPanel {
             leftSide.add(createPatchesList(activeSearches, attributes, image));
             leftSide.add(createTestSearchBox(m, searchListModel, image,
                     objectID, img, p));
-            leftSide.add(createExampleSearchPanel(searchListModel, image, img,
+            leftSide.add(new ExampleSearchPanel(searchListModel, image, img,
                     exampleSearchFactories));
         } else {
             String text;
@@ -364,38 +364,136 @@ public class PopupPanel extends JPanel {
         return p;
     }
 
-    private static JPanel createExampleSearchPanel(final SearchListModel model,
-            final ImagePatchesLabel image, final BufferedImage img,
-            List<HyperFindSearchFactory> exampleSearchFactories) {
-        JPanel p = new JPanel();
-        p.setBorder(BorderFactory.createTitledBorder("Example Search"));
+    private static class ExampleSearchPanel extends JPanel {
+        private final SearchListModel model;
 
-        Box vBox = Box.createVerticalBox();
-        p.add(vBox);
+        private final ImagePatchesLabel image;
 
-        final JButton addButton = new JButton("+");
-        addButton.setEnabled(false);
+        private final BufferedImage img;
 
-        final JPopupMenu searches = new JPopupMenu();
+        private final JButton addButton;
 
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                searches.show(c, 0, c.getHeight());
-            }
-        });
+        private final JButton clearButton;
 
-        for (final HyperFindSearchFactory f : exampleSearchFactories) {
-            JMenuItem jm = new JMenuItem(f.getDisplayName());
-            jm.addActionListener(new ActionListener() {
+        private final JLabel countLabel;
+
+        private final JButton addToExistingButton;
+
+        private final JComboBox addToExistingCombo;
+
+        public ExampleSearchPanel(final SearchListModel model,
+                final ImagePatchesLabel image, BufferedImage img,
+                List<HyperFindSearchFactory> exampleSearchFactories) {
+            setBorder(BorderFactory.createTitledBorder("Example Search"));
+
+            this.model = model;
+            this.image = image;
+            this.img = img;
+
+            Box vBox = Box.createVerticalBox();
+            add(vBox);
+
+            addButton = new JButton("+");
+            addButton.setEnabled(false);
+
+            final JPopupMenu searches = new JPopupMenu();
+
+            addButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    try {
-                        // make patches
-                        List<BufferedImage> patches = createPatches(image, img);
+                    Component c = (Component) e.getSource();
+                    searches.show(c, 0, c.getHeight());
+                }
+            });
 
-                        model.addSearch(f.createHyperFindSearch(patches));
+            for (final HyperFindSearchFactory f : exampleSearchFactories) {
+                JMenuItem jm = new JMenuItem(f.getDisplayName());
+                jm.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            // make patches
+                            List<BufferedImage> patches = createPatches();
+
+                            model.addSearch(f.createHyperFindSearch(patches));
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        } catch (InterruptedException e1) {
+                            // TODO Auto-generated catch block
+                            Thread.currentThread().interrupt();
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+                searches.add(jm);
+            }
+
+            clearButton = new JButton("Clear Patches");
+            clearButton.setEnabled(false);
+
+            countLabel = new JLabel();
+            updateCountLabel();
+
+            final ListDataListener listener = new ListDataListener() {
+                @Override
+                public void contentsChanged(ListDataEvent e) {
+                }
+
+                @Override
+                public void intervalAdded(ListDataEvent e) {
+                    updateCountLabel();
+                }
+
+                @Override
+                public void intervalRemoved(ListDataEvent e) {
+                    updateCountLabel();
+                }
+            };
+            model.addListDataListener(listener);
+            countLabel.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                            !countLabel.isDisplayable()) {
+                        // System.out.println("removing count label listener");
+                        model.removeListDataListener(listener);
+                    }
+                }
+            });
+
+            Box hBox = Box.createHorizontalBox();
+            hBox.add(addButton);
+            hBox.add(Box.createHorizontalStrut(10));
+            hBox.add(clearButton);
+            vBox.add(hBox);
+
+            addToExistingButton = new JButton("Add to Existing");
+            final ExistingSearchComboModel existingSearchComboModel =
+                    new ExistingSearchComboModel(model);
+            addToExistingCombo = new JComboBox(existingSearchComboModel);
+            addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
+
+            addToExistingCombo.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                            !addToExistingCombo.isDisplayable()) {
+                        // System.out.println("destroying ExistingSearchComboModel");
+                        existingSearchComboModel.destroy();
+                    }
+                }
+            });
+
+            addToExistingButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // get item
+                    SelectableSearch item = (SelectableSearch)
+                            existingSearchComboModel.getSelectedItem();
+                    try {
+                        // System.out.println(item);
+                        item.getSearch().addPatches(createPatches());
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -405,149 +503,79 @@ public class PopupPanel extends JPanel {
                         e1.printStackTrace();
                     }
                 }
-
             });
-            searches.add(jm);
+
+            addToExistingButton.setEnabled(false);
+            addToExistingCombo.setEnabled(false);
+
+            hBox = Box.createHorizontalBox();
+            hBox.add(addToExistingButton);
+            hBox.add(Box.createHorizontalStrut(10));
+            hBox.add(addToExistingCombo);
+            vBox.add(Box.createVerticalStrut(10));
+            vBox.add(hBox);
+
+            hBox = Box.createHorizontalBox();
+            hBox.add(countLabel);
+            vBox.add(hBox);
+
+            // enabled/disabled behaviors
+            clearButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    image.clearDrawnPatches();
+                    addButton.setEnabled(false);
+                    clearButton.setEnabled(false);
+                    addToExistingButton.setEnabled(false);
+                    addToExistingCombo.setEnabled(false);
+                }
+            });
+
+            addToExistingCombo.addItemListener(new ItemListener() {
+                @Override
+                public void itemStateChanged(ItemEvent e) {
+                    updateComponentsEnablement();
+                }
+            });
+
+            image.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    updateComponentsEnablement();
+                }
+            });
         }
 
-        final JButton clearButton = new JButton("Clear Patches");
-        clearButton.setEnabled(false);
+        private List<BufferedImage> createPatches() {
+            List<BufferedImage> patches = new ArrayList<BufferedImage>();
+            for (Rectangle r : image.getDrawnPatches()) {
+                BufferedImage b = new BufferedImage(r.width, r.height,
+                        BufferedImage.TYPE_INT_RGB);
 
-        final JLabel countLabel = new JLabel();
-        updateCountLabel(countLabel, model);
+                Graphics2D g2 = b.createGraphics();
+                g2.drawImage(img, 0, 0, r.width, r.height, r.x, r.y,
+                        r.x + r.width, r.y + r.height, null);
+                g2.dispose();
 
-        final ListDataListener listener = new ListDataListener() {
-            @Override
-            public void contentsChanged(ListDataEvent e) {
+                patches.add(b);
             }
+            return patches;
+        }
 
-            @Override
-            public void intervalAdded(ListDataEvent e) {
-                updateCountLabel(countLabel, model);
-            }
+        private void updateComponentsEnablement() {
+            boolean b = !image.getDrawnPatches().isEmpty();
+            addButton.setEnabled(b);
+            clearButton.setEnabled(b);
+            addToExistingCombo.setEnabled(b);
 
-            @Override
-            public void intervalRemoved(ListDataEvent e) {
-                updateCountLabel(countLabel, model);
-            }
-        };
-        model.addListDataListener(listener);
-        countLabel.addHierarchyListener(new HierarchyListener() {
-            @Override
-            public void hierarchyChanged(HierarchyEvent e) {
-                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
-                        !countLabel.isDisplayable()) {
-                    // System.out.println("removing count label listener");
-                    model.removeListDataListener(listener);
-                }
-            }
-        });
+            addToExistingButton.setEnabled(b
+                    && (addToExistingCombo.getSelectedIndex() != -1));
+        }
 
-        Box hBox = Box.createHorizontalBox();
-        hBox.add(addButton);
-        hBox.add(Box.createHorizontalStrut(10));
-        hBox.add(clearButton);
-        vBox.add(hBox);
-
-        final JButton addToExistingButton = new JButton("Add to Existing");
-        final ExistingSearchComboModel existingSearchComboModel = new ExistingSearchComboModel(
-                model);
-        final JComboBox addToExistingCombo = new JComboBox(
-                existingSearchComboModel);
-        addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
-
-        addToExistingCombo.addHierarchyListener(new HierarchyListener() {
-            @Override
-            public void hierarchyChanged(HierarchyEvent e) {
-                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
-                        !addToExistingCombo.isDisplayable()) {
-                    // System.out.println("destroying ExistingSearchComboModel");
-                    existingSearchComboModel.destroy();
-                }
-            }
-        });
-
-        addToExistingButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // get item
-                SelectableSearch item = (SelectableSearch) existingSearchComboModel
-                        .getSelectedItem();
-                try {
-                    // System.out.println(item);
-                    item.getSearch().addPatches(createPatches(image, img));
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                } catch (InterruptedException e1) {
-                    // TODO Auto-generated catch block
-                    Thread.currentThread().interrupt();
-                    e1.printStackTrace();
-                }
-            }
-        });
-
-        addToExistingButton.setEnabled(false);
-        addToExistingCombo.setEnabled(false);
-
-        hBox = Box.createHorizontalBox();
-        hBox.add(addToExistingButton);
-        hBox.add(Box.createHorizontalStrut(10));
-        hBox.add(addToExistingCombo);
-        vBox.add(Box.createVerticalStrut(10));
-        vBox.add(hBox);
-
-        hBox = Box.createHorizontalBox();
-        hBox.add(countLabel);
-        vBox.add(hBox);
-
-        // enabled/disabled behaviors
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                image.clearDrawnPatches();
-                addButton.setEnabled(false);
-                clearButton.setEnabled(false);
-                addToExistingButton.setEnabled(false);
-                addToExistingCombo.setEnabled(false);
-            }
-        });
-
-        addToExistingCombo.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                updateComponentsEnablement(image, addButton, clearButton,
-                        addToExistingButton, addToExistingCombo);
-            }
-        });
-
-        image.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                updateComponentsEnablement(image, addButton, clearButton,
-                        addToExistingButton, addToExistingCombo);
-            }
-        });
-        return p;
-    }
-
-    private static void updateComponentsEnablement(
-            final ImagePatchesLabel image, final JButton addButton,
-            final JButton clearButton, final JButton addToExistingButton,
-            final JComboBox addToExistingCombo) {
-        boolean b = !image.getDrawnPatches().isEmpty();
-        addButton.setEnabled(b);
-        clearButton.setEnabled(b);
-        addToExistingCombo.setEnabled(b);
-
-        addToExistingButton.setEnabled(b
-                && (addToExistingCombo.getSelectedIndex() != -1));
-    }
-
-    private static void updateCountLabel(JLabel countLabel,
-            SearchListModel model) {
-        int count = model.getSize();
-        countLabel.setText("Search count: " + count);
+        private void updateCountLabel() {
+            int count = model.getSize();
+            countLabel.setText("Search count: " + count);
+        }
     }
 
     private static class TestSearchComboModel extends AbstractListModel
@@ -736,23 +764,6 @@ public class PopupPanel extends JPanel {
 
     public Image getImage() {
         return img;
-    }
-
-    private static List<BufferedImage> createPatches(ImagePatchesLabel image,
-            BufferedImage img) {
-        List<BufferedImage> patches = new ArrayList<BufferedImage>();
-        for (Rectangle r : image.getDrawnPatches()) {
-            BufferedImage b = new BufferedImage(r.width, r.height,
-                    BufferedImage.TYPE_INT_RGB);
-
-            Graphics2D g2 = b.createGraphics();
-            g2.drawImage(img, 0, 0, r.width, r.height, r.x, r.y, r.x + r.width,
-                    r.y + r.height, null);
-            g2.dispose();
-
-            patches.add(b);
-        }
-        return patches;
     }
 
     private static byte[] encodePNM(BufferedImage image) throws IOException {
