@@ -640,15 +640,28 @@ public class PopupPanel extends JPanel {
     }
 
     private static class TestSearchPanel extends JPanel {
+        private final Main m;
+
+        private final ImagePatchesLabel image;
+
+        private final ObjectIdentifier objectID;
+
         private final BufferedImage img;
 
-        public TestSearchPanel(final Main m, SearchListModel model,
-                final ImagePatchesLabel image,
-                final ObjectIdentifier objectID, BufferedImage img,
-                final PopupPanel pp) {
+        private final PopupPanel pp;
+
+        private HyperFindSearch selected;
+
+        public TestSearchPanel(Main m, SearchListModel model,
+                ImagePatchesLabel image, ObjectIdentifier objectID,
+                BufferedImage img, PopupPanel pp) {
             setBorder(BorderFactory.createTitledBorder("Filter Test"));
 
+            this.m = m;
+            this.image = image;
+            this.objectID = objectID;
             this.img = img;
+            this.pp = pp;
 
             final JComboBox c = new JComboBox(new TestSearchComboModel(model));
             c.setRenderer(new SearchInstanceCellRenderer());
@@ -673,35 +686,43 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     if (c.getSelectedIndex() <= 0) {
                         // clear
-                        List<BoundingBox> patches = Collections.emptyList();
-                        image.setTestResultPatches(patches);
+                        selected = null;
                     } else {
                         SelectableSearch ss = (SelectableSearch) c
                                 .getSelectedItem();
-                        HyperFindSearch s = ss.getSearch();
-
-                        Cursor oldCursor = pp.getCursor();
-
-                        try {
-                            pp.setCursor(Cursor
-                                    .getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-                            List<BoundingBox> bb;
-                            if (objectID != null) {
-                                bb = m.getPatches(s, objectID);
-                            } else {
-                                bb = m.getPatches(s, encodePNM());
-                            }
-                            image.setTestResultPatches(bb);
-                        } catch (IOException e1) {
-                            // TODO Auto-generated catch block
-                            e1.printStackTrace();
-                        } finally {
-                            pp.setCursor(oldCursor);
-                        }
+                        selected = ss.getSearch();
                     }
+                    updatePatches();
                 }
             });
+        }
+
+        private void updatePatches() {
+            if (selected == null) {
+                // clear
+                List<BoundingBox> patches = Collections.emptyList();
+                image.setTestResultPatches(patches);
+            } else {
+                Cursor oldCursor = pp.getCursor();
+
+                try {
+                    pp.setCursor(Cursor
+                            .getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                    List<BoundingBox> bb;
+                    if (objectID != null) {
+                        bb = m.getPatches(selected, objectID);
+                    } else {
+                        bb = m.getPatches(selected, encodePNM());
+                    }
+                    image.setTestResultPatches(bb);
+                } catch (IOException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } finally {
+                    pp.setCursor(oldCursor);
+                }
+            }
         }
 
         private byte[] encodePNM() throws IOException {
