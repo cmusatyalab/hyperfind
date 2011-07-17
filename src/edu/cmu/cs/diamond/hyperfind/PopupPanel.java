@@ -52,6 +52,8 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
@@ -681,9 +683,19 @@ public class PopupPanel extends JPanel {
                 }
             });
 
+            final ChangeListener listener = new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    updatePatches();
+                }
+            };
             c.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
+                    if (selected != null) {
+                        selected.removeChangeListener(listener);
+                    }
+
                     if (c.getSelectedIndex() <= 0) {
                         // clear
                         selected = null;
@@ -691,8 +703,19 @@ public class PopupPanel extends JPanel {
                         SelectableSearch ss = (SelectableSearch) c
                                 .getSelectedItem();
                         selected = ss.getSearch();
+                        selected.addChangeListener(listener);
                     }
                     updatePatches();
+                }
+            });
+            c.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                            !c.isDisplayable() && selected != null) {
+                        // System.out.println("removing change listener");
+                        selected.removeChangeListener(listener);
+                    }
                 }
             });
         }
