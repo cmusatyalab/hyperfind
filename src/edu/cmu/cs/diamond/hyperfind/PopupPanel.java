@@ -327,7 +327,7 @@ public class PopupPanel extends JPanel {
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             leftSide.add(createPatchesList(activeSearches, attributes, image));
-            leftSide.add(createTestSearchBox(m, searchListModel, image,
+            leftSide.add(new TestSearchPanel(m, searchListModel, image,
                     objectID, img, p));
             leftSide.add(new ExampleSearchPanel(searchListModel, image, img,
                     exampleSearchFactories));
@@ -638,67 +638,85 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static JPanel createTestSearchBox(final Main m,
-            final SearchListModel model, final ImagePatchesLabel image,
-            final ObjectIdentifier objectID, final BufferedImage img,
-            final PopupPanel pp) {
-        JPanel p = new JPanel();
-        p.setBorder(BorderFactory.createTitledBorder("Filter Test"));
+    private static class TestSearchPanel extends JPanel {
+        private final BufferedImage img;
 
-        final JComboBox c = new JComboBox(new TestSearchComboModel(model));
-        c.setRenderer(new SearchInstanceCellRenderer());
-        c.setSelectedIndex(0);
-        p.add(c);
+        public TestSearchPanel(final Main m, SearchListModel model,
+                final ImagePatchesLabel image,
+                final ObjectIdentifier objectID, BufferedImage img,
+                final PopupPanel pp) {
+            setBorder(BorderFactory.createTitledBorder("Filter Test"));
 
-        c.addHierarchyListener(new HierarchyListener() {
-            @Override
-            public void hierarchyChanged(HierarchyEvent e) {
-                if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
-                        !c.isDisplayable()) {
-                    // System.out.println("destroying TestSearchComboModel");
-                    TestSearchComboModel model = (TestSearchComboModel)
-                            c.getModel();
-                    model.destroy();
-                }
-            }
-        });
+            this.img = img;
 
-        c.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (c.getSelectedIndex() <= 0) {
-                    // clear
-                    List<BoundingBox> patches = Collections.emptyList();
-                    image.setTestResultPatches(patches);
-                } else {
-                    SelectableSearch ss = (SelectableSearch) c
-                            .getSelectedItem();
-                    HyperFindSearch s = ss.getSearch();
+            final JComboBox c = new JComboBox(new TestSearchComboModel(model));
+            c.setRenderer(new SearchInstanceCellRenderer());
+            c.setSelectedIndex(0);
+            add(c);
 
-                    Cursor oldCursor = pp.getCursor();
-
-                    try {
-                        pp.setCursor(Cursor
-                                .getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-                        List<BoundingBox> bb;
-                        if (objectID != null) {
-                            bb = m.getPatches(s, objectID);
-                        } else {
-                            bb = m.getPatches(s, encodePNM(img));
-                        }
-                        image.setTestResultPatches(bb);
-                    } catch (IOException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    } finally {
-                        pp.setCursor(oldCursor);
+            c.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                            !c.isDisplayable()) {
+                        // System.out.println("destroying TestSearchComboModel");
+                        TestSearchComboModel model = (TestSearchComboModel)
+                                c.getModel();
+                        model.destroy();
                     }
                 }
-            }
-        });
+            });
 
-        return p;
+            c.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (c.getSelectedIndex() <= 0) {
+                        // clear
+                        List<BoundingBox> patches = Collections.emptyList();
+                        image.setTestResultPatches(patches);
+                    } else {
+                        SelectableSearch ss = (SelectableSearch) c
+                                .getSelectedItem();
+                        HyperFindSearch s = ss.getSearch();
+
+                        Cursor oldCursor = pp.getCursor();
+
+                        try {
+                            pp.setCursor(Cursor
+                                    .getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                            List<BoundingBox> bb;
+                            if (objectID != null) {
+                                bb = m.getPatches(s, objectID);
+                            } else {
+                                bb = m.getPatches(s, encodePNM());
+                            }
+                            image.setTestResultPatches(bb);
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        } finally {
+                            pp.setCursor(oldCursor);
+                        }
+                    }
+                }
+            });
+        }
+
+        private byte[] encodePNM() throws IOException {
+            BufferedImage buf = new BufferedImage(img.getWidth(),
+                    img.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2 = buf.createGraphics();
+            g2.drawImage(img, 0, 0, null);
+            g2.dispose();
+
+            ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
+            // System.out.println(buf);
+            if (!ImageIO.write(buf, "PNM", ppmOut)) {
+                throw new IOException("Can't write out PNM");
+            }
+            return ppmOut.toByteArray();
+        }
     }
 
     private static JPanel createPatchesList(List<ActiveSearch> activeSearches,
@@ -764,20 +782,5 @@ public class PopupPanel extends JPanel {
 
     public Image getImage() {
         return img;
-    }
-
-    private static byte[] encodePNM(BufferedImage image) throws IOException {
-        BufferedImage buf = new BufferedImage(image.getWidth(), image
-                .getHeight(), BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2 = buf.createGraphics();
-        g2.drawImage(image, 0, 0, null);
-        g2.dispose();
-
-        ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
-        // System.out.println(buf);
-        if (!ImageIO.write(buf, "PNM", ppmOut)) {
-            throw new IOException("Can't write out PNM");
-        }
-        return ppmOut.toByteArray();
     }
 }
