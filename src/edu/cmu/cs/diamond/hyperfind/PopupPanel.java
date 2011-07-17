@@ -175,6 +175,22 @@ public class PopupPanel extends JPanel {
         }
     }
 
+    private static class SearchInstanceCellRenderer
+            extends DefaultListCellRenderer {
+        public Component getListCellRendererComponent(JList list,
+                Object value, int index, boolean isSelected,
+                boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list,
+                    value, index, isSelected, cellHasFocus);
+            // We may also get "No selection"
+            if (value instanceof SelectableSearch) {
+                HyperFindSearch s = ((SelectableSearch) value).getSearch();
+                label.setText(s.getInstanceName());
+            }
+            return label;
+        }
+    }
+
     private static final int PATCH_LIST_MINIMUM_HEIGHT = 300;
 
     private static final int PATCH_LIST_PREFERRED_WIDTH = 300;
@@ -421,6 +437,7 @@ public class PopupPanel extends JPanel {
                 model);
         final JComboBox addToExistingCombo = new JComboBox(
                 existingSearchComboModel);
+        addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
 
         addToExistingButton.addActionListener(new ActionListener() {
             @Override
@@ -569,6 +586,7 @@ public class PopupPanel extends JPanel {
         p.setBorder(BorderFactory.createTitledBorder("Local Execution"));
 
         final JComboBox c = new JComboBox(new LocalSearchComboModel(model));
+        c.setRenderer(new SearchInstanceCellRenderer());
         c.setSelectedIndex(0);
         p.add(c);
 
