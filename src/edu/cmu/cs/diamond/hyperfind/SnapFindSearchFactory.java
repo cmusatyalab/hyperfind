@@ -243,12 +243,6 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return needsPatches;
     }
 
-    @Override
-    public boolean needsBundle() {
-        // SnapFind plugins never accept ZIP bundles
-        return false;
-    }
-
     /*
      * (non-Javadoc)
      * 
@@ -261,11 +255,5 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
             throws IOException, InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
                 type, needsPatches, patches);
-    }
-
-    @Override
-    public HyperFindSearch createHyperFindSearchFromZipMap(
-            Map<String, byte[]> zipMap, Properties p) {
-        return null;
     }
 }

@@ -154,7 +154,7 @@ public final class Main {
                 exampleSearchFactories, codecs);
 
         searchList.setTransferHandler(new SearchImportTransferHandler(m,
-                model, factories));
+                model));
 
         // add import
         searches.add(new JSeparator());
@@ -251,7 +251,7 @@ public final class Main {
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
                         HyperFindSearch s = HyperFindSearchFactory
-                                .createHyperFindSearch(factories, chooser
+                                .createHyperFindSearch(chooser
                                         .getSelectedFile().toURI());
                         if (s != null) {
                             model.addSearch(s);
@@ -485,7 +485,7 @@ public final class Main {
             case FILTER:
                 if (f.needsPatches()) {
                     exampleSearchFactories.add(f);
-                } else if (!f.needsBundle()) {
+                } else {
                     JMenuItem jm = new JMenuItem(f.getDisplayName());
                     jm.addActionListener(new ActionListener() {
                         @Override

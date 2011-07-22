@@ -42,7 +42,10 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+
+import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class BundledSearchFactory extends HyperFindSearchFactory {
 
@@ -68,11 +71,6 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     }
 
     @Override
-    public boolean needsBundle() {
-        return true;
-    }
-
-    @Override
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
         return null;
@@ -83,9 +81,12 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
        Dependencies: comma-separated list of filter dependencies
        <other keys as described in SearchSettingsFrame>
     */
-    @Override
-    public HyperFindSearch createHyperFindSearchFromZipMap(
-            Map<String, byte[]> zipMap, Properties p) {
+    public static HyperFindSearch createHyperFindSearch(InputStream in)
+            throws IOException {
+        // readZipFile will close in
+        Map<String, byte[]> zipMap = Util.readZipFile(in);
+        Properties p = Util.extractManifest(zipMap);
+
         String name = p.getProperty("Filter");
         if (name == null) {
             return null;

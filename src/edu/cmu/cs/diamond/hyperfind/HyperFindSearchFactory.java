@@ -45,8 +45,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-import edu.cmu.cs.diamond.opendiamond.Util;
-
 public abstract class HyperFindSearchFactory {
 
     public abstract String getDisplayName();
@@ -58,38 +56,15 @@ public abstract class HyperFindSearchFactory {
 
     public abstract boolean needsPatches();
 
-    public abstract boolean needsBundle();
-
     public abstract HyperFindSearch createHyperFindSearch(
             List<BufferedImage> patches) throws IOException,
             InterruptedException;
 
-    public abstract HyperFindSearch createHyperFindSearchFromZipMap(
-            Map<String, byte[]> zipMap, Properties p);
-
-    private static HyperFindSearch createHyperFindSearch(
-            List<HyperFindSearchFactory> factories,
-            Map<String, byte[]> zipMap, Properties p) {
-        for (HyperFindSearchFactory f : factories) {
-            // System.out.println(f);
-            HyperFindSearch s = f.createHyperFindSearchFromZipMap(zipMap, p);
-            if (s != null) {
-                return s;
-            }
-        }
-        return null;
-    }
-
-    public static HyperFindSearch createHyperFindSearch(
-            List<HyperFindSearchFactory> factories, URI uri)
+    public static HyperFindSearch createHyperFindSearch(URI uri)
             throws IOException {
         // System.out.println("trying " + uri);
         InputStream in = uri.toURL().openStream();
-        // readZipFile will close in
-        Map<String, byte[]> zipMap = Util.readZipFile(in);
-        Properties p = Util.extractManifest(zipMap);
-        return HyperFindSearchFactory.createHyperFindSearch(factories,
-                zipMap, p);
+        return BundledSearchFactory.createHyperFindSearch(in);
     }
 
     public static List<HyperFindSearchFactory>
@@ -100,7 +75,6 @@ public abstract class HyperFindSearchFactory {
 
         factories.addAll(SnapFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner));
-        factories.add(new BundledSearchFactory());
 
         Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
             @Override

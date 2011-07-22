@@ -57,13 +57,9 @@ public class SearchImportTransferHandler extends TransferHandler {
 
     private final SearchListModel model;
 
-    private final List<HyperFindSearchFactory> factories;
-
-    public SearchImportTransferHandler(Main main, SearchListModel model,
-            List<HyperFindSearchFactory> factories) {
+    public SearchImportTransferHandler(Main main, SearchListModel model) {
         this.main = main;
         this.model = model;
-        this.factories = factories;
     }
 
     private static final DataFlavor uriListFlavor = new DataFlavor(
@@ -87,7 +83,7 @@ public class SearchImportTransferHandler extends TransferHandler {
                 // first see if any HyperFindSearchFactories will accept the
                 // URI
                 HyperFindSearch s = HyperFindSearchFactory
-                        .createHyperFindSearch(factories, u);
+                        .createHyperFindSearch(u);
                 if (s != null) {
                     model.addSearch(s);
                     continue;
