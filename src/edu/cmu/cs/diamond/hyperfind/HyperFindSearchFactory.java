@@ -98,9 +98,6 @@ public abstract class HyperFindSearchFactory {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
 
-        for (HyperFindSearchFactory f : factoryLoader) {
-            factories.add(f);
-        }
         factories.addAll(SnapFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner));
         factories.add(new BundledSearchFactory());
@@ -114,7 +111,4 @@ public abstract class HyperFindSearchFactory {
         });
         return factories;
     }
-
-    private static ServiceLoader<HyperFindSearchFactory> factoryLoader = ServiceLoader
-            .load(HyperFindSearchFactory.class);
 }
