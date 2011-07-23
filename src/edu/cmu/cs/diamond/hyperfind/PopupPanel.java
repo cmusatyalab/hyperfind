@@ -809,30 +809,38 @@ public class PopupPanel extends JPanel {
                 // extract patches
                 String searchName = h.getSearchName();
                 String name = h.getInstanceName();
-                String mName = h.getMangledName();
 
-                String key = "_filter." + mName + ".patches";
+                final List<BoundingBox> bbs = new ArrayList<BoundingBox>();
+                double distance = 1;
+                for (String fName : h.getFilterNames()) {
+                    String key = "_filter." + fName + ".patches";
+                    // System.out.println(key);
+                    if (attributes.containsKey(key)) {
+                        for (BoundingBox bb : BoundingBox
+                                .fromPatchesList(attributes.get(key))) {
+                            bbs.add(bb);
+                            // Find minimum distance
+                            distance = Math.min(distance, bb.getDistance());
+                        }
+                    }
+                }
 
-                // System.out.println(key);
-                if (attributes.containsKey(key)) {
+                if (bbs.size() > 0) {
                     // System.out.println(" YES");
                     // patches found, add them
-                    final List<BoundingBox> bb = BoundingBox
-                            .fromPatchesList(attributes.get(key));
-
                     JCheckBox cb = new JCheckBox();
                     Formatter f = new Formatter();
                     f.format("%s (similarity %.0f%%)", searchName,
-                            100 - 100.0 * bb.get(0).getDistance());
+                            100 - 100.0 * distance);
                     SearchList.updateCheckBox(cb, f.toString(), name);
 
                     cb.addItemListener(new ItemListener() {
                         @Override
                         public void itemStateChanged(ItemEvent e) {
                             if (e.getStateChange() == ItemEvent.SELECTED) {
-                                image.addResultPatch(bb);
+                                image.addResultPatch(bbs);
                             } else {
-                                image.removeResultPatch(bb);
+                                image.removeResultPatch(bbs);
                             }
                         }
                     });

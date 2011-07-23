@@ -343,8 +343,13 @@ class SnapFindSearch extends HyperFindSearch {
     }
 
     @Override
-    public String getDigestedName() {
-        return fspecFilterName;
+    public List<String> getFilterNames() {
+        List<String> names = new ArrayList<String>();
+        // We only return the mangled filter name substituted for "*" in
+        // the fspec.  We should be returning all filter names, but with
+        // the current set of SnapFind plugins it doesn't matter.
+        names.add(fspecFilterName);
+        return names;
     }
 
     @Override

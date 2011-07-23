@@ -61,7 +61,7 @@ public class ActiveSearchSet {
         this.searches = new ArrayList<ActiveSearch>(selectedSearches.size());
         for (HyperFindSearch h : selectedSearches) {
             this.searches.add(new ActiveSearch(h.getSearchName(),
-                    h.getInstanceName(), h.getDigestedName()));
+                    h.getInstanceName(), h.getFilterNames()));
         }
         this.factory = factory;
     }

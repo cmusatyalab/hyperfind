@@ -40,16 +40,22 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class ActiveSearch {
 
     private final String searchName;
     private final String instanceName;
-    private final String mangledName;
+    private final List<String> filterNames;
 
-    ActiveSearch(String searchName, String instanceName, String mangledName) {
+    ActiveSearch(String searchName, String instanceName,
+            List<String> filterNames) {
         this.searchName = searchName;
         this.instanceName = instanceName;
-        this.mangledName = mangledName;
+        this.filterNames = Collections.unmodifiableList(
+                new ArrayList<String>(filterNames));
     }
 
     public String getSearchName() {
@@ -60,7 +66,7 @@ public class ActiveSearch {
         return instanceName;
     }
 
-    public String getMangledName() {
-        return mangledName;
+    public List<String> getFilterNames() {
+        return filterNames;
     }
 }

@@ -562,9 +562,10 @@ public final class Main {
         SearchFactory factory = createFactory(filters);
 
         // Set push attributes
-        String attr = "_filter." + search.getDigestedName() + ".patches";
         Set<String> attributes = new HashSet<String>();
-        attributes.add(attr);
+        for (String fName : search.getFilterNames()) {
+            attributes.add("_filter." + fName + ".patches");
+        }
 
         // Generate result
         Result r;
@@ -575,18 +576,21 @@ public final class Main {
         }
 
         // Check if object was dropped
-        String scoreAttr = "_filter." + search.getDigestedName() + "_score";
-        if (r.getValue(scoreAttr) == null) {
-            return null;
+        for (String fName : search.getFilterNames()) {
+            if (r.getValue("_filter." + fName + "_score") == null) {
+                return null;
+            }
         }
 
         // Generate bounding boxes
-        byte[] patches = r.getValue(attr);
-        if (patches != null) {
-            return BoundingBox.fromPatchesList(patches);
-        } else {
-            return Collections.emptyList();
+        List<BoundingBox> patchList = new ArrayList<BoundingBox>();
+        for (String attr : attributes) {
+            byte[] patches = r.getValue(attr);
+            if (patches != null) {
+                patchList.addAll(BoundingBox.fromPatchesList(patches));
+            }
         }
+        return patchList;
     }
 
     List<BoundingBox> getPatches(HyperFindSearch search,

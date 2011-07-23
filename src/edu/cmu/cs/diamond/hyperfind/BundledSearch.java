@@ -116,8 +116,7 @@ public class BundledSearch extends HyperFindSearch {
         return searchName;
     }
 
-    @Override
-    public String getDigestedName() {
+    private String getDigestedName() {
         // Build a single byte array for all arguments
         List<String> args = settings.getFilterArguments();
         int count = 0;
@@ -135,6 +134,13 @@ public class BundledSearch extends HyperFindSearch {
         }
 
         return digest(searchName.getBytes(), buf, filter, blob);
+    }
+
+    @Override
+    public List<String> getFilterNames() {
+        List<String> names = new ArrayList<String>();
+        names.add(getDigestedName());
+        return names;
     }
 
     @Override

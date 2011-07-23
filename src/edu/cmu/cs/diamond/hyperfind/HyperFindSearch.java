@@ -69,7 +69,7 @@ public abstract class HyperFindSearch {
 
     public abstract String getSearchName();
 
-    public abstract String getDigestedName();
+    public abstract List<String> getFilterNames();
 
     public abstract void addPatches(List<BufferedImage> patches)
             throws IOException, InterruptedException;
@@ -98,14 +98,14 @@ public abstract class HyperFindSearch {
 
     @Override
     public int hashCode() {
-        return getDigestedName().hashCode();
+        return getFilterNames().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof SnapFindSearch) {
             SnapFindSearch s = (SnapFindSearch) obj;
-            return getDigestedName().equals(s.getDigestedName());
+            return getFilterNames().equals(s.getFilterNames());
         }
         return false;
     }
