@@ -47,29 +47,19 @@ import java.util.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.Filter;
-import edu.cmu.cs.diamond.opendiamond.FilterCode;
 
 public class BundledSearch extends HyperFindSearch {
 
-    private final String searchName;
+    private final Bundle bundle;
 
-    private final ArrayList<String> dependencies;
+    private final SearchSettingsFrame settings;
 
-    private final byte[] filter;
-
-    private final byte[] blob;
-
-    private SearchSettingsFrame settings;
-
-    /* @blob may be null */
-    BundledSearch(String filterName, SearchSettingsFrame settings,
-            byte[] filter, byte[] blob, Collection<String> dependencies) {
-        this.searchName = filterName;
-        this.settings = settings;
-        this.filter = filter;
-        this.blob = blob;
-        this.dependencies = new ArrayList<String>(dependencies);
+    BundledSearch(Bundle bundle) throws IOException {
+        this.bundle = bundle;
+        this.settings = new SearchSettingsFrame(bundle.getDisplayName(),
+                "filter", bundle.getOptions());
 
         // Pass settings changes along to our listeners
         final BundledSearch search = this;
@@ -83,7 +73,7 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public boolean isEditable() {
-        return settings.isEditable();
+        return true;
     }
 
     @Override
@@ -99,11 +89,8 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public List<Filter> createFilters() throws IOException {
-        List<Filter> filters = new ArrayList<Filter>();
-        filters.add(new Filter(getDigestedName(), new FilterCode(filter),
-                settings.getMinScore(), settings.getMaxScore(), dependencies,
-                settings.getFilterArguments(), blob));
-        return filters;
+        Map<String, String> optionMap = settings.getOptionMap();
+        return bundle.getFilters(optionMap);
     }
 
     @Override
@@ -113,33 +100,20 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public String getSearchName() {
-        return searchName;
-    }
-
-    private String getDigestedName() {
-        // Build a single byte array for all arguments
-        List<String> args = settings.getFilterArguments();
-        int count = 0;
-        for (String arg : args) {
-            count += arg.getBytes().length + 2;
-        }
-        byte[] buf = new byte[count];
-        int i = 0;
-        for (String arg : args) {
-            byte[] argbuf = arg.getBytes();
-            System.arraycopy(argbuf, 0, buf, i, argbuf.length);
-            i += argbuf.length;
-            buf[i++] = 1;
-            buf[i++] = 0;
-        }
-
-        return digest(searchName.getBytes(), buf, filter, blob);
+        return bundle.getDisplayName();
     }
 
     @Override
     public List<String> getFilterNames() {
+        // XXX this is too heavyweight
         List<String> names = new ArrayList<String>();
-        names.add(getDigestedName());
+        try {
+            for (Filter f : createFilters()) {
+                names.add(f.getName());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return names;
     }
 

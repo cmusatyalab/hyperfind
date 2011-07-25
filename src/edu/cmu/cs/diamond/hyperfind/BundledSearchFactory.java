@@ -45,13 +45,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import edu.cmu.cs.diamond.opendiamond.Util;
+import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.Bundle;
 
 public class BundledSearchFactory extends HyperFindSearchFactory {
 
+    private final Bundle bundle;
+
+    public BundledSearchFactory(Bundle bundle) {
+        this.bundle = bundle;
+    }
+
     @Override
     public String getDisplayName() {
-        return "Bundled Search";
+        return bundle.getDisplayName();
     }
 
     @Override
@@ -62,7 +69,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     @Override
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
-        return null;
+        return new BundledSearch(bundle);
     }
 
     @Override
@@ -76,44 +83,18 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
         return null;
     }
 
-    /* Format of opendiamond-manifest.txt:
-       Filter: display name of filter code
-       Dependencies: comma-separated list of filter dependencies
-       <other keys as described in SearchSettingsFrame>
-    */
-    public static HyperFindSearch createHyperFindSearch(InputStream in)
-            throws IOException {
-        // readZipFile will close in
-        Map<String, byte[]> zipMap = Util.readZipFile(in);
-        Properties p = Util.extractManifest(zipMap);
+    public static HyperFindSearch createHyperFindSearch(
+            BundleFactory bundleFactory, InputStream in) throws IOException {
+        return new BundledSearch(bundleFactory.getBundle(in));
+    }
 
-        String name = p.getProperty("Filter");
-        if (name == null) {
-            return null;
+    public static List<HyperFindSearchFactory> createHyperFindSearchFactories(
+            BundleFactory bundleFactory) {
+        List<HyperFindSearchFactory> factories =
+                new ArrayList<HyperFindSearchFactory>();
+        for (Bundle b : bundleFactory.getBundles()) {
+            factories.add(new BundledSearchFactory(b));
         }
-
-        ArrayList<String> dependencies = new ArrayList<String>();
-        String deplist = p.getProperty("Dependencies");
-        if (deplist != null) {
-            dependencies.addAll(Arrays.asList(deplist.split(",")));
-        }
-
-        byte[] filter = zipMap.get("filter");
-
-        byte[] blob = zipMap.get("blob");
-        if (blob == null) {
-            blob = new byte[0];
-        }
-
-        SearchSettingsFrame settings;
-        try {
-            settings = SearchSettingsFrame.createFromProperties(name, p);
-        } catch (IllegalArgumentException e) {
-            /* Parse error reading properties */
-            e.printStackTrace();
-            return null;
-        }
-
-        return new BundledSearch(name, settings, filter, blob, dependencies);
+        return factories;
     }
 }

@@ -93,10 +93,14 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(File pluginRunner, File pluginDirectory)
-            throws IOException, InterruptedException {
+    public static Main createMain(File pluginRunner,
+            final File pluginDirectory) throws IOException,
+            InterruptedException {
+        List<File> l = Arrays.asList(new File("/opt/snapfind/lib"));
+        final BundleFactory bundleFactory = new BundleFactory(l, l);
+
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
-                .createHyperFindSearchFactories(pluginRunner, pluginDirectory);
+                .createHyperFindSearchFactories(pluginRunner, bundleFactory);
 
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -154,7 +158,7 @@ public final class Main {
                 exampleSearchFactories, codecs);
 
         searchList.setTransferHandler(new SearchImportTransferHandler(m,
-                model));
+                model, bundleFactory));
 
         // add import
         searches.add(new JSeparator());
@@ -237,7 +241,7 @@ public final class Main {
         });
 
         // add from file
-        JMenuItem fromFileMenuItem = new JMenuItem("From ZIP file...");
+        JMenuItem fromFileMenuItem = new JMenuItem("From Search File...");
         searches.add(fromFileMenuItem);
         fromFileMenuItem.addActionListener(new ActionListener() {
             @Override
@@ -245,14 +249,14 @@ public final class Main {
                 // get file
                 JFileChooser chooser = new JFileChooser();
                 FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                        "ZIP files", "zip");
+                        "Search Files", "search");
                 chooser.setFileFilter(filter);
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
                         HyperFindSearch s = HyperFindSearchFactory
-                                .createHyperFindSearch(chooser
-                                        .getSelectedFile().toURI());
+                                .createHyperFindSearch(bundleFactory,
+                                        chooser.getSelectedFile().toURI());
                         if (s != null) {
                             model.addSearch(s);
                         } else {

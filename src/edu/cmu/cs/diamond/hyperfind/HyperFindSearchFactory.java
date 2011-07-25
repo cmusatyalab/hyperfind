@@ -45,6 +45,8 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
+import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+
 public abstract class HyperFindSearchFactory {
 
     public abstract String getDisplayName();
@@ -60,21 +62,24 @@ public abstract class HyperFindSearchFactory {
             List<BufferedImage> patches) throws IOException,
             InterruptedException;
 
-    public static HyperFindSearch createHyperFindSearch(URI uri)
-            throws IOException {
+    public static HyperFindSearch createHyperFindSearch(
+            BundleFactory bundleFactory, URI uri) throws IOException {
         // System.out.println("trying " + uri);
         InputStream in = uri.toURL().openStream();
-        return BundledSearchFactory.createHyperFindSearch(in);
+        return BundledSearchFactory.createHyperFindSearch(bundleFactory, in);
     }
 
     public static List<HyperFindSearchFactory>
             createHyperFindSearchFactories(File pluginRunner,
-            File pluginDirectory) throws IOException, InterruptedException {
+            BundleFactory bundleFactory) throws IOException,
+            InterruptedException {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
 
         factories.addAll(SnapFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner));
+        factories.addAll(BundledSearchFactory
+                .createHyperFindSearchFactories(bundleFactory));
 
         Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
             @Override

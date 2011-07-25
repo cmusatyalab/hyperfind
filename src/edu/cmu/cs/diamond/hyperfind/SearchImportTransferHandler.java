@@ -52,14 +52,20 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.TransferHandler;
 
+import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+
 public class SearchImportTransferHandler extends TransferHandler {
     private final Main main;
 
     private final SearchListModel model;
 
-    public SearchImportTransferHandler(Main main, SearchListModel model) {
+    private final BundleFactory bundleFactory;
+
+    public SearchImportTransferHandler(Main main, SearchListModel model,
+            BundleFactory bundleFactory) {
         this.main = main;
         this.model = model;
+        this.bundleFactory = bundleFactory;
     }
 
     private static final DataFlavor uriListFlavor = new DataFlavor(
@@ -83,7 +89,7 @@ public class SearchImportTransferHandler extends TransferHandler {
                 // first see if any HyperFindSearchFactories will accept the
                 // URI
                 HyperFindSearch s = HyperFindSearchFactory
-                        .createHyperFindSearch(u);
+                        .createHyperFindSearch(bundleFactory, u);
                 if (s != null) {
                     model.addSearch(s);
                     continue;

@@ -49,7 +49,14 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.event.*;
 
-import edu.cmu.cs.diamond.opendiamond.Util;
+import edu.cmu.cs.diamond.opendiamond.Bundle;
+import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.bundle.Option;
+import edu.cmu.cs.diamond.opendiamond.bundle.BooleanOption;
+import edu.cmu.cs.diamond.opendiamond.bundle.StringOption;
+import edu.cmu.cs.diamond.opendiamond.bundle.NumberOption;
+import edu.cmu.cs.diamond.opendiamond.bundle.ChoiceOption;
+import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
 
 public class SearchSettingsFrame extends JFrame {
 
@@ -60,19 +67,14 @@ public class SearchSettingsFrame extends JFrame {
 
     private final StringField instanceNameField;
 
-    private final NumberField minScoreField;
-
-    private final NumberField maxScoreField;
-
-    private final ArrayList<SettingsField> arguments = new
+    private final ArrayList<SettingsField> optionFields = new
             ArrayList<SettingsField>();
 
     private int currentRow;
 
-    public SearchSettingsFrame(String filterName, String instanceName,
-            boolean instanceEditable, double minScore, double maxScore,
-            boolean thresholdsEditable) {
-        super("Edit " + filterName);
+    public SearchSettingsFrame(String searchName, String instanceName,
+            List<Option> options) {
+        super("Edit " + searchName);
 
         setResizable(false);
         content = (JComponent) getContentPane();
@@ -95,41 +97,48 @@ public class SearchSettingsFrame extends JFrame {
         c.insets = new Insets(2, 2, 2, 2);
         content.add(close_button, c);
 
-        // Filter name.  Always create the field, sometimes display it.
-        instanceNameField = new StringField(this, instanceName, null, null);
-        if (instanceEditable) {
-            addField("Filter name", instanceNameField);
+        // Search name
+        StringOption opt = new StringOption();
+        opt.setDisplayName("Search name");
+        opt.setDefault(instanceName);
+        instanceNameField = new StringField(this, opt);
+        addField(instanceNameField);
+
+        // Separator
+        if (options.size() > 0) {
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = currentRow++;
+            c.gridwidth = 3;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(3, 0, 3, 0);
+            content.add(new JSeparator(), c);
         }
 
-        // Threshold fields.  Always create the fields, sometimes display
-        // them.
-        Boolean minScoreEnabled = Boolean.TRUE;
-        Boolean maxScoreEnabled = Boolean.TRUE;
-        if (minScore == Double.NEGATIVE_INFINITY) {
-            minScore = 0;
-            minScoreEnabled = Boolean.FALSE;
-        }
-        if (maxScore == Double.POSITIVE_INFINITY) {
-            maxScore = 100;
-            maxScoreEnabled = Boolean.FALSE;
-        }
-        minScoreField = new NumberField(this, new Double(minScore),
-                new Double(0), new Double(100), 0.1, minScoreEnabled,
-                Double.NEGATIVE_INFINITY);
-        maxScoreField = new NumberField(this, new Double(maxScore),
-                new Double(0), new Double(100), 0.1, maxScoreEnabled,
-                Double.POSITIVE_INFINITY);
-        if (thresholdsEditable) {
-            addField("Minimum score", minScoreField);
-            addField("Maximum score", maxScoreField);
+        // Options
+        for (Option option : options) {
+            SettingsField field;
+            if (option instanceof BooleanOption) {
+                field = new BooleanField(this, (BooleanOption) option);
+            } else if (option instanceof StringOption) {
+                field = new StringField(this, (StringOption) option);
+            } else if (option instanceof NumberOption) {
+                field = new NumberField(this, (NumberOption) option);
+            } else if (option instanceof ChoiceOption) {
+                field = new ChoiceField(this, (ChoiceOption) option);
+            } else {
+                throw new IllegalArgumentException("Unknown option type");
+            }
+            addField(field);
+            optionFields.add(field);
         }
 
         pack();
     }
 
-    private void addField(String label, SettingsField field) {
+    private void addField(SettingsField field) {
         // Add label
-        JLabel l = new JLabel(label + ":");
+        JLabel l = new JLabel(field.getDisplayName() + ":");
         GridBagConstraints c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = currentRow;
@@ -162,36 +171,29 @@ public class SearchSettingsFrame extends JFrame {
         pack();
     }
 
-    private void addArgumentField(String label, SettingsField field) {
-        // If this is the first argument field, we need a separator
-        if (arguments.size() == 0) {
-            GridBagConstraints c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = currentRow++;
-            c.gridwidth = 3;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.insets = new Insets(3, 0, 3, 0);
-            content.add(new JSeparator(), c);
-        }
+    private abstract static class SettingsField {
 
-        addField(label, field);
-        arguments.add(field);
-    }
+        private final Option option;
 
-    private abstract class SettingsField {
         private JCheckBox enable = null;
+
+        private String valueIfDisabled = null;
+
+        protected SettingsField(Option option) {
+            this.option = option;
+        }
 
         protected void configureEnableToggle(
                 final SearchSettingsFrame settings, Boolean initiallyEnabled,
-                final List<JComponent> components) {
-
+                String valueIfDisabled, final List<JComponent> components) {
             if (initiallyEnabled != null) {
-                this.enable = new JCheckBox();
+                enable = new JCheckBox();
                 boolean enabled = initiallyEnabled.booleanValue();
                 this.enable.setSelected(enabled);
                 for (JComponent c : components) {
                     c.setEnabled(enabled);
                 }
+                this.valueIfDisabled = valueIfDisabled;
 
                 final SettingsField f = this;
                 this.enable.addChangeListener(new ChangeListener() {
@@ -210,22 +212,44 @@ public class SearchSettingsFrame extends JFrame {
             return enable;
         }
 
-        public boolean isEnabled() {
+        private boolean isEnabled() {
             return enable == null || enable.getSelectedObjects() != null;
+        }
+
+        public String getDisplayName() {
+            return option.getDisplayName();
+        }
+
+        public String getName() {
+            return option.getName();
+        }
+
+        public String getValue() {
+            if (isEnabled()) {
+                return getEnabledValue();
+            } else {
+                return valueIfDisabled;
+            }
         }
 
         public abstract JComponent getComponent();
 
-        public abstract String toString();
+        protected abstract String getEnabledValue();
     }
 
-    private class BooleanField extends SettingsField {
+    private static class BooleanField extends SettingsField {
+
+        private final BooleanOption option;
 
         private final JCheckBox checkbox;
 
-        public BooleanField(final SearchSettingsFrame settings, boolean defl) {
+        public BooleanField(final SearchSettingsFrame settings,
+                BooleanOption option) {
+            super(option);
+            this.option = option;
+
             checkbox = new JCheckBox();
-            checkbox.setSelected(defl);
+            checkbox.setSelected(option.isDefault());
             checkbox.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
@@ -240,26 +264,25 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
-        public String toString() {
+        protected String getEnabledValue() {
             return (checkbox.getSelectedObjects() != null) ? "true" : "false";
         }
     }
 
-    public void addBoolean(String label, boolean defl) {
-        addArgumentField(label, new BooleanField(this, defl));
-    }
+    private static class StringField extends SettingsField {
 
-    private class StringField extends SettingsField {
+        private final StringOption option;
 
         private final JTextField field;
 
         private final int FIELD_WIDTH = 15;
 
-        private final String valueIfDisabled;
+        public StringField(final SearchSettingsFrame settings,
+                StringOption option) {
+            super(option);
+            this.option = option;
 
-        public StringField(final SearchSettingsFrame settings, String defl,
-                Boolean initiallyEnabled, String valueIfDisabled) {
-            field = new JTextField(defl);
+            field = new JTextField(option.getDefault());
             field.setColumns(FIELD_WIDTH);
             field.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
@@ -278,8 +301,8 @@ public class SearchSettingsFrame extends JFrame {
                 }
             });
 
-            this.valueIfDisabled = valueIfDisabled;
-            configureEnableToggle(settings, initiallyEnabled,
+            configureEnableToggle(settings, option.isInitiallyEnabled(),
+                    option.getDisabledValue(),
                     Arrays.asList((JComponent) field));
         }
 
@@ -289,26 +312,14 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
-        public String toString() {
-            if (isEnabled()) {
-                return field.getText();
-            } else {
-                return valueIfDisabled;
-            }
+        protected String getEnabledValue() {
+            return field.getText();
         }
     }
 
-    public void addString(String label, String defl) {
-        addArgumentField(label, new StringField(this, defl, null, null));
-    }
+    private static class NumberField extends SettingsField {
 
-    public void addString(String label, String defl, Boolean initiallyEnabled,
-            String valueIfDisabled) {
-        addArgumentField(label, new StringField(this, defl, initiallyEnabled,
-                valueIfDisabled));
-    }
-
-    private class NumberField extends SettingsField {
+        private final NumberOption option;
 
         private final JPanel panel;
 
@@ -320,9 +331,7 @@ public class SearchSettingsFrame extends JFrame {
 
         private final int sliderMax;
 
-        private final double increment;
-
-        private final double valueIfDisabled;
+        private final double step;
 
         private static final int SLIDER_DEFAULT_MIN = 0;
 
@@ -330,37 +339,37 @@ public class SearchSettingsFrame extends JFrame {
 
         private static final int FIELD_WIDTH = 8;
 
-        public NumberField(final SearchSettingsFrame settings, Double defl,
-                Double min, Double max, double increment,
-                Boolean initiallyEnabled, double valueIfDisabled) {
+        public NumberField(final SearchSettingsFrame settings,
+                NumberOption option) {
+            super(option);
+            this.option = option;
 
             panel = new JPanel(new GridBagLayout());
-            this.increment = increment;
-            this.valueIfDisabled = valueIfDisabled;
+            this.step = option.getStep();
+            Double min = option.getMin();
+            Double max = option.getMax();
+            Double defl = new Double(option.getDefault());
 
             // Normalize parameters
-            if (defl == null) {
-                defl = new Double(0);
-                if (min != null && defl.compareTo(min) < 0) {
-                    defl = min;
-                } else if (max != null && defl.compareTo(max) > 0) {
-                    defl = max;
-                }
+            if (min != null && defl.compareTo(min) < 0) {
+                defl = min;
+            } else if (max != null && defl.compareTo(max) > 0) {
+                defl = max;
             }
             if (min != null) {
-                sliderMin = (int) (min.doubleValue() / increment);
+                sliderMin = (int) (min.doubleValue() / step);
             } else {
                 sliderMin = SLIDER_DEFAULT_MIN;
             }
             if (max != null) {
-                sliderMax = (int) (max.doubleValue() / increment);
+                sliderMax = (int) (max.doubleValue() / step);
             } else {
                 sliderMax = SLIDER_DEFAULT_MAX;
             }
 
             // Create spinner
             SpinnerNumberModel spinnerModel = new SpinnerNumberModel(defl,
-                    min, max, new Double(increment));
+                    min, max, new Double(step));
             spinner = new JSpinner(spinnerModel);
             ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField().
                     setColumns(FIELD_WIDTH);
@@ -373,7 +382,6 @@ public class SearchSettingsFrame extends JFrame {
 
             // Add listeners.  The spinner is the master and the slider is
             // the slave.
-            final double f_increment = increment;
             spinner.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
@@ -389,13 +397,14 @@ public class SearchSettingsFrame extends JFrame {
                 public void stateChanged(ChangeEvent e) {
                     int newIndex = slider.getValue();
                     if (newIndex != sliderIndex((Double) spinner.getValue())) {
-                        spinner.setValue(new Double(newIndex * f_increment));
+                        spinner.setValue(new Double(newIndex * step));
                     }
                 }
             });
 
             // Create enable checkbox
-            configureEnableToggle(settings, initiallyEnabled,
+            configureEnableToggle(settings, option.isInitiallyEnabled(),
+                    string(option.getDisabledValue()),
                     Arrays.asList((JComponent) spinner, slider));
 
             // Add to the panel
@@ -407,18 +416,10 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         private int sliderIndex(Double value) {
-            int ret = (int) (value.doubleValue() / increment);
+            int ret = (int) (value.doubleValue() / step);
             ret = Math.min(ret, sliderMax);
             ret = Math.max(ret, sliderMin);
             return ret;
-        }
-
-        public double getValue() {
-            if (isEnabled()) {
-                return ((Double) spinner.getValue()).doubleValue();
-            } else {
-                return valueIfDisabled;
-            }
         }
 
         @Override
@@ -427,8 +428,11 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
-        public String toString() {
-            double d = getValue();
+        protected String getEnabledValue() {
+            return string(((Double) spinner.getValue()).doubleValue());
+        }
+
+        private String string(double d) {
             int i = (int) d;
             if (d == i) {
                 // Avoid trailing .0 if possible
@@ -439,31 +443,26 @@ public class SearchSettingsFrame extends JFrame {
         }
     }
 
-    public void addNumber(String label, Double defl, Double min, Double max,
-            double increment) {
-        addArgumentField(label, new NumberField(this, defl, min, max,
-                increment, null, 0));
-    }
+    private static class ChoiceField extends SettingsField {
 
-    public void addNumber(String label, Double defl, Double min, Double max,
-            double increment, Boolean initiallyEnabled,
-            double valueIfDisabled) {
-        addArgumentField(label, new NumberField(this, defl, min, max,
-                increment, initiallyEnabled, valueIfDisabled));
-    }
-
-    private class ChoiceField extends SettingsField {
+        private final ChoiceOption option;
 
         private final JComboBox comboBox;
 
-        private int valueIfDisabled;
+        private final Choice[] choices;
 
         public ChoiceField(final SearchSettingsFrame settings,
-                List<String> choices, Integer defl, Boolean initiallyEnabled,
-                int valueIfDisabled) {
-            comboBox = new JComboBox(choices.toArray());
-            if (defl != null) {
-                comboBox.setSelectedIndex(defl.intValue());
+                ChoiceOption option) {
+            super(option);
+            this.option = option;
+            this.choices = option.getChoices().toArray(new Choice[0]);
+
+            comboBox = new JComboBox();
+            for (int i = 0; i < choices.length; i++) {
+                comboBox.addItem(makeEntry(choices[i].getDisplayName()));
+                if (i == 0 || choices[i].isDefault()) {
+                    comboBox.setSelectedIndex(i);
+                }
             }
             comboBox.addActionListener(new ActionListener() {
                 @Override
@@ -472,9 +471,19 @@ public class SearchSettingsFrame extends JFrame {
                 }
             });
 
-            this.valueIfDisabled = valueIfDisabled;
-            configureEnableToggle(settings, initiallyEnabled,
+            configureEnableToggle(settings, option.isInitiallyEnabled(),
+                    option.getDisabledValue(),
                     Arrays.asList((JComponent) comboBox));
+        }
+
+        // avoid adding the same value to the JComboBox twice
+        private static Object makeEntry(final String str) {
+            return new Object() {
+                @Override
+                public String toString() {
+                    return str;
+                }
+            };
         }
 
         @Override
@@ -483,59 +492,21 @@ public class SearchSettingsFrame extends JFrame {
         }
 
         @Override
-        public String toString() {
-            int val;
-            if (isEnabled()) {
-                val = comboBox.getSelectedIndex();
-            } else {
-                val = valueIfDisabled;
-            }
-            return Integer.toString(val);
+        protected String getEnabledValue() {
+            return choices[comboBox.getSelectedIndex()].getValue();
         }
     }
 
-    public void addChoice(String label, List<String> choices, Integer defl) {
-        addChoice(label, choices, defl, null, 0);
-    }
-
-    public void addChoice(String label, List<String> choices, Integer defl,
-            Boolean initiallyEnabled, int valueIfDisabled) {
-        if (choices.size() == 0) {
-            throw new IllegalArgumentException("No choices");
-        }
-        if (defl != null && defl.intValue() >= choices.size()) {
-            throw new IllegalArgumentException("Default out of range");
-        }
-        addArgumentField(label, new ChoiceField(this, choices, defl,
-                initiallyEnabled, valueIfDisabled));
-    }
-
-    public List<String> getFilterArguments() {
-        List<String> ret = new ArrayList<String>();
-        for (SettingsField arg : arguments) {
-            ret.add(arg.toString());
+    public Map<String, String> getOptionMap() {
+        Map<String, String> ret = new HashMap<String, String>();
+        for (SettingsField opt : optionFields) {
+            ret.put(opt.getName(), opt.getValue());
         }
         return ret;
     }
 
     public String getInstanceName() {
-        return instanceNameField.toString();
-    }
-
-    public double getMinScore() {
-        return minScoreField.getValue();
-    }
-
-    public double getMaxScore() {
-        return maxScoreField.getValue();
-    }
-
-    public boolean isEditable() {
-        // we are editable if the instance name or thresholds are, or if
-        // we have editable arguments
-        return instanceNameField.getComponent().isDisplayable() ||
-                minScoreField.getComponent().isDisplayable() ||
-                arguments.size() > 0;
+        return instanceNameField.getValue();
     }
 
     public void addChangeListener(ChangeListener l) {
@@ -553,189 +524,29 @@ public class SearchSettingsFrame extends JFrame {
         }
     }
 
-    private static String getProperty(Properties p, String label, int i) {
-        String key = new Formatter().format("%s-%d", label, i).toString();
-        return p.getProperty(key);
-    }
-
-    private static String getProperty(Properties p, String label, int i,
-            int j) {
-        String key = new Formatter().format("%s-%d-%d", label, j,
-                i).toString();
-        return p.getProperty(key);
-    }
-
-    private static double parseDouble(String str) {
-        // Handle more forms of infinity than Double.parseDouble()
-        if (str.equalsIgnoreCase("inf") || str.equalsIgnoreCase("infinity")) {
-            return Double.POSITIVE_INFINITY;
-        }
-        if (str.equalsIgnoreCase("-inf") ||
-                str.equalsIgnoreCase("-infinity")) {
-            return Double.NEGATIVE_INFINITY;
-        }
-        return Double.parseDouble(str);
-    }
-
-    /* Accepted properties:
-       Instance: the default filter instance name (optional)
-       Instance-Editable: "false" if the instance name should not be editable
-           (optional, and should usually be omitted)
-       Min-Score: the minimum filter score to pass (optional)
-       Max-Score: the maximum filter score to pass (optional)
-       Threshold: historical alias for Min-Score (optional)
-       Thresholds-Editable: "true" if min/max should be editable (optional)
-       Threshold-Editable: historical alias for Thresholds-Editable (optional)
-
-       In addition, there can be parameter descriptions, arranged in a
-       zero-indexed array.  Each parameter corresponds to a single argument
-       to the server-side filter code.  Let II be the array index.
-       Properties:
-       Type-II: {boolean, string, number, choice}
-       Label-II: field label for this argument
-       Default-II: default value (optional)
-       Disabled-Value-II: add an enable checkbox and return this value if
-               it is disabled (optional)
-       Initially-Enabled-II: if Disabled-Value-II is specified and this
-               property is present and not "true", enable checkbox defaults
-               to disabled (optional)
-
-       boolean produces a filter argument of "true" or "false".  The Default
-       value, if any, should be "true" or "false".
-
-       string produces a filter argument consisting of a string.
-
-       number produces a filter argument consisting of the text
-       representation of the selected number.  Additional properties:
-       Minimum-II: minimum value (optional)
-       Maximum-II: maximum value (optional)
-       Increment-II: distance between acceptable values (optional, defaults
-           to 1)
-
-       choice displays a drop-down menu of options.  There are additional
-       properties listing these options as a zero-indexed array.  Let the
-       index be JJ.  Properties:
-       Choice-JJ-II: text label of the menu entry
-       The filter argument consists of the text representation of JJ.
-    */
-    public static SearchSettingsFrame createFromProperties(String filterName,
-            Properties p) {
-        String instanceName = p.getProperty("Instance");
-        if (instanceName == null) {
-            instanceName = "filter";
-        }
-
-        String instanceEditableStr = p.getProperty("Instance-Editable");
-        boolean instanceEditable = instanceEditableStr == null ||
-                ! instanceEditableStr.equals("false");
-
-        String minScoreStr = p.getProperty("Min-Score");
-        if (minScoreStr == null) {
-            minScoreStr = p.getProperty("Threshold");
-        }
-        double minScore = (minScoreStr != null) ? parseDouble(minScoreStr) :
-                Double.NEGATIVE_INFINITY;
-
-        String maxScoreStr = p.getProperty("Max-Score");
-        double maxScore = (maxScoreStr != null) ? parseDouble(maxScoreStr) :
-                Double.POSITIVE_INFINITY;
-
-        String threshEditableStr = p.getProperty("Thresholds-Editable");
-        if (threshEditableStr == null) {
-            threshEditableStr = p.getProperty("Threshold-Editable");
-        }
-        boolean threshEditable = threshEditableStr != null &&
-                threshEditableStr.equals("true");
-
-        SearchSettingsFrame fr = new SearchSettingsFrame(filterName,
-                instanceName, instanceEditable, minScore, maxScore,
-                threshEditable);
-
-        for (int i = 0; ; i++) {
-            String type = getProperty(p, "Type", i);
-            if (type == null) {
-                break;
-            }
-
-            String label = getProperty(p, "Label", i);
-            if (label == null) {
-                throw new IllegalArgumentException(
-                        "Missing label for option " + i);
-            }
-
-            String defl = getProperty(p, "Default", i);
-
-            String disabledValue = getProperty(p, "Disabled-Value", i);
-
-            String s_initiallyEnabled = getProperty(p, "Initially-Enabled", i);
-            Boolean initiallyEnabled = null;
-            if (disabledValue != null) {
-                if (s_initiallyEnabled != null &&
-                        !s_initiallyEnabled.equals("true")) {
-                    initiallyEnabled = Boolean.FALSE;
-                } else {
-                    initiallyEnabled = Boolean.TRUE;
-                }
-            }
-
-            if (type.equals("boolean")) {
-                fr.addBoolean(label, defl != null && defl.equals("true"));
-            } else if (type.equals("string")) {
-                fr.addString(label, defl != null ? defl : "", initiallyEnabled,
-                        disabledValue);
-            } else if (type.equals("number")) {
-                String min = getProperty(p, "Minimum", i);
-                String max = getProperty(p, "Maximum", i);
-                String increment = getProperty(p, "Increment", i);
-                Double f_defl = (defl != null) ? new Double(defl) : null;
-                Double f_min = (min != null) ? new Double(min) : null;
-                Double f_max = (max != null) ? new Double(max) : null;
-                double f_increment = (increment != null) ?
-                        parseDouble(increment) : 1;
-                double f_disabledValue = (disabledValue != null) ?
-                        parseDouble(disabledValue) : 0;
-                fr.addNumber(label, f_defl, f_min, f_max, f_increment,
-                        initiallyEnabled, f_disabledValue);
-            } else if (type.equals("choice")) {
-                List<String> choices = new ArrayList<String>();
-                Integer i_defl = (defl != null) ? new Integer(defl) : null;
-                int i_disabledValue = (disabledValue != null) ?
-                        Integer.parseInt(disabledValue) : 0;
-                for (int j = 0; ; j++) {
-                    String cur = getProperty(p, "Choice", i, j);
-                    if (cur == null) {
-                        break;
-                    }
-                    choices.add(cur);
-                }
-                fr.addChoice(label, choices, i_defl, initiallyEnabled,
-                        i_disabledValue);
-            } else {
-                throw new IllegalArgumentException("Unknown type " + type);
-            }
-        }
-
-        return fr;
-    }
-
     public static void main(final String args[]) throws FileNotFoundException,
             UnsupportedEncodingException, IOException {
         if (args.length != 1) {
             System.out.println("Usage: " +
-                    SearchSettingsFrame.class.getName() + " manifest-file");
+                    SearchSettingsFrame.class.getName() + " bundle");
             System.exit(1);
         }
 
-        final Properties p = new Properties();
-        FileInputStream in = new FileInputStream(args[0]);
-        Reader r = new InputStreamReader(in, "UTF-8");
-        p.load(r);
+        List<File> noFiles = Collections.emptyList();
+        final Bundle bundle = new BundleFactory(noFiles, noFiles)
+                .getBundle(new File(args[0]));
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                String name = p.getProperty("Filter");
-                SearchSettingsFrame fr = createFromProperties(name, p);
+                SearchSettingsFrame fr = null;
+                try {
+                    fr = new SearchSettingsFrame(bundle.getDisplayName(),
+                            "filter", bundle.getOptions());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
                 fr.addComponentListener(new ComponentAdapter() {
                     @Override
                     public void componentHidden(ComponentEvent e) {
@@ -743,13 +554,11 @@ public class SearchSettingsFrame extends JFrame {
                                 e.getSource();
                         System.out.println("Instance: " +
                                 fr.getInstanceName());
-                        System.out.println("Minimum score: " +
-                                fr.getMinScore());
-                        System.out.println("Maximum score: " +
-                                fr.getMaxScore());
-                        System.out.println("Arguments:");
-                        for (String arg : fr.getFilterArguments()) {
-                            System.out.println(arg);
+                        System.out.println("Option map:");
+                        Map<String, String> optionMap = fr.getOptionMap();
+                        for (String name : optionMap.keySet()) {
+                            System.out.println(name + "\t" +
+                                    optionMap.get(name));
                         }
                         System.exit(0);
                     }
