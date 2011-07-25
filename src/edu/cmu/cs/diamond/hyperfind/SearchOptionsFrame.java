@@ -542,7 +542,7 @@ public class SearchOptionsFrame extends JFrame {
                 SearchOptionsFrame fr = null;
                 try {
                     fr = new SearchOptionsFrame(bundle.getDisplayName(),
-                            "filter", bundle.getOptions());
+                            "untitled", bundle.getOptions());
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.exit(1);

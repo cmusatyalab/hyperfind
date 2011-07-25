@@ -59,7 +59,7 @@ public class BundledSearch extends HyperFindSearch {
     BundledSearch(Bundle bundle) throws IOException {
         this.bundle = bundle;
         this.frame = new SearchOptionsFrame(bundle.getDisplayName(),
-                "filter", bundle.getOptions());
+                "untitled", bundle.getOptions());
 
         // Pass option changes along to our listeners
         final BundledSearch search = this;

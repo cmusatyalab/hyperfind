@@ -101,7 +101,7 @@ final class SearchList extends JPanel implements ListDataListener {
         JScrollPane jsp = new JScrollPane(box,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jsp.setBorder(BorderFactory.createTitledBorder("Filters"));
+        jsp.setBorder(BorderFactory.createTitledBorder("Searches"));
         jsp.getHorizontalScrollBar().setUnitIncrement(20);
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 

@@ -659,7 +659,7 @@ public class PopupPanel extends JPanel {
         public TestSearchPanel(Main m, SearchListModel model,
                 ImagePatchesLabel image, ObjectIdentifier objectID,
                 BufferedImage img, PopupPanel pp) {
-            setBorder(BorderFactory.createTitledBorder("Filter Test"));
+            setBorder(BorderFactory.createTitledBorder("Search Test"));
 
             this.m = m;
             this.image = image;
