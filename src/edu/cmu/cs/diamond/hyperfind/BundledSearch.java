@@ -54,16 +54,16 @@ public class BundledSearch extends HyperFindSearch {
 
     private final Bundle bundle;
 
-    private final SearchSettingsFrame settings;
+    private final SearchOptionsFrame frame;
 
     BundledSearch(Bundle bundle) throws IOException {
         this.bundle = bundle;
-        this.settings = new SearchSettingsFrame(bundle.getDisplayName(),
+        this.frame = new SearchOptionsFrame(bundle.getDisplayName(),
                 "filter", bundle.getOptions());
 
-        // Pass settings changes along to our listeners
+        // Pass option changes along to our listeners
         final BundledSearch search = this;
-        settings.addChangeListener(new ChangeListener() {
+        frame.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
                 search.fireChangeEvent();
@@ -84,18 +84,18 @@ public class BundledSearch extends HyperFindSearch {
     @Override
     public void edit(Component parentComponent) throws IOException,
             InterruptedException {
-        settings.setVisible(true);
+        frame.setVisible(true);
     }
 
     @Override
     public List<Filter> createFilters() throws IOException {
-        Map<String, String> optionMap = settings.getOptionMap();
+        Map<String, String> optionMap = frame.getOptionMap();
         return bundle.getFilters(optionMap);
     }
 
     @Override
     public String getInstanceName() {
-        return settings.getInstanceName();
+        return frame.getInstanceName();
     }
 
     @Override
@@ -124,6 +124,6 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public void dispose() {
-        settings.dispose();
+        frame.dispose();
     }
 }

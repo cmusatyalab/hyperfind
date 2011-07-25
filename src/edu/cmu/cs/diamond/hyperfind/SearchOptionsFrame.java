@@ -58,7 +58,7 @@ import edu.cmu.cs.diamond.opendiamond.bundle.NumberOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.ChoiceOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
 
-public class SearchSettingsFrame extends JFrame {
+public class SearchOptionsFrame extends JFrame {
 
     private final List<ChangeListener> listeners =
             new ArrayList<ChangeListener>();
@@ -67,12 +67,12 @@ public class SearchSettingsFrame extends JFrame {
 
     private final StringField instanceNameField;
 
-    private final ArrayList<SettingsField> optionFields = new
-            ArrayList<SettingsField>();
+    private final ArrayList<OptionField> optionFields = new
+            ArrayList<OptionField>();
 
     private int currentRow;
 
-    public SearchSettingsFrame(String searchName, String instanceName,
+    public SearchOptionsFrame(String searchName, String instanceName,
             List<Option> options) {
         super("Edit " + searchName);
 
@@ -80,7 +80,7 @@ public class SearchSettingsFrame extends JFrame {
         content = (JComponent) getContentPane();
         content.setLayout(new GridBagLayout());
 
-        final SearchSettingsFrame frame = this;
+        final SearchOptionsFrame frame = this;
 
         // Close button
         JButton close_button = new JButton("Close");
@@ -117,7 +117,7 @@ public class SearchSettingsFrame extends JFrame {
 
         // Options
         for (Option option : options) {
-            SettingsField field;
+            OptionField field;
             if (option instanceof BooleanOption) {
                 field = new BooleanField(this, (BooleanOption) option);
             } else if (option instanceof StringOption) {
@@ -136,7 +136,7 @@ public class SearchSettingsFrame extends JFrame {
         pack();
     }
 
-    private void addField(SettingsField field) {
+    private void addField(OptionField field) {
         // Add label
         JLabel l = new JLabel(field.getDisplayName() + ":");
         GridBagConstraints c = new GridBagConstraints();
@@ -171,7 +171,7 @@ public class SearchSettingsFrame extends JFrame {
         pack();
     }
 
-    private abstract static class SettingsField {
+    private abstract static class OptionField {
 
         private final Option option;
 
@@ -179,12 +179,12 @@ public class SearchSettingsFrame extends JFrame {
 
         private String valueIfDisabled = null;
 
-        protected SettingsField(Option option) {
+        protected OptionField(Option option) {
             this.option = option;
         }
 
         protected void configureEnableToggle(
-                final SearchSettingsFrame settings, Boolean initiallyEnabled,
+                final SearchOptionsFrame frame, Boolean initiallyEnabled,
                 String valueIfDisabled, final List<JComponent> components) {
             if (initiallyEnabled != null) {
                 enable = new JCheckBox();
@@ -195,14 +195,14 @@ public class SearchSettingsFrame extends JFrame {
                 }
                 this.valueIfDisabled = valueIfDisabled;
 
-                final SettingsField f = this;
+                final OptionField f = this;
                 this.enable.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
                         for (JComponent c : components) {
                             c.setEnabled(f.isEnabled());
                         }
-                        settings.fireChangeEvent();
+                        frame.fireChangeEvent();
                     }
                 });
             }
@@ -237,13 +237,13 @@ public class SearchSettingsFrame extends JFrame {
         protected abstract String getEnabledValue();
     }
 
-    private static class BooleanField extends SettingsField {
+    private static class BooleanField extends OptionField {
 
         private final BooleanOption option;
 
         private final JCheckBox checkbox;
 
-        public BooleanField(final SearchSettingsFrame settings,
+        public BooleanField(final SearchOptionsFrame frame,
                 BooleanOption option) {
             super(option);
             this.option = option;
@@ -253,7 +253,7 @@ public class SearchSettingsFrame extends JFrame {
             checkbox.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
             });
         }
@@ -269,7 +269,7 @@ public class SearchSettingsFrame extends JFrame {
         }
     }
 
-    private static class StringField extends SettingsField {
+    private static class StringField extends OptionField {
 
         private final StringOption option;
 
@@ -277,7 +277,7 @@ public class SearchSettingsFrame extends JFrame {
 
         private final int FIELD_WIDTH = 15;
 
-        public StringField(final SearchSettingsFrame settings,
+        public StringField(final SearchOptionsFrame frame,
                 StringOption option) {
             super(option);
             this.option = option;
@@ -287,21 +287,21 @@ public class SearchSettingsFrame extends JFrame {
             field.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
 
                 @Override
                 public void removeUpdate(DocumentEvent e) {
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
 
                 @Override
                 public void changedUpdate(DocumentEvent e) {
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
             });
 
-            configureEnableToggle(settings, option.isInitiallyEnabled(),
+            configureEnableToggle(frame, option.isInitiallyEnabled(),
                     option.getDisabledValue(),
                     Arrays.asList((JComponent) field));
         }
@@ -317,7 +317,7 @@ public class SearchSettingsFrame extends JFrame {
         }
     }
 
-    private static class NumberField extends SettingsField {
+    private static class NumberField extends OptionField {
 
         private final NumberOption option;
 
@@ -339,7 +339,7 @@ public class SearchSettingsFrame extends JFrame {
 
         private static final int FIELD_WIDTH = 8;
 
-        public NumberField(final SearchSettingsFrame settings,
+        public NumberField(final SearchOptionsFrame frame,
                 NumberOption option) {
             super(option);
             this.option = option;
@@ -389,7 +389,7 @@ public class SearchSettingsFrame extends JFrame {
                     if (slider.getValue() != newIndex) {
                         slider.setValue(newIndex);
                     }
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
             });
             slider.addChangeListener(new ChangeListener() {
@@ -403,7 +403,7 @@ public class SearchSettingsFrame extends JFrame {
             });
 
             // Create enable checkbox
-            configureEnableToggle(settings, option.isInitiallyEnabled(),
+            configureEnableToggle(frame, option.isInitiallyEnabled(),
                     string(option.getDisabledValue()),
                     Arrays.asList((JComponent) spinner, slider));
 
@@ -443,7 +443,7 @@ public class SearchSettingsFrame extends JFrame {
         }
     }
 
-    private static class ChoiceField extends SettingsField {
+    private static class ChoiceField extends OptionField {
 
         private final ChoiceOption option;
 
@@ -451,7 +451,7 @@ public class SearchSettingsFrame extends JFrame {
 
         private final Choice[] choices;
 
-        public ChoiceField(final SearchSettingsFrame settings,
+        public ChoiceField(final SearchOptionsFrame frame,
                 ChoiceOption option) {
             super(option);
             this.option = option;
@@ -467,11 +467,11 @@ public class SearchSettingsFrame extends JFrame {
             comboBox.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    settings.fireChangeEvent();
+                    frame.fireChangeEvent();
                 }
             });
 
-            configureEnableToggle(settings, option.isInitiallyEnabled(),
+            configureEnableToggle(frame, option.isInitiallyEnabled(),
                     option.getDisabledValue(),
                     Arrays.asList((JComponent) comboBox));
         }
@@ -499,7 +499,7 @@ public class SearchSettingsFrame extends JFrame {
 
     public Map<String, String> getOptionMap() {
         Map<String, String> ret = new HashMap<String, String>();
-        for (SettingsField opt : optionFields) {
+        for (OptionField opt : optionFields) {
             ret.put(opt.getName(), opt.getValue());
         }
         return ret;
@@ -528,7 +528,7 @@ public class SearchSettingsFrame extends JFrame {
             UnsupportedEncodingException, IOException {
         if (args.length != 1) {
             System.out.println("Usage: " +
-                    SearchSettingsFrame.class.getName() + " bundle");
+                    SearchOptionsFrame.class.getName() + " bundle");
             System.exit(1);
         }
 
@@ -539,9 +539,9 @@ public class SearchSettingsFrame extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                SearchSettingsFrame fr = null;
+                SearchOptionsFrame fr = null;
                 try {
-                    fr = new SearchSettingsFrame(bundle.getDisplayName(),
+                    fr = new SearchOptionsFrame(bundle.getDisplayName(),
                             "filter", bundle.getOptions());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -550,7 +550,7 @@ public class SearchSettingsFrame extends JFrame {
                 fr.addComponentListener(new ComponentAdapter() {
                     @Override
                     public void componentHidden(ComponentEvent e) {
-                        SearchSettingsFrame fr = (SearchSettingsFrame)
+                        SearchOptionsFrame fr = (SearchOptionsFrame)
                                 e.getSource();
                         System.out.println("Instance: " +
                                 fr.getInstanceName());

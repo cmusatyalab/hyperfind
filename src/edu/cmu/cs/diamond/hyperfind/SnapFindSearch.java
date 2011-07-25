@@ -249,7 +249,7 @@ class SnapFindSearch extends HyperFindSearch {
 
     private static double parseDouble(String str) {
         // Handle more forms of infinity than Double.parseDouble().
-        // Copy-n-pasted from SearchSettingsFrame.
+        // Copy-n-pasted from SearchOptionsFrame.
         if (str.equalsIgnoreCase("inf") || str.equalsIgnoreCase("infinity")) {
             return Double.POSITIVE_INFINITY;
         }
