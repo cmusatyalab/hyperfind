@@ -51,6 +51,7 @@ import javax.swing.event.*;
 
 import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
 import edu.cmu.cs.diamond.opendiamond.bundle.Option;
 import edu.cmu.cs.diamond.opendiamond.bundle.BooleanOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.StringOption;
@@ -73,7 +74,7 @@ public class SearchOptionsFrame extends JFrame {
     private int currentRow;
 
     public SearchOptionsFrame(String searchName, String instanceName,
-            List<Option> options) {
+            List<OptionGroup> options) {
         super("Edit " + searchName);
 
         setResizable(false);
@@ -104,36 +105,69 @@ public class SearchOptionsFrame extends JFrame {
         instanceNameField = new StringField(this, opt);
         addField(instanceNameField);
 
-        // Separator
-        if (options.size() > 0) {
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = currentRow++;
-            c.gridwidth = 3;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.insets = new Insets(3, 0, 3, 0);
-            content.add(new JSeparator(), c);
-        }
-
         // Options
-        for (Option option : options) {
-            OptionField field;
-            if (option instanceof BooleanOption) {
-                field = new BooleanField(this, (BooleanOption) option);
-            } else if (option instanceof StringOption) {
-                field = new StringField(this, (StringOption) option);
-            } else if (option instanceof NumberOption) {
-                field = new NumberField(this, (NumberOption) option);
-            } else if (option instanceof ChoiceOption) {
-                field = new ChoiceField(this, (ChoiceOption) option);
-            } else {
-                throw new IllegalArgumentException("Unknown option type");
+        for (OptionGroup group : options) {
+            addSeparator(group.getDisplayName());
+            for (Option option : group.getOptions()) {
+                OptionField field;
+                if (option instanceof BooleanOption) {
+                    field = new BooleanField(this, (BooleanOption) option);
+                } else if (option instanceof StringOption) {
+                    field = new StringField(this, (StringOption) option);
+                } else if (option instanceof NumberOption) {
+                    field = new NumberField(this, (NumberOption) option);
+                } else if (option instanceof ChoiceOption) {
+                    field = new ChoiceField(this, (ChoiceOption) option);
+                } else {
+                    throw new IllegalArgumentException("Unknown option type");
+                }
+                addField(field);
+                optionFields.add(field);
             }
-            addField(field);
-            optionFields.add(field);
         }
 
         pack();
+    }
+
+    private void addSeparator(String label) {
+        JPanel p = new JPanel(new GridBagLayout());
+        GridBagConstraints c;
+
+        if (label != null) {
+            // left border
+            c = new GridBagConstraints();
+            c.gridy = 0;
+            c.ipadx = 15;  // half the desired width
+            p.add(new JSeparator(), c);
+
+            // label
+            c = new GridBagConstraints();
+            c.gridy = 0;
+            c.insets = new Insets(0, 4, 0, 4);
+            p.add(new JLabel(label), c);
+        }
+
+        // right border
+        c = new GridBagConstraints();
+        c.gridy = 0;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        p.add(new JSeparator(), c);
+
+        // add to window
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = currentRow++;
+        c.gridwidth = 3;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        if (label == null) {
+            // simple separator between search name and options; don't use
+            // pronounced section break
+            c.insets = new Insets(3, 0, 3, 0);
+        } else {
+            c.insets = new Insets(10, 0, 0, 0);
+        }
+        content.add(p, c);
     }
 
     private void addField(OptionField field) {
