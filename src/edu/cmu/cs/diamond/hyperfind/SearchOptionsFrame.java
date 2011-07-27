@@ -446,6 +446,7 @@ public class SearchOptionsFrame extends JFrame {
             GridBagConstraints c = new GridBagConstraints();
             c.insets = new Insets(0, 8, 0, 0);
             c.fill = GridBagConstraints.HORIZONTAL;
+            c.weightx = 1;
             panel.add(slider, c);
         }
 
