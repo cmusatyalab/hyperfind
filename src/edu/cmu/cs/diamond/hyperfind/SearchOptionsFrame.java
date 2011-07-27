@@ -48,6 +48,7 @@ import java.util.List;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.JTextComponent;
 
 import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
@@ -307,17 +308,27 @@ public class SearchOptionsFrame extends JFrame {
 
         private final StringOption option;
 
-        private final JTextField field;
+        private final JTextComponent field;
 
-        private final int FIELD_WIDTH = 15;
+        private final JComponent component;
+
+        private final int SINGLE_FIELD_WIDTH = 15;
 
         public StringField(final SearchOptionsFrame frame,
                 StringOption option) {
             super(option);
             this.option = option;
 
-            field = new JTextField(option.getDefault());
-            field.setColumns(FIELD_WIDTH);
+            if (option.isMultiLine()) {
+                field = new JTextArea(option.getDefault(), option.getHeight(),
+                        option.getWidth());
+                component = new JScrollPane(field);
+            } else {
+                field = new JTextField(option.getDefault(),
+                        SINGLE_FIELD_WIDTH);
+                component = field;
+            }
+
             field.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
@@ -342,7 +353,7 @@ public class SearchOptionsFrame extends JFrame {
 
         @Override
         public JComponent getComponent() {
-            return field;
+            return component;
         }
 
         @Override
