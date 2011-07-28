@@ -96,8 +96,8 @@ public final class Main {
     public static Main createMain(File pluginRunner,
             final File pluginDirectory) throws IOException,
             InterruptedException {
-        List<File> l = Arrays.asList(new File("/opt/snapfind/lib"));
-        final BundleFactory bundleFactory = new BundleFactory(l, l);
+        final BundleFactory bundleFactory = new BundleFactory(
+                Arrays.asList(new File("/opt/snapfind/lib")));
 
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
                 .createHyperFindSearchFactories(pluginRunner, bundleFactory);

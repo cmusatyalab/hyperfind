@@ -92,7 +92,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
             BundleFactory bundleFactory) {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
-        for (Bundle b : bundleFactory.getBundles()) {
+        for (Bundle b : bundleFactory.getSearchBundles()) {
             factories.add(new BundledSearchFactory(b));
         }
         return factories;

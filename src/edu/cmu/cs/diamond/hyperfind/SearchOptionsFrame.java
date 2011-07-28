@@ -579,8 +579,8 @@ public class SearchOptionsFrame extends JFrame {
         }
 
         List<File> noFiles = Collections.emptyList();
-        final Bundle bundle = new BundleFactory(noFiles, noFiles)
-                .getBundle(new File(args[0]));
+        final Bundle bundle = new BundleFactory(noFiles).getBundle(
+                new File(args[0]));
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
