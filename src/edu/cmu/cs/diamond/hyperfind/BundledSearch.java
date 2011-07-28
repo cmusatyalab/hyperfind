@@ -56,9 +56,9 @@ public class BundledSearch extends HyperFindSearch {
 
     private final BundleOptionsFrame frame;
 
-    BundledSearch(Bundle bundle, boolean isCodec) throws IOException {
+    BundledSearch(Bundle bundle) throws IOException {
         this.bundle = bundle;
-        if (isCodec) {
+        if (bundle.isCodec()) {
             this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
                     bundle.getOptions());
         } else {

@@ -52,11 +52,8 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     private final Bundle bundle;
 
-    private final boolean isCodec;
-
-    public BundledSearchFactory(Bundle bundle, boolean isCodec) {
+    public BundledSearchFactory(Bundle bundle) {
         this.bundle = bundle;
-        this.isCodec = isCodec;
     }
 
     @Override
@@ -66,13 +63,13 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     @Override
     public boolean isCodec() {
-        return isCodec;
+        return bundle.isCodec();
     }
 
     @Override
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
-        return new BundledSearch(bundle, isCodec);
+        return new BundledSearch(bundle);
     }
 
     @Override
@@ -88,18 +85,15 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     public static HyperFindSearch createHyperFindSearch(
             BundleFactory bundleFactory, InputStream in) throws IOException {
-        return new BundledSearch(bundleFactory.getBundle(in), false);
+        return new BundledSearch(bundleFactory.getBundle(in));
     }
 
     public static List<HyperFindSearchFactory> createHyperFindSearchFactories(
             BundleFactory bundleFactory) {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
-        for (Bundle b : bundleFactory.getSearchBundles()) {
-            factories.add(new BundledSearchFactory(b, false));
-        }
-        for (Bundle b : bundleFactory.getCodecBundles()) {
-            factories.add(new BundledSearchFactory(b, true));
+        for (Bundle b : bundleFactory.getBundles()) {
+            factories.add(new BundledSearchFactory(b));
         }
         return factories;
     }
