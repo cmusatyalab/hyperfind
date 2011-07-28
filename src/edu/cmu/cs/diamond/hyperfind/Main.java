@@ -145,11 +145,10 @@ public final class Main {
             e.printStackTrace();
         }
 
-        final List<Filter> thumbnailFilter = new ArrayList<Filter>();
         List<HyperFindSearchFactory> exampleSearchFactories =
                 new ArrayList<HyperFindSearchFactory>();
         List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
-        initSearchFactories(factories, model, searches, thumbnailFilter,
+        initSearchFactories(factories, model, searches,
                 exampleSearchFactories, codecList);
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
@@ -308,7 +307,6 @@ public final class Main {
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
                             s.createFilters());
-                    filters.addAll(thumbnailFilter);
                     filters.addAll(model.createFilters());
 
                     SearchFactory factory = m.createFactory(filters);
@@ -476,7 +474,6 @@ public final class Main {
     private static void initSearchFactories(
             List<HyperFindSearchFactory> factories,
             final SearchListModel model, final JPopupMenu searches,
-            final List<Filter> thumbnailFilter,
             final List<HyperFindSearchFactory> exampleSearchFactories,
             final List<HyperFindSearch> codecList) throws IOException,
             InterruptedException {
@@ -510,9 +507,6 @@ public final class Main {
                     searches.add(jm);
                 }
                 break;
-            case THUMBNAIL:
-                thumbnailFilter.addAll(f.createHyperFindSearch()
-                        .createFilters());
             }
         }
     }

@@ -41,7 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 public enum HyperFindSearchType {
-    CODEC, FILTER, THUMBNAIL;
+    CODEC, FILTER;
 
     public static HyperFindSearchType fromString(String s) {
         return valueOf(s.toUpperCase());
