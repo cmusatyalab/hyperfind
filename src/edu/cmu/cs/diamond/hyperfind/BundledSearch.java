@@ -56,10 +56,15 @@ public class BundledSearch extends HyperFindSearch {
 
     private final BundleOptionsFrame frame;
 
-    BundledSearch(Bundle bundle) throws IOException {
+    BundledSearch(Bundle bundle, boolean isCodec) throws IOException {
         this.bundle = bundle;
-        this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
-                "untitled", bundle.getOptions());
+        if (isCodec) {
+            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
+                    bundle.getOptions());
+        } else {
+            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
+                    "untitled", bundle.getOptions());
+        }
 
         // Pass option changes along to our listeners
         final BundledSearch search = this;
@@ -73,7 +78,7 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public boolean isEditable() {
-        return true;
+        return frame.isEditable();
     }
 
     @Override

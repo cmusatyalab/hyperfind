@@ -74,6 +74,11 @@ public class BundleOptionsFrame extends JFrame {
 
     private int currentRow;
 
+    // Constructor for use by codecs, which don't have an instance name
+    public BundleOptionsFrame(String displayName, List<OptionGroup> options) {
+        this(displayName, null, options);
+    }
+
     public BundleOptionsFrame(String displayName, String instanceName,
             List<OptionGroup> options) {
         super("Edit " + displayName);
@@ -99,12 +104,17 @@ public class BundleOptionsFrame extends JFrame {
         c.insets = new Insets(2, 2, 2, 2);
         content.add(close_button, c);
 
-        // Search name
-        StringOption opt = new StringOption();
-        opt.setDisplayName("Search name");
-        opt.setDefault(instanceName);
-        instanceNameField = new StringField(this, opt);
-        addField(instanceNameField);
+        if (instanceName != null) {
+            // Search name
+            StringOption opt = new StringOption();
+            opt.setDisplayName("Search name");
+            opt.setDefault(instanceName);
+            instanceNameField = new StringField(this, opt);
+            addField(instanceNameField);
+        } else {
+            // We're a codec; no instance name
+            instanceNameField = null;
+        }
 
         // Options
         for (OptionGroup group : options) {
@@ -552,7 +562,15 @@ public class BundleOptionsFrame extends JFrame {
     }
 
     public String getInstanceName() {
-        return instanceNameField.getValue();
+        if (instanceNameField != null) {
+            return instanceNameField.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    public boolean isEditable() {
+        return instanceNameField != null || optionFields.size() > 0;
     }
 
     public void addChangeListener(ChangeListener l) {
