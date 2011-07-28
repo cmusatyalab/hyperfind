@@ -147,7 +147,8 @@ public final class Main {
 
         List<HyperFindSearchFactory> exampleSearchFactories =
                 new ArrayList<HyperFindSearchFactory>();
-        List<HyperFindSearch> codecList = new ArrayList<HyperFindSearch>();
+        final List<HyperFindSearch> codecList =
+                new ArrayList<HyperFindSearch>();
         initSearchFactories(factories, model, searches,
                 exampleSearchFactories, codecList);
 
@@ -459,6 +460,9 @@ public final class Main {
                 // clear state from previous search
                 m.results.terminate();
                 m.popupFrame.dispose();
+                for (HyperFindSearch codec : codecList) {
+                    codec.dispose();
+                }
             }
         });
         frame.setVisible(true);
