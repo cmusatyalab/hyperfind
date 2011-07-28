@@ -60,7 +60,7 @@ import edu.cmu.cs.diamond.opendiamond.bundle.NumberOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.ChoiceOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
 
-public class SearchOptionsFrame extends JFrame {
+public class BundleOptionsFrame extends JFrame {
 
     private final List<ChangeListener> listeners =
             new ArrayList<ChangeListener>();
@@ -74,15 +74,15 @@ public class SearchOptionsFrame extends JFrame {
 
     private int currentRow;
 
-    public SearchOptionsFrame(String searchName, String instanceName,
+    public BundleOptionsFrame(String displayName, String instanceName,
             List<OptionGroup> options) {
-        super("Edit " + searchName);
+        super("Edit " + displayName);
 
         setResizable(false);
         content = (JComponent) getContentPane();
         content.setLayout(new GridBagLayout());
 
-        final SearchOptionsFrame frame = this;
+        final BundleOptionsFrame frame = this;
 
         // Close button
         JButton close_button = new JButton("Close");
@@ -219,7 +219,7 @@ public class SearchOptionsFrame extends JFrame {
         }
 
         protected void configureEnableToggle(
-                final SearchOptionsFrame frame, Boolean initiallyEnabled,
+                final BundleOptionsFrame frame, Boolean initiallyEnabled,
                 String valueIfDisabled, final List<JComponent> components) {
             if (initiallyEnabled != null) {
                 enable = new JCheckBox();
@@ -278,7 +278,7 @@ public class SearchOptionsFrame extends JFrame {
 
         private final JCheckBox checkbox;
 
-        public BooleanField(final SearchOptionsFrame frame,
+        public BooleanField(final BundleOptionsFrame frame,
                 BooleanOption option) {
             super(option);
             this.option = option;
@@ -314,7 +314,7 @@ public class SearchOptionsFrame extends JFrame {
 
         private final int SINGLE_FIELD_WIDTH = 15;
 
-        public StringField(final SearchOptionsFrame frame,
+        public StringField(final BundleOptionsFrame frame,
                 StringOption option) {
             super(option);
             this.option = option;
@@ -384,7 +384,7 @@ public class SearchOptionsFrame extends JFrame {
 
         private static final int FIELD_WIDTH = 8;
 
-        public NumberField(final SearchOptionsFrame frame,
+        public NumberField(final BundleOptionsFrame frame,
                 NumberOption option) {
             super(option);
             this.option = option;
@@ -497,7 +497,7 @@ public class SearchOptionsFrame extends JFrame {
 
         private final Choice[] choices;
 
-        public ChoiceField(final SearchOptionsFrame frame,
+        public ChoiceField(final BundleOptionsFrame frame,
                 ChoiceOption option) {
             super(option);
             this.option = option;
@@ -574,7 +574,7 @@ public class SearchOptionsFrame extends JFrame {
             UnsupportedEncodingException, IOException {
         if (args.length != 1) {
             System.out.println("Usage: " +
-                    SearchOptionsFrame.class.getName() + " bundle");
+                    BundleOptionsFrame.class.getName() + " bundle");
             System.exit(1);
         }
 
@@ -585,9 +585,9 @@ public class SearchOptionsFrame extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                SearchOptionsFrame fr = null;
+                BundleOptionsFrame fr = null;
                 try {
-                    fr = new SearchOptionsFrame(bundle.getDisplayName(),
+                    fr = new BundleOptionsFrame(bundle.getDisplayName(),
                             "untitled", bundle.getOptions());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -596,7 +596,7 @@ public class SearchOptionsFrame extends JFrame {
                 fr.addComponentListener(new ComponentAdapter() {
                     @Override
                     public void componentHidden(ComponentEvent e) {
-                        SearchOptionsFrame fr = (SearchOptionsFrame)
+                        BundleOptionsFrame fr = (BundleOptionsFrame)
                                 e.getSource();
                         System.out.println("Instance: " +
                                 fr.getInstanceName());
