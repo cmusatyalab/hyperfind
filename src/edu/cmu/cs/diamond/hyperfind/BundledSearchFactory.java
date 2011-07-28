@@ -85,7 +85,11 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     public static HyperFindSearch createHyperFindSearch(
             BundleFactory bundleFactory, InputStream in) throws IOException {
-        return new BundledSearch(bundleFactory.getBundle(in));
+        Bundle bundle = bundleFactory.getBundle(in);
+        if (bundle.isCodec()) {
+            throw new IOException("Codecs cannot be imported at runtime.");
+        }
+        return new BundledSearch(bundle);
     }
 
     public static List<HyperFindSearchFactory> createHyperFindSearchFactories(
