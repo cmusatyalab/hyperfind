@@ -98,14 +98,15 @@ public abstract class HyperFindSearch {
 
     @Override
     public int hashCode() {
-        return getFilterNames().hashCode();
+        return getSearchName().hashCode() + getFilterNames().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof SnapFindSearch) {
-            SnapFindSearch s = (SnapFindSearch) obj;
-            return getFilterNames().equals(s.getFilterNames());
+        if (obj instanceof HyperFindSearch) {
+            HyperFindSearch s = (HyperFindSearch) obj;
+            return getSearchName().equals(s.getSearchName()) &&
+                    getFilterNames().equals(s.getFilterNames());
         }
         return false;
     }
