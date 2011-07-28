@@ -61,8 +61,6 @@ class SnapFindSearch extends HyperFindSearch {
 
     private final String internalName;
 
-    private final HyperFindSearchType type;
-
     private final boolean isEditable;
 
     private final boolean needsPatches;
@@ -82,25 +80,24 @@ class SnapFindSearch extends HyperFindSearch {
     private File searchletLib;
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, HyperFindSearchType type, boolean needsPatches)
+            String internalName, boolean needsPatches)
             throws IOException, InterruptedException {
-        this(pluginRunner, displayName, internalName, type, needsPatches,
+        this(pluginRunner, displayName, internalName, needsPatches,
                 new ArrayList<BufferedImage>());
     }
 
     public SnapFindSearch(File pluginRunner, String displayName,
-            String internalName, HyperFindSearchType type,
+            String internalName,
             boolean needsPatches, List<BufferedImage> patches)
             throws IOException, InterruptedException {
         this.pluginRunner = pluginRunner;
         this.displayName = displayName;
         this.internalName = internalName;
-        this.type = type;
         this.needsPatches = needsPatches;
 
         // populate the configs
         ProcessBuilder pb = new ProcessBuilder(pluginRunner.getPath(),
-                "get-plugin-initial-config", type.toString(), internalName);
+                "get-plugin-initial-config", "filter", internalName);
         // System.out.println(pb.command());
 
         Process p = null;
@@ -133,8 +130,8 @@ class SnapFindSearch extends HyperFindSearch {
             InterruptedException {
         Process p = null;
         try {
-            p = new ProcessBuilder(pluginRunner.getPath(), command, type
-                    .toString(), internalName).start();
+            p = new ProcessBuilder(pluginRunner.getPath(), command, "filter",
+                    internalName).start();
 
             OutputStream out = p.getOutputStream();
 
@@ -186,8 +183,7 @@ class SnapFindSearch extends HyperFindSearch {
     }
 
     private String digestForFspec(byte[] fspecBytes) {
-        return digest(type.toString().getBytes(), internalName.getBytes(),
-                blob, fspecBytes);
+        return digest(internalName.getBytes(), blob, fspecBytes);
     }
 
     @Override

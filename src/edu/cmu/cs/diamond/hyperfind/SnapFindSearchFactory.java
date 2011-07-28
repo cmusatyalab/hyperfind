@@ -72,14 +72,12 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
      */
     @Override
     public HyperFindSearchType getType() {
-        return type;
+        return HyperFindSearchType.FILTER;
     }
 
     private final String displayName;
 
     private final String internalName;
-
-    private final HyperFindSearchType type;
 
     private final boolean needsPatches;
 
@@ -92,13 +90,6 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         internalName = new String(getOrFail(map, "internal-name"), utf8);
         needsPatches = Boolean.parseBoolean(new String(getOrFail(map,
                 "needs-patches"), utf8));
-
-        String typeString = new String(getOrFail(map, "type"), utf8);
-        try {
-            type = HyperFindSearchType.fromString(typeString);
-        } catch (IllegalArgumentException e) {
-            throw new UnknownSearchTypeException(e);
-        }
     }
 
     /*
@@ -112,7 +103,7 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
     public HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
-                type, needsPatches);
+                needsPatches);
     }
 
     static <V> V getOrFail(Map<String, V> map, String key) {
@@ -135,10 +126,7 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
 
         List<Map<String, byte[]>> listPluginsResult = readKeyValueSetList(in);
         for (Map<String, byte[]> map : listPluginsResult) {
-            try {
-                result.add(new SnapFindSearchFactory(pluginRunner, map));
-            } catch (UnknownSearchTypeException ignore) {
-            }
+            result.add(new SnapFindSearchFactory(pluginRunner, map));
         }
 
         if (p.waitFor() != 0) {
@@ -254,6 +242,6 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
         return new SnapFindSearch(pluginRunner, displayName, internalName,
-                type, needsPatches, patches);
+                needsPatches, patches);
     }
 }
