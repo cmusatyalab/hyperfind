@@ -478,35 +478,29 @@ public final class Main {
             final List<HyperFindSearch> codecList) throws IOException,
             InterruptedException {
         for (final HyperFindSearchFactory f : factories) {
-            HyperFindSearchType t = f.getType();
-            switch (t) {
-            case CODEC:
+            if (f.isCodec()) {
                 codecList.add(f.createHyperFindSearch());
-                break;
-            case FILTER:
-                if (f.needsPatches()) {
-                    exampleSearchFactories.add(f);
-                } else {
-                    JMenuItem jm = new JMenuItem(f.getDisplayName());
-                    jm.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            try {
-                                model.addSearch(f.createHyperFindSearch());
-                            } catch (IOException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
-                            } catch (InterruptedException e1) {
-                                // TODO Auto-generated catch block
-                                Thread.currentThread().interrupt();
-                                e1.printStackTrace();
-                            }
+            } else if (f.needsPatches()) {
+                exampleSearchFactories.add(f);
+            } else {
+                JMenuItem jm = new JMenuItem(f.getDisplayName());
+                jm.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            model.addSearch(f.createHyperFindSearch());
+                        } catch (IOException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
+                        } catch (InterruptedException e1) {
+                            // TODO Auto-generated catch block
+                            Thread.currentThread().interrupt();
+                            e1.printStackTrace();
                         }
+                    }
 
-                    });
-                    searches.add(jm);
-                }
-                break;
+                });
+                searches.add(jm);
             }
         }
     }

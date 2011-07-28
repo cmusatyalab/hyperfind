@@ -65,14 +65,9 @@ public class SnapFindSearchFactory extends HyperFindSearchFactory {
         return internalName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see edu.cmu.cs.diamond.hyperfind.HyperFindSearchFactory#getType()
-     */
     @Override
-    public HyperFindSearchType getType() {
-        return HyperFindSearchType.FILTER;
+    public boolean isCodec() {
+        return false;
     }
 
     private final String displayName;

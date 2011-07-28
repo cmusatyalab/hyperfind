@@ -51,10 +51,10 @@ public abstract class HyperFindSearchFactory {
 
     public abstract String getDisplayName();
 
-    public abstract HyperFindSearchType getType();
-
     public abstract HyperFindSearch createHyperFindSearch() throws IOException,
             InterruptedException;
+
+    public abstract boolean isCodec();
 
     public abstract boolean needsPatches();
 
