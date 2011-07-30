@@ -284,14 +284,11 @@ public class BundleOptionsFrame extends JFrame {
 
     private static class BooleanField extends OptionField {
 
-        private final BooleanOption option;
-
         private final JCheckBox checkbox;
 
         public BooleanField(final BundleOptionsFrame frame,
                 BooleanOption option) {
             super(option);
-            this.option = option;
 
             checkbox = new JCheckBox();
             checkbox.setSelected(option.isDefault());
@@ -316,8 +313,6 @@ public class BundleOptionsFrame extends JFrame {
 
     private static class StringField extends OptionField {
 
-        private final StringOption option;
-
         private final JTextComponent field;
 
         private final JComponent component;
@@ -327,7 +322,6 @@ public class BundleOptionsFrame extends JFrame {
         public StringField(final BundleOptionsFrame frame,
                 StringOption option) {
             super(option);
-            this.option = option;
 
             if (option.isMultiLine()) {
                 field = new JTextArea(option.getDefault(), option.getHeight(),
@@ -374,8 +368,6 @@ public class BundleOptionsFrame extends JFrame {
 
     private static class NumberField extends OptionField {
 
-        private final NumberOption option;
-
         private final JPanel panel;
 
         private final JSpinner spinner;
@@ -397,7 +389,6 @@ public class BundleOptionsFrame extends JFrame {
         public NumberField(final BundleOptionsFrame frame,
                 NumberOption option) {
             super(option);
-            this.option = option;
 
             panel = new JPanel(new GridBagLayout());
             this.step = option.getStep();
@@ -501,8 +492,6 @@ public class BundleOptionsFrame extends JFrame {
 
     private static class ChoiceField extends OptionField {
 
-        private final ChoiceOption option;
-
         private final JComboBox comboBox;
 
         private final Choice[] choices;
@@ -510,7 +499,6 @@ public class BundleOptionsFrame extends JFrame {
         public ChoiceField(final BundleOptionsFrame frame,
                 ChoiceOption option) {
             super(option);
-            this.option = option;
             this.choices = option.getChoices().toArray(new Choice[0]);
 
             comboBox = new JComboBox();
