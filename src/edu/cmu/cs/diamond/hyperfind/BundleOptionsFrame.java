@@ -188,7 +188,7 @@ public class BundleOptionsFrame extends JFrame {
         c.gridx = 0;
         c.gridy = currentRow;
         c.insets = new Insets(2, 2, 2, 2);
-        c.anchor = GridBagConstraints.LINE_START;
+        c.anchor = GridBagConstraints.NORTHWEST;
         content.add(l, c);
 
         // Add enable checkbox
@@ -198,7 +198,7 @@ public class BundleOptionsFrame extends JFrame {
             c.gridy = currentRow;
             c.fill = GridBagConstraints.BOTH;
             c.insets = new Insets(2, 2, 2, 2);
-            c.anchor = GridBagConstraints.LINE_START;
+            c.anchor = GridBagConstraints.NORTHWEST;
             content.add(field.getEnableToggle(), c);
         }
 
@@ -208,7 +208,7 @@ public class BundleOptionsFrame extends JFrame {
         c.gridy = currentRow;
         c.fill = GridBagConstraints.BOTH;
         c.insets = new Insets(2, 2, 2, 2);
-        c.anchor = GridBagConstraints.LINE_START;
+        c.anchor = GridBagConstraints.NORTHWEST;
         content.add(field.getComponent(), c);
 
         // Update state
