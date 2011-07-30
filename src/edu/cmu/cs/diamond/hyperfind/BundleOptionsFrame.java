@@ -109,7 +109,7 @@ public class BundleOptionsFrame extends JFrame {
             StringOption opt = new StringOption();
             opt.setDisplayName("Search name");
             opt.setDefault(instanceName);
-            instanceNameField = new StringField(this, opt);
+            instanceNameField = new StringField(opt);
             addField(instanceNameField);
         } else {
             // We're a codec; no instance name
@@ -122,13 +122,13 @@ public class BundleOptionsFrame extends JFrame {
             for (Option option : group.getOptions()) {
                 OptionField field;
                 if (option instanceof BooleanOption) {
-                    field = new BooleanField(this, (BooleanOption) option);
+                    field = new BooleanField((BooleanOption) option);
                 } else if (option instanceof StringOption) {
-                    field = new StringField(this, (StringOption) option);
+                    field = new StringField((StringOption) option);
                 } else if (option instanceof NumberOption) {
-                    field = new NumberField(this, (NumberOption) option);
+                    field = new NumberField((NumberOption) option);
                 } else if (option instanceof ChoiceOption) {
-                    field = new ChoiceField(this, (ChoiceOption) option);
+                    field = new ChoiceField((ChoiceOption) option);
                 } else {
                     throw new IllegalArgumentException("Unknown option type");
                 }
@@ -211,6 +211,14 @@ public class BundleOptionsFrame extends JFrame {
         c.anchor = GridBagConstraints.NORTHWEST;
         content.add(field.getComponent(), c);
 
+        // Add change listener
+        field.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                fireChangeEvent();
+            }
+        });
+
         // Update state
         currentRow++;
         pack();
@@ -220,6 +228,9 @@ public class BundleOptionsFrame extends JFrame {
 
         private final Option option;
 
+        private final List<ChangeListener> listeners =
+                new ArrayList<ChangeListener>();
+
         private JCheckBox enable = null;
 
         private String valueIfDisabled = null;
@@ -228,8 +239,7 @@ public class BundleOptionsFrame extends JFrame {
             this.option = option;
         }
 
-        protected void configureEnableToggle(
-                final BundleOptionsFrame frame, Boolean initiallyEnabled,
+        protected void configureEnableToggle(Boolean initiallyEnabled,
                 String valueIfDisabled, final List<JComponent> components) {
             if (initiallyEnabled != null) {
                 enable = new JCheckBox();
@@ -247,9 +257,24 @@ public class BundleOptionsFrame extends JFrame {
                         for (JComponent c : components) {
                             c.setEnabled(f.isEnabled());
                         }
-                        frame.fireChangeEvent();
+                        fireChangeEvent();
                     }
                 });
+            }
+        }
+
+        public void addChangeListener(ChangeListener l) {
+            listeners.add(l);
+        }
+
+        public void removeChangeListener(ChangeListener l) {
+            listeners.remove(l);
+        }
+
+        protected void fireChangeEvent() {
+            ChangeEvent ev = new ChangeEvent(this);
+            for (ChangeListener l : listeners) {
+                l.stateChanged(ev);
             }
         }
 
@@ -286,8 +311,7 @@ public class BundleOptionsFrame extends JFrame {
 
         private final JCheckBox checkbox;
 
-        public BooleanField(final BundleOptionsFrame frame,
-                BooleanOption option) {
+        public BooleanField(BooleanOption option) {
             super(option);
 
             checkbox = new JCheckBox();
@@ -295,7 +319,7 @@ public class BundleOptionsFrame extends JFrame {
             checkbox.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
             });
         }
@@ -319,8 +343,7 @@ public class BundleOptionsFrame extends JFrame {
 
         private final int SINGLE_FIELD_WIDTH = 15;
 
-        public StringField(final BundleOptionsFrame frame,
-                StringOption option) {
+        public StringField(StringOption option) {
             super(option);
 
             if (option.isMultiLine()) {
@@ -336,21 +359,21 @@ public class BundleOptionsFrame extends JFrame {
             field.getDocument().addDocumentListener(new DocumentListener() {
                 @Override
                 public void insertUpdate(DocumentEvent e) {
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
 
                 @Override
                 public void removeUpdate(DocumentEvent e) {
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
 
                 @Override
                 public void changedUpdate(DocumentEvent e) {
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
             });
 
-            configureEnableToggle(frame, option.isInitiallyEnabled(),
+            configureEnableToggle(option.isInitiallyEnabled(),
                     option.getDisabledValue(),
                     Arrays.asList((JComponent) field));
         }
@@ -386,8 +409,7 @@ public class BundleOptionsFrame extends JFrame {
 
         private static final int FIELD_WIDTH = 8;
 
-        public NumberField(final BundleOptionsFrame frame,
-                NumberOption option) {
+        public NumberField(NumberOption option) {
             super(option);
 
             panel = new JPanel(new GridBagLayout());
@@ -435,7 +457,7 @@ public class BundleOptionsFrame extends JFrame {
                     if (slider.getValue() != newIndex) {
                         slider.setValue(newIndex);
                     }
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
             });
             slider.addChangeListener(new ChangeListener() {
@@ -449,7 +471,7 @@ public class BundleOptionsFrame extends JFrame {
             });
 
             // Create enable checkbox
-            configureEnableToggle(frame, option.isInitiallyEnabled(),
+            configureEnableToggle(option.isInitiallyEnabled(),
                     string(option.getDisabledValue()),
                     Arrays.asList((JComponent) spinner, slider));
 
@@ -496,8 +518,7 @@ public class BundleOptionsFrame extends JFrame {
 
         private final Choice[] choices;
 
-        public ChoiceField(final BundleOptionsFrame frame,
-                ChoiceOption option) {
+        public ChoiceField(ChoiceOption option) {
             super(option);
             this.choices = option.getChoices().toArray(new Choice[0]);
 
@@ -511,11 +532,11 @@ public class BundleOptionsFrame extends JFrame {
             comboBox.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    frame.fireChangeEvent();
+                    fireChangeEvent();
                 }
             });
 
-            configureEnableToggle(frame, option.isInitiallyEnabled(),
+            configureEnableToggle(option.isInitiallyEnabled(),
                     option.getDisabledValue(),
                     Arrays.asList((JComponent) comboBox));
         }
