@@ -67,6 +67,8 @@ public class BundleOptionsFrame extends JFrame {
 
     private final JComponent content;
 
+    private final String displayName;
+
     private final StringField instanceNameField;
 
     private final ArrayList<OptionField> optionFields = new
@@ -81,9 +83,8 @@ public class BundleOptionsFrame extends JFrame {
 
     public BundleOptionsFrame(String displayName, String instanceName,
             List<OptionGroup> options) {
-        super("Edit " + displayName);
-
         setResizable(false);
+        this.displayName = displayName;
         content = (JComponent) getContentPane();
         content.setLayout(new GridBagLayout());
 
@@ -110,11 +111,18 @@ public class BundleOptionsFrame extends JFrame {
             opt.setDisplayName("Search name");
             opt.setDefault(instanceName);
             instanceNameField = new StringField(opt);
+            instanceNameField.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    updateTitle();
+                }
+            });
             addField(instanceNameField);
         } else {
             // We're a codec; no instance name
             instanceNameField = null;
         }
+        updateTitle();
 
         // Options
         for (OptionGroup group : options) {
@@ -138,6 +146,18 @@ public class BundleOptionsFrame extends JFrame {
         }
 
         pack();
+    }
+
+    private void updateTitle() {
+        String detail = getInstanceName();
+        if (detail == null) {
+            // codec
+            detail = displayName;
+        }
+        if (detail.equals("")) {
+            detail = "Search";
+        }
+        setTitle("Edit " + detail);
     }
 
     private void addSeparator(String label) {
