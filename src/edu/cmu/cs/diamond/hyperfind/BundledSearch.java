@@ -83,7 +83,7 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public boolean needsPatches() {
-        return false;
+        return frame.needsExamples();
     }
 
     @Override
@@ -94,8 +94,12 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public List<Filter> createFilters() throws IOException {
-        Map<String, String> optionMap = frame.getOptionMap();
-        return bundle.getFilters(optionMap);
+        if (frame.needsExamples()) {
+            return bundle.getFilters(frame.getOptionMap(),
+                    frame.getExamples());
+        } else {
+            return bundle.getFilters(frame.getOptionMap());
+        }
     }
 
     @Override
@@ -125,6 +129,7 @@ public class BundledSearch extends HyperFindSearch {
     @Override
     public void addPatches(List<BufferedImage> patches)
             throws IOException, InterruptedException {
+        frame.addExamples(patches);
     }
 
     @Override

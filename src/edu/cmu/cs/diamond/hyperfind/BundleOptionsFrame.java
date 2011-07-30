@@ -42,6 +42,7 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 import java.util.List;
@@ -59,6 +60,7 @@ import edu.cmu.cs.diamond.opendiamond.bundle.StringOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.NumberOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.ChoiceOption;
 import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
+import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
 
 public class BundleOptionsFrame extends JFrame {
 
@@ -70,6 +72,8 @@ public class BundleOptionsFrame extends JFrame {
     private final String displayName;
 
     private final StringField instanceNameField;
+
+    private final ExampleField exampleField;
 
     private final ArrayList<OptionField> optionFields = new
             ArrayList<OptionField>();
@@ -125,6 +129,7 @@ public class BundleOptionsFrame extends JFrame {
         updateTitle();
 
         // Options
+        ExampleField example = null;
         for (OptionGroup group : options) {
             addSeparator(group.getDisplayName());
             for (Option option : group.getOptions()) {
@@ -137,6 +142,13 @@ public class BundleOptionsFrame extends JFrame {
                     field = new NumberField((NumberOption) option);
                 } else if (option instanceof ChoiceOption) {
                     field = new ChoiceField((ChoiceOption) option);
+                } else if (option instanceof ExampleOption) {
+                    if (example != null) {
+                        throw new IllegalArgumentException(
+                                "Cannot display more than one ExampleOption");
+                    }
+                    example = new ExampleField((ExampleOption) option);
+                    field = example;
                 } else {
                     throw new IllegalArgumentException("Unknown option type");
                 }
@@ -144,6 +156,7 @@ public class BundleOptionsFrame extends JFrame {
                 optionFields.add(field);
             }
         }
+        this.exampleField = example;
 
         pack();
     }
@@ -582,6 +595,174 @@ public class BundleOptionsFrame extends JFrame {
         }
     }
 
+    private static class ExampleField extends OptionField {
+
+        private static final int ICON_SIZE = 100;
+
+        private static final int CELL_SIZE = ICON_SIZE + 6;
+
+        private static class Example {
+
+            private final BufferedImage image;
+
+            private final Icon icon;
+
+            public Example(BufferedImage image) {
+                // copy image
+                int width = image.getWidth();
+                int height = image.getHeight();
+                this.image = new BufferedImage(width, height,
+                        BufferedImage.TYPE_INT_RGB);
+                Graphics2D g2 = this.image.createGraphics();
+                g2.drawImage(image, 0, 0, null);
+                g2.dispose();
+
+                // create icon
+                if (Math.max(width, height) > ICON_SIZE) {
+                    double scale = Math.min((double) ICON_SIZE / width,
+                            (double) ICON_SIZE / height);
+                    width *= scale;
+                    height *= scale;
+                }
+                BufferedImage buf = new BufferedImage(width, height,
+                        BufferedImage.TYPE_INT_RGB);
+                g2 = buf.createGraphics();
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                        RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2.drawImage(image, 0, 0, width, height, null);
+                g2.dispose();
+                this.icon = new ImageIcon(buf);
+            }
+
+            public BufferedImage getBufferedImage() {
+                return image;
+            }
+
+            public Icon getIcon() {
+                return icon;
+            }
+        }
+
+        private final DefaultListModel model;
+
+        private final JPanel panel;
+
+        public ExampleField(ExampleOption option) {
+            super(option);
+
+            model = new DefaultListModel();
+            model.addListDataListener(new ListDataListener() {
+                @Override
+                public void intervalAdded(ListDataEvent e) {
+                    fireChangeEvent();
+                }
+
+                @Override
+                public void intervalRemoved(ListDataEvent e) {
+                    fireChangeEvent();
+                }
+
+                @Override
+                public void contentsChanged(ListDataEvent e) {
+                    fireChangeEvent();
+                }
+            });
+
+            final JList list = new JList(model) {
+                @Override
+                public Dimension getPreferredScrollableViewportSize() {
+                    return new Dimension(3 * CELL_SIZE, 2 * CELL_SIZE);
+                }
+            };
+            list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+            list.setVisibleRowCount(0);
+            list.setFixedCellHeight(CELL_SIZE);
+            list.setFixedCellWidth(CELL_SIZE);
+            list.setCellRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList list,
+                        Object value, int index, boolean isSelected,
+                        boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index,
+                            isSelected, cellHasFocus);
+
+                    Example example = (Example) value;
+
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    setText(null);
+                    setIcon(example.getIcon());
+                    setBorder(BorderFactory.createEmptyBorder());
+
+                    return this;
+                }
+            });
+            JScrollPane jsp = new JScrollPane(list);
+            jsp.setHorizontalScrollBarPolicy(
+                    JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            jsp.setVerticalScrollBarPolicy(
+                    JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+            final JButton remove = new JButton("Remove");
+            remove.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int[] indices = list.getSelectedIndices();
+                    for (int i = indices.length - 1; i >= 0; i--) {
+                        model.remove(indices[i]);
+                    }
+                }
+            });
+            list.addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    remove.setEnabled(list.getSelectedIndex() != -1);
+                }
+            });
+            remove.setEnabled(false);
+
+            panel = new JPanel(new GridBagLayout());
+            // Add list
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = 0;
+            c.weightx = 1;
+            c.weighty = 1;
+            c.fill = GridBagConstraints.BOTH;
+            panel.add(jsp, c);
+            // Add remove button
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.anchor = GridBagConstraints.WEST;
+            panel.add(remove, c);
+        }
+
+        @Override
+        public JComponent getComponent() {
+            return panel;
+        }
+
+        @Override
+        protected String getEnabledValue() {
+            return Integer.toString(model.getSize());
+        }
+
+        public void addExamples(List<BufferedImage> examples) {
+            for (BufferedImage image : examples) {
+                model.addElement(new Example(image));
+            }
+        }
+
+        public List<BufferedImage> getExamples() {
+            List<BufferedImage> list = new ArrayList<BufferedImage>();
+            for (int i = 0; i < model.size(); i++) {
+                Example example = (Example) model.get(i);
+                list.add(example.getBufferedImage());
+            }
+            return list;
+        }
+    }
+
+
     public Map<String, String> getOptionMap() {
         Map<String, String> ret = new HashMap<String, String>();
         for (OptionField opt : optionFields) {
@@ -598,8 +779,26 @@ public class BundleOptionsFrame extends JFrame {
         }
     }
 
+    public List<BufferedImage> getExamples() {
+        if (exampleField != null) {
+            return exampleField.getExamples();
+        } else {
+            return null;
+        }
+    }
+
     public boolean isEditable() {
         return instanceNameField != null || optionFields.size() > 0;
+    }
+
+    public boolean needsExamples() {
+        return exampleField != null;
+    }
+
+    public void addExamples(List<BufferedImage> examples) {
+        if (exampleField != null) {
+            exampleField.addExamples(examples);
+        }
     }
 
     public void addChangeListener(ChangeListener l) {

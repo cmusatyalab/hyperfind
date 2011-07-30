@@ -47,13 +47,27 @@ import java.util.*;
 
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.Bundle;
+import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
+import edu.cmu.cs.diamond.opendiamond.bundle.Option;
+import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
 
 public class BundledSearchFactory extends HyperFindSearchFactory {
 
     private final Bundle bundle;
 
-    public BundledSearchFactory(Bundle bundle) {
+    private final boolean needsExamples;
+
+    private BundledSearchFactory(Bundle bundle) throws IOException {
         this.bundle = bundle;
+        boolean needsExamples = false;
+        for (OptionGroup group : bundle.getOptions()) {
+            for (Option option : group.getOptions()) {
+                if (option instanceof ExampleOption) {
+                    needsExamples = true;
+                }
+            }
+        }
+        this.needsExamples = needsExamples;
     }
 
     @Override
@@ -74,13 +88,15 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     @Override
     public boolean needsPatches() {
-        return false;
+        return needsExamples;
     }
 
     @Override
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
             throws IOException, InterruptedException {
-        return null;
+        HyperFindSearch search = createHyperFindSearch();
+        search.addPatches(patches);
+        return search;
     }
 
     public static HyperFindSearch createHyperFindSearch(
@@ -93,7 +109,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     }
 
     public static List<HyperFindSearchFactory> createHyperFindSearchFactories(
-            BundleFactory bundleFactory) {
+            BundleFactory bundleFactory) throws IOException {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
         for (Bundle b : bundleFactory.getBundles()) {
