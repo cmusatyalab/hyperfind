@@ -83,7 +83,7 @@ public class HyperFindSearchFactory {
     }
 
     public HyperFindSearch createHyperFindSearch() throws IOException {
-        return new BundledSearch(bundle);
+        return new HyperFindSearch(bundle);
     }
 
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> examples)
@@ -101,7 +101,7 @@ public class HyperFindSearchFactory {
         if (bundle.isCodec()) {
             throw new IOException("Codecs cannot be imported at runtime.");
         }
-        return new BundledSearch(bundle);
+        return new HyperFindSearch(bundle);
     }
 
     public static List<HyperFindSearchFactory>

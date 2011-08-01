@@ -177,13 +177,8 @@ final class SearchList extends JPanel implements ListDataListener {
         edit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    s.edit(SearchList.this);
-                    model.updated(ss);
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
+                s.edit(SearchList.this);
+                model.updated(ss);
             }
         });
 

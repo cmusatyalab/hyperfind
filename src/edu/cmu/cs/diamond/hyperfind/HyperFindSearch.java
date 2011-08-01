@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2010 Carnegie Mellon University
+ *  Copyright (c) 2008-2011 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -43,34 +43,89 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
-public abstract class HyperFindSearch {
-    private List<ChangeListener> listeners = new ArrayList<ChangeListener>();
+public class HyperFindSearch {
+    private final List<ChangeListener> listeners =
+            new ArrayList<ChangeListener>();
 
-    public abstract boolean isEditable();
+    private final Bundle bundle;
 
-    public abstract boolean needsExamples();
+    private final BundleOptionsFrame frame;
 
-    public abstract void edit(Component parentComponent) throws IOException;
+    HyperFindSearch(Bundle bundle) throws IOException {
+        this.bundle = bundle;
+        if (bundle.isCodec()) {
+            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
+                    bundle.getOptions());
+        } else {
+            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
+                    "untitled", bundle.getOptions());
+        }
 
-    public abstract List<Filter> createFilters() throws IOException;
+        // Pass option changes along to our listeners
+        frame.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                fireChangeEvent();
+            }
+        });
+    }
 
-    public abstract String getInstanceName();
+    public boolean isEditable() {
+        return frame.isEditable();
+    }
 
-    public abstract String getSearchName();
+    public boolean needsExamples() {
+        return frame.needsExamples();
+    }
 
-    public abstract List<String> getFilterNames();
+    public String getSearchName() {
+        return bundle.getDisplayName();
+    }
 
-    public abstract void addExamples(List<BufferedImage> examples)
-            throws IOException;
+    public String getInstanceName() {
+        return frame.getInstanceName();
+    }
 
-    public abstract void dispose();
+    public List<String> getFilterNames() {
+        // XXX this is too heavyweight
+        List<String> names = new ArrayList<String>();
+        try {
+            for (Filter f : createFilters()) {
+                names.add(f.getName());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return names;
+    }
+
+    public void edit(Component parentComponent) {
+        frame.setVisible(true);
+    }
+
+    public void addExamples(List<BufferedImage> examples) {
+        frame.addExamples(examples);
+    }
+
+    public List<Filter> createFilters() throws IOException {
+        if (frame.needsExamples()) {
+            return bundle.getFilters(frame.getOptionMap(),
+                    frame.getExamples());
+        } else {
+            return bundle.getFilters(frame.getOptionMap());
+        }
+    }
+
+    public void dispose() {
+        frame.dispose();
+    }
 
     public void addChangeListener(ChangeListener l) {
         listeners.add(l);
@@ -80,7 +135,7 @@ public abstract class HyperFindSearch {
         listeners.remove(l);
     }
 
-    protected void fireChangeEvent() {
+    private void fireChangeEvent() {
         ChangeEvent ev = new ChangeEvent(this);
         for (ChangeListener l : listeners) {
             l.stateChanged(ev);

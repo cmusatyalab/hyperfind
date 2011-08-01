@@ -490,13 +490,8 @@ public class PopupPanel extends JPanel {
                     // get item
                     SelectableSearch item = (SelectableSearch)
                             existingSearchComboModel.getSelectedItem();
-                    try {
-                        // System.out.println(item);
-                        item.getSearch().addExamples(createExamples());
-                    } catch (IOException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    }
+                    // System.out.println(item);
+                    item.getSearch().addExamples(createExamples());
                 }
             });
 

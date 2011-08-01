@@ -276,12 +276,7 @@ public final class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
-                try {
-                    s.edit(frame);
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
+                s.edit(frame);
             }
         });
 
