@@ -825,7 +825,7 @@ public class BundleOptionsFrame extends JFrame {
         }
 
         List<File> noFiles = Collections.emptyList();
-        final Bundle bundle = new BundleFactory(noFiles).getBundle(
+        final Bundle bundle = new BundleFactory(noFiles, noFiles).getBundle(
                 new File(args[0]));
 
         SwingUtilities.invokeLater(new Runnable() {
