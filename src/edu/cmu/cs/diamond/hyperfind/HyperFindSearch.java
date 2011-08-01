@@ -43,9 +43,6 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Formatter;
 import java.util.List;
 import java.util.ArrayList;
 import javax.swing.event.ChangeEvent;
@@ -108,26 +105,5 @@ public abstract class HyperFindSearch {
                     getFilterNames().equals(s.getFilterNames());
         }
         return false;
-    }
-
-    protected static String digest(byte[]... datas) {
-        try {
-            MessageDigest m = MessageDigest.getInstance("SHA-256");
-            for (byte[] data : datas) {
-                m.update(data);
-            }
-            byte[] digest = m.digest();
-            // System.out.println(digest.length);
-            Formatter f = new Formatter();
-            for (byte b : digest) {
-                f.format("%02x", b & 0xFF);
-            }
-            return "z" + f.toString();
-        } catch (NoSuchAlgorithmException e) {
-            // can't happen on java 6?
-            e.printStackTrace();
-        }
-
-        return "";
     }
 }
