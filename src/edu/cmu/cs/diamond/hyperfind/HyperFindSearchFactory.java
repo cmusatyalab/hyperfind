@@ -1,7 +1,7 @@
 /*
  *  HyperFind, an search application for the OpenDiamond platform
  *
- *  Copyright (c) 2009-2010 Carnegie Mellon University
+ *  Copyright (c) 2009-2011 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -46,25 +46,62 @@ import java.net.URI;
 import java.util.*;
 
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.Bundle;
+import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
+import edu.cmu.cs.diamond.opendiamond.bundle.Option;
+import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
 
-public abstract class HyperFindSearchFactory {
+public class HyperFindSearchFactory {
 
-    public abstract String getDisplayName();
+    private final Bundle bundle;
 
-    public abstract HyperFindSearch createHyperFindSearch() throws IOException;
+    private final boolean needsExamples;
 
-    public abstract boolean isCodec();
+    private HyperFindSearchFactory(Bundle bundle) throws IOException {
+        this.bundle = bundle;
+        boolean needsExamples = false;
+        for (OptionGroup group : bundle.getOptions()) {
+            for (Option option : group.getOptions()) {
+                if (option instanceof ExampleOption) {
+                    needsExamples = true;
+                }
+            }
+        }
+        this.needsExamples = needsExamples;
+    }
 
-    public abstract boolean needsExamples();
+    public String getDisplayName() {
+        return bundle.getDisplayName();
+    }
 
-    public abstract HyperFindSearch createHyperFindSearch(
-            List<BufferedImage> examples) throws IOException;
+    public boolean isCodec() {
+        return bundle.isCodec();
+    }
+
+    public boolean needsExamples() {
+        return needsExamples;
+    }
+
+    public HyperFindSearch createHyperFindSearch() throws IOException {
+        return new BundledSearch(bundle);
+    }
+
+    public HyperFindSearch createHyperFindSearch(List<BufferedImage> examples)
+            throws IOException {
+        HyperFindSearch search = createHyperFindSearch();
+        search.addExamples(examples);
+        return search;
+    }
 
     public static HyperFindSearch createHyperFindSearch(
             BundleFactory bundleFactory, URI uri) throws IOException {
         // System.out.println("trying " + uri);
         InputStream in = uri.toURL().openStream();
-        return BundledSearchFactory.createHyperFindSearch(bundleFactory, in);
+        Bundle bundle = bundleFactory.getBundle(in);
+        if (bundle.isCodec()) {
+            throw new IOException("Codecs cannot be imported at runtime.");
+        }
+        return new BundledSearch(bundle);
     }
 
     public static List<HyperFindSearchFactory>
@@ -73,8 +110,9 @@ public abstract class HyperFindSearchFactory {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
 
-        factories.addAll(BundledSearchFactory
-                .createHyperFindSearchFactories(bundleFactory));
+        for (Bundle b : bundleFactory.getBundles()) {
+            factories.add(new HyperFindSearchFactory(b));
+        }
 
         Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
             @Override
