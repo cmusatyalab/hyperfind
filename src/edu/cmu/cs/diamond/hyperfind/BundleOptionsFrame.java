@@ -220,7 +220,7 @@ public class BundleOptionsFrame extends JFrame {
         GridBagConstraints c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = currentRow;
-        c.insets = new Insets(2, 2, 2, 2);
+        c.insets = new Insets(5, 2, 2, 2);
         c.anchor = GridBagConstraints.NORTHWEST;
         content.add(l, c);
 
