@@ -93,10 +93,10 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(final File pluginDirectory)
+    public static Main createMain(final List<File> searchDirectories)
             throws IOException {
-        final BundleFactory bundleFactory = new BundleFactory(
-                Arrays.asList(new File("/opt/snapfind/lib")));
+        final BundleFactory bundleFactory =
+                new BundleFactory(searchDirectories);
 
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
                 .createHyperFindSearchFactories(bundleFactory);
@@ -600,7 +600,7 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " hyperfind-plugin-directory");
+                + " colon-separated-search-directories");
     }
 
     public static void main(String[] args) throws IOException {
@@ -609,17 +609,19 @@ public final class Main {
             System.exit(1);
         }
 
-        final File pluginDirectory = new File(args[0]);
-        if (!pluginDirectory.isDirectory()) {
-            throw new IOException(
-                    "plugin directory does not exist: " + pluginDirectory);
+        final List<File> searchDirectories = new ArrayList<File>();
+        for (String path : args[0].split(":")) {
+            File dir = new File(path);
+            if (dir.isDirectory()) {
+                searchDirectories.add(dir);
+            }
         }
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(pluginDirectory);
+                    createMain(searchDirectories);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
