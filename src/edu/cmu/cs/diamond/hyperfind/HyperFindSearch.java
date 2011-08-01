@@ -58,6 +58,8 @@ public class HyperFindSearch {
 
     private final BundleOptionsFrame frame;
 
+    private List<Filter> cachedFilters;
+
     HyperFindSearch(Bundle bundle) throws IOException {
         this.bundle = bundle;
         if (bundle.isCodec()) {
@@ -68,10 +70,12 @@ public class HyperFindSearch {
                     "untitled", bundle.getOptions());
         }
 
-        // Pass option changes along to our listeners
         frame.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
+                // Invalidate any cached filters
+                cachedFilters = null;
+                // Pass option changes along to our listeners
                 fireChangeEvent();
             }
         });
@@ -94,7 +98,6 @@ public class HyperFindSearch {
     }
 
     public List<String> getFilterNames() {
-        // XXX this is too heavyweight
         List<String> names = new ArrayList<String>();
         try {
             for (Filter f : createFilters()) {
@@ -115,12 +118,17 @@ public class HyperFindSearch {
     }
 
     public List<Filter> createFilters() throws IOException {
-        if (frame.needsExamples()) {
-            return bundle.getFilters(frame.getOptionMap(),
-                    frame.getExamples());
-        } else {
-            return bundle.getFilters(frame.getOptionMap());
+        if (cachedFilters == null) {
+            List<Filter> list;
+            if (frame.needsExamples()) {
+                list = bundle.getFilters(frame.getOptionMap(),
+                        frame.getExamples());
+            } else {
+                list = bundle.getFilters(frame.getOptionMap());
+            }
+            cachedFilters = Collections.unmodifiableList(list);
         }
+        return cachedFilters;
     }
 
     public void dispose() {
