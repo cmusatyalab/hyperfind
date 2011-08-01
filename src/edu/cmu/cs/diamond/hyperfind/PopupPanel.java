@@ -422,10 +422,6 @@ public class PopupPanel extends JPanel {
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
-                        } catch (InterruptedException e1) {
-                            // TODO Auto-generated catch block
-                            Thread.currentThread().interrupt();
-                            e1.printStackTrace();
                         }
                     }
                 });
@@ -499,10 +495,6 @@ public class PopupPanel extends JPanel {
                         item.getSearch().addExamples(createExamples());
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    } catch (InterruptedException e1) {
-                        // TODO Auto-generated catch block
-                        Thread.currentThread().interrupt();
                         e1.printStackTrace();
                     }
                 }

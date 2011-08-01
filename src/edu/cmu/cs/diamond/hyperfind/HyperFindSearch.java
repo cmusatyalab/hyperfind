@@ -60,8 +60,7 @@ public abstract class HyperFindSearch {
 
     public abstract boolean needsExamples();
 
-    public abstract void edit(Component parentComponent) throws IOException,
-            InterruptedException;
+    public abstract void edit(Component parentComponent) throws IOException;
 
     public abstract List<Filter> createFilters() throws IOException;
 
@@ -72,7 +71,7 @@ public abstract class HyperFindSearch {
     public abstract List<String> getFilterNames();
 
     public abstract void addExamples(List<BufferedImage> examples)
-            throws IOException, InterruptedException;
+            throws IOException;
 
     public abstract void dispose();
 

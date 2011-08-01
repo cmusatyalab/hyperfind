@@ -51,16 +51,14 @@ public abstract class HyperFindSearchFactory {
 
     public abstract String getDisplayName();
 
-    public abstract HyperFindSearch createHyperFindSearch() throws IOException,
-            InterruptedException;
+    public abstract HyperFindSearch createHyperFindSearch() throws IOException;
 
     public abstract boolean isCodec();
 
     public abstract boolean needsExamples();
 
     public abstract HyperFindSearch createHyperFindSearch(
-            List<BufferedImage> examples) throws IOException,
-            InterruptedException;
+            List<BufferedImage> examples) throws IOException;
 
     public static HyperFindSearch createHyperFindSearch(
             BundleFactory bundleFactory, URI uri) throws IOException {
@@ -71,7 +69,7 @@ public abstract class HyperFindSearchFactory {
 
     public static List<HyperFindSearchFactory>
             createHyperFindSearchFactories(BundleFactory bundleFactory)
-            throws IOException, InterruptedException {
+            throws IOException {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
 

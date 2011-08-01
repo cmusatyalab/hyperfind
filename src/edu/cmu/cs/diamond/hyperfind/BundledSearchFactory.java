@@ -81,8 +81,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     }
 
     @Override
-    public HyperFindSearch createHyperFindSearch() throws IOException,
-            InterruptedException {
+    public HyperFindSearch createHyperFindSearch() throws IOException {
         return new BundledSearch(bundle);
     }
 
@@ -93,7 +92,7 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
 
     @Override
     public HyperFindSearch createHyperFindSearch(List<BufferedImage> examples)
-            throws IOException, InterruptedException {
+            throws IOException {
         HyperFindSearch search = createHyperFindSearch();
         search.addExamples(examples);
         return search;

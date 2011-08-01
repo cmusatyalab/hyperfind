@@ -87,8 +87,7 @@ public class BundledSearch extends HyperFindSearch {
     }
 
     @Override
-    public void edit(Component parentComponent) throws IOException,
-            InterruptedException {
+    public void edit(Component parentComponent) throws IOException {
         frame.setVisible(true);
     }
 
@@ -128,7 +127,7 @@ public class BundledSearch extends HyperFindSearch {
 
     @Override
     public void addExamples(List<BufferedImage> examples)
-            throws IOException, InterruptedException {
+            throws IOException {
         frame.addExamples(examples);
     }
 

@@ -94,7 +94,7 @@ public final class Main {
     }
 
     public static Main createMain(final File pluginDirectory)
-            throws IOException, InterruptedException {
+            throws IOException {
         final BundleFactory bundleFactory = new BundleFactory(
                 Arrays.asList(new File("/opt/snapfind/lib")));
 
@@ -279,9 +279,6 @@ public final class Main {
                 try {
                     s.edit(frame);
                 } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                } catch (InterruptedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
                 }
@@ -478,8 +475,7 @@ public final class Main {
             List<HyperFindSearchFactory> factories,
             final SearchListModel model, final JPopupMenu searches,
             final List<HyperFindSearchFactory> exampleSearchFactories,
-            final List<HyperFindSearch> codecList) throws IOException,
-            InterruptedException {
+            final List<HyperFindSearch> codecList) throws IOException {
         for (final HyperFindSearchFactory f : factories) {
             if (f.isCodec()) {
                 codecList.add(f.createHyperFindSearch());
@@ -494,10 +490,6 @@ public final class Main {
                             model.addSearch(f.createHyperFindSearch());
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
-                            e1.printStackTrace();
-                        } catch (InterruptedException e1) {
-                            // TODO Auto-generated catch block
-                            Thread.currentThread().interrupt();
                             e1.printStackTrace();
                         }
                     }
@@ -616,8 +608,7 @@ public final class Main {
                 + " hyperfind-plugin-directory");
     }
 
-    public static void main(String[] args) throws IOException,
-            InterruptedException {
+    public static void main(String[] args) throws IOException {
         if (args.length != 1) {
             printUsage();
             System.exit(1);
@@ -637,10 +628,6 @@ public final class Main {
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    Thread.currentThread().interrupt();
                 }
             }
         });

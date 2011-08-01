@@ -183,10 +183,6 @@ final class SearchList extends JPanel implements ListDataListener {
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
-                } catch (InterruptedException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                    Thread.currentThread().interrupt();
                 }
             }
         });
