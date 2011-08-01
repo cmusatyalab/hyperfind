@@ -58,7 +58,7 @@ public abstract class HyperFindSearch {
 
     public abstract boolean isEditable();
 
-    public abstract boolean needsPatches();
+    public abstract boolean needsExamples();
 
     public abstract void edit(Component parentComponent) throws IOException,
             InterruptedException;
@@ -71,7 +71,7 @@ public abstract class HyperFindSearch {
 
     public abstract List<String> getFilterNames();
 
-    public abstract void addPatches(List<BufferedImage> patches)
+    public abstract void addExamples(List<BufferedImage> examples)
             throws IOException, InterruptedException;
 
     public abstract void dispose();

@@ -56,10 +56,10 @@ public abstract class HyperFindSearchFactory {
 
     public abstract boolean isCodec();
 
-    public abstract boolean needsPatches();
+    public abstract boolean needsExamples();
 
     public abstract HyperFindSearch createHyperFindSearch(
-            List<BufferedImage> patches) throws IOException,
+            List<BufferedImage> examples) throws IOException,
             InterruptedException;
 
     public static HyperFindSearch createHyperFindSearch(

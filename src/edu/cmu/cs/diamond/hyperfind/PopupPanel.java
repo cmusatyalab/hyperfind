@@ -83,7 +83,7 @@ public class PopupPanel extends JPanel {
             for (int i = 0; i < model.getSize(); i++) {
                 SelectableSearch item = (SelectableSearch) model
                         .getElementAt(i);
-                if (item.getSearch().needsPatches()) {
+                if (item.getSearch().needsExamples()) {
                     list.add(item);
                 } else {
                     list.add(null);
@@ -156,7 +156,7 @@ public class PopupPanel extends JPanel {
 
             SelectableSearch item = (SelectableSearch) model
                     .getElementAt(index);
-            if (!item.getSearch().needsPatches()) {
+            if (!item.getSearch().needsExamples()) {
                 item = null;
             }
             list.add(index, item);
@@ -415,10 +415,10 @@ public class PopupPanel extends JPanel {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         try {
-                            // make patches
-                            List<BufferedImage> patches = createPatches();
+                            // make examples
+                            List<BufferedImage> examples = createExamples();
 
-                            model.addSearch(f.createHyperFindSearch(patches));
+                            model.addSearch(f.createHyperFindSearch(examples));
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
@@ -496,7 +496,7 @@ public class PopupPanel extends JPanel {
                             existingSearchComboModel.getSelectedItem();
                     try {
                         // System.out.println(item);
-                        item.getSearch().addPatches(createPatches());
+                        item.getSearch().addExamples(createExamples());
                     } catch (IOException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();
@@ -549,8 +549,8 @@ public class PopupPanel extends JPanel {
             });
         }
 
-        private List<BufferedImage> createPatches() {
-            List<BufferedImage> patches = new ArrayList<BufferedImage>();
+        private List<BufferedImage> createExamples() {
+            List<BufferedImage> examples = new ArrayList<BufferedImage>();
             for (Rectangle r : image.getDrawnPatches()) {
                 BufferedImage b = new BufferedImage(r.width, r.height,
                         BufferedImage.TYPE_INT_RGB);
@@ -560,9 +560,9 @@ public class PopupPanel extends JPanel {
                         r.x + r.width, r.y + r.height, null);
                 g2.dispose();
 
-                patches.add(b);
+                examples.add(b);
             }
-            return patches;
+            return examples;
         }
 
         private void updateComponentsEnablement() {

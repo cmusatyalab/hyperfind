@@ -483,7 +483,7 @@ public final class Main {
         for (final HyperFindSearchFactory f : factories) {
             if (f.isCodec()) {
                 codecList.add(f.createHyperFindSearch());
-            } else if (f.needsPatches()) {
+            } else if (f.needsExamples()) {
                 exampleSearchFactories.add(f);
             } else {
                 JMenuItem jm = new JMenuItem(f.getDisplayName());

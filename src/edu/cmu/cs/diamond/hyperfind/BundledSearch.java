@@ -82,7 +82,7 @@ public class BundledSearch extends HyperFindSearch {
     }
 
     @Override
-    public boolean needsPatches() {
+    public boolean needsExamples() {
         return frame.needsExamples();
     }
 
@@ -127,9 +127,9 @@ public class BundledSearch extends HyperFindSearch {
     }
 
     @Override
-    public void addPatches(List<BufferedImage> patches)
+    public void addExamples(List<BufferedImage> examples)
             throws IOException, InterruptedException {
-        frame.addExamples(patches);
+        frame.addExamples(examples);
     }
 
     @Override

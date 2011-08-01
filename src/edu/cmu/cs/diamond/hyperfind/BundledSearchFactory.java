@@ -87,15 +87,15 @@ public class BundledSearchFactory extends HyperFindSearchFactory {
     }
 
     @Override
-    public boolean needsPatches() {
+    public boolean needsExamples() {
         return needsExamples;
     }
 
     @Override
-    public HyperFindSearch createHyperFindSearch(List<BufferedImage> patches)
+    public HyperFindSearch createHyperFindSearch(List<BufferedImage> examples)
             throws IOException, InterruptedException {
         HyperFindSearch search = createHyperFindSearch();
-        search.addPatches(patches);
+        search.addExamples(examples);
         return search;
     }
 
