@@ -93,10 +93,10 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(final List<File> searchDirectories)
-            throws IOException {
+    public static Main createMain(List<File> searchDirectories,
+            List<File> filterDirectories) throws IOException {
         final BundleFactory bundleFactory =
-                new BundleFactory(searchDirectories);
+                new BundleFactory(searchDirectories, filterDirectories);
 
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
                 .createHyperFindSearchFactories(bundleFactory);
@@ -600,28 +600,34 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " colon-separated-search-directories");
+                + " search-directories filter-directories");
+    }
+
+    private static List<File> splitDirs(String paths) {
+        List<File> dirs = new ArrayList<File>();
+        for (String path : paths.split(":")) {
+            File dir = new File(path);
+            if (dir.isDirectory()) {
+                dirs.add(dir);
+            }
+        }
+        return dirs;
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 1) {
+        if (args.length != 2) {
             printUsage();
             System.exit(1);
         }
 
-        final List<File> searchDirectories = new ArrayList<File>();
-        for (String path : args[0].split(":")) {
-            File dir = new File(path);
-            if (dir.isDirectory()) {
-                searchDirectories.add(dir);
-            }
-        }
+        final List<File> searchDirectories = splitDirs(args[0]);
+        final List<File> filterDirectories = splitDirs(args[1]);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(searchDirectories);
+                    createMain(searchDirectories, filterDirectories);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
