@@ -284,9 +284,9 @@ public class BundleOptionsFrame extends JFrame {
                 this.valueIfDisabled = valueIfDisabled;
 
                 final OptionField f = this;
-                this.enable.addChangeListener(new ChangeListener() {
+                this.enable.addItemListener(new ItemListener() {
                     @Override
-                    public void stateChanged(ChangeEvent e) {
+                    public void itemStateChanged(ItemEvent e) {
                         for (JComponent c : components) {
                             c.setEnabled(f.isEnabled());
                         }
@@ -349,9 +349,9 @@ public class BundleOptionsFrame extends JFrame {
 
             checkbox = new JCheckBox();
             checkbox.setSelected(option.isDefault());
-            checkbox.addChangeListener(new ChangeListener() {
+            checkbox.addItemListener(new ItemListener() {
                 @Override
-                public void stateChanged(ChangeEvent e) {
+                public void itemStateChanged(ItemEvent e) {
                     fireChangeEvent();
                 }
             });
