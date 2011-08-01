@@ -93,14 +93,13 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(File pluginRunner,
-            final File pluginDirectory) throws IOException,
-            InterruptedException {
+    public static Main createMain(final File pluginDirectory)
+            throws IOException, InterruptedException {
         final BundleFactory bundleFactory = new BundleFactory(
                 Arrays.asList(new File("/opt/snapfind/lib")));
 
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
-                .createHyperFindSearchFactories(pluginRunner, bundleFactory);
+                .createHyperFindSearchFactories(bundleFactory);
 
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -614,24 +613,17 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " snapfind-plugin-runner hyperfind-plugin-directory");
+                + " hyperfind-plugin-directory");
     }
 
     public static void main(String[] args) throws IOException,
             InterruptedException {
-        if (args.length != 2) {
+        if (args.length != 1) {
             printUsage();
             System.exit(1);
         }
 
-        final File pluginRunner = new File(args[0]);
-        if (!pluginRunner.canExecute()) {
-            throw new IOException(
-                    "cannot execute given snapfind-plugin-runner: "
-                            + pluginRunner);
-        }
-
-        final File pluginDirectory = new File(args[1]);
+        final File pluginDirectory = new File(args[0]);
         if (!pluginDirectory.isDirectory()) {
             throw new IOException(
                     "plugin directory does not exist: " + pluginDirectory);
@@ -641,7 +633,7 @@ public final class Main {
             @Override
             public void run() {
                 try {
-                    createMain(pluginRunner, pluginDirectory);
+                    createMain(pluginDirectory);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();

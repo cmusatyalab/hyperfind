@@ -70,14 +70,11 @@ public abstract class HyperFindSearchFactory {
     }
 
     public static List<HyperFindSearchFactory>
-            createHyperFindSearchFactories(File pluginRunner,
-            BundleFactory bundleFactory) throws IOException,
-            InterruptedException {
+            createHyperFindSearchFactories(BundleFactory bundleFactory)
+            throws IOException, InterruptedException {
         List<HyperFindSearchFactory> factories =
                 new ArrayList<HyperFindSearchFactory>();
 
-        factories.addAll(SnapFindSearchFactory
-                .createHyperFindSearchFactories(pluginRunner));
         factories.addAll(BundledSearchFactory
                 .createHyperFindSearchFactories(bundleFactory));
 
