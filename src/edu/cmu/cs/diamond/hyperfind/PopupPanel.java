@@ -183,7 +183,7 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static class SearchInstanceCellRenderer
+    private static class PredicateInstanceCellRenderer
             extends DefaultListCellRenderer {
         public Component getListCellRendererComponent(JList list,
                 Object value, int index, boolean isSelected,
@@ -475,7 +475,8 @@ public class PopupPanel extends JPanel {
             final ExistingPredicateComboModel existingPredicateComboModel =
                     new ExistingPredicateComboModel(model);
             addToExistingCombo = new JComboBox(existingPredicateComboModel);
-            addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
+            addToExistingCombo.setRenderer(
+                    new PredicateInstanceCellRenderer());
 
             addToExistingCombo.addHierarchyListener(new HierarchyListener() {
                 @Override
@@ -662,7 +663,7 @@ public class PopupPanel extends JPanel {
             add(vBox);
 
             final JComboBox c = new JComboBox(new TestSearchComboModel(model));
-            c.setRenderer(new SearchInstanceCellRenderer());
+            c.setRenderer(new PredicateInstanceCellRenderer());
             c.setSelectedIndex(0);
             vBox.add(c);
 
