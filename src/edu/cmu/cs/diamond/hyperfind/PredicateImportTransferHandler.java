@@ -86,8 +86,7 @@ public class PredicateImportTransferHandler extends TransferHandler {
         try {
             List<URI> uris = getURIs(support);
             for (URI u : uris) {
-                // first see if any HyperFindSearchFactories will accept the
-                // URI
+                // first try to load it as a predicate bundle
                 HyperFindPredicate p = HyperFindPredicateFactory
                         .createHyperFindPredicate(bundleFactory, u);
                 if (p != null) {

@@ -401,13 +401,13 @@ public class PopupPanel extends JPanel {
             addButton = new JButton("+");
             addButton.setEnabled(false);
 
-            final JPopupMenu searches = new JPopupMenu();
+            final JPopupMenu predicates = new JPopupMenu();
 
             addButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     Component c = (Component) e.getSource();
-                    searches.show(c, 0, c.getHeight());
+                    predicates.show(c, 0, c.getHeight());
                 }
             });
 
@@ -429,7 +429,7 @@ public class PopupPanel extends JPanel {
                         }
                     }
                 });
-                searches.add(jm);
+                predicates.add(jm);
             }
 
             clearButton = new JButton("Clear Patches");

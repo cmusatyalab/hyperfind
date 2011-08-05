@@ -125,11 +125,11 @@ final class PredicateList extends JPanel implements ListDataListener {
         });
     }
 
-    static void updateCheckBox(JCheckBox cb, String searchName,
+    static void updateCheckBox(JCheckBox cb, String predicateName,
             String instanceName) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html>");
-        sb.append(htmlEscape(searchName));
+        sb.append(htmlEscape(predicateName));
         sb.append("<br><font size=-2>");
         sb.append(htmlEscape(instanceName));
         sb.append("</font></html>");

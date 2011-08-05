@@ -122,19 +122,19 @@ public final class Main {
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
                 resultsList, stats, 500);
 
-        // search list
+        // predicate list
         final PredicateListModel model = new PredicateListModel();
         final PredicateList predicateList = new PredicateList(model);
 
         // codecs / menu
-        JButton addSearchButton = new JButton("+");
-        final JPopupMenu searches = new JPopupMenu();
+        JButton addPredicateButton = new JButton("+");
+        final JPopupMenu predicates = new JPopupMenu();
 
-        addSearchButton.addActionListener(new ActionListener() {
+        addPredicateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Component c = (Component) e.getSource();
-                searches.show(c, 0, c.getHeight());
+                predicates.show(c, 0, c.getHeight());
             }
         });
 
@@ -149,7 +149,7 @@ public final class Main {
                 new ArrayList<HyperFindPredicateFactory>();
         final List<HyperFindPredicate> codecList =
                 new ArrayList<HyperFindPredicate>();
-        initSearchFactories(factories, model, searches,
+        initPredicateFactories(factories, model, predicates,
                 examplePredicateFactories, codecList);
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
@@ -161,9 +161,9 @@ public final class Main {
                 model, bundleFactory));
 
         // add import
-        searches.add(new JSeparator());
+        predicates.add(new JSeparator());
         JMenuItem importExampleMenuItem = new JMenuItem("From Example...");
-        searches.add(importExampleMenuItem);
+        predicates.add(importExampleMenuItem);
         importExampleMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -196,7 +196,7 @@ public final class Main {
         // add example from screenshot (requires ImageMagick)
         JMenuItem importScreenshotMenuItem =
                 new JMenuItem("From Screenshot...");
-        searches.add(importScreenshotMenuItem);
+        predicates.add(importScreenshotMenuItem);
         importScreenshotMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -242,7 +242,7 @@ public final class Main {
 
         // add from file
         JMenuItem fromFileMenuItem = new JMenuItem("From Predicate File...");
-        searches.add(fromFileMenuItem);
+        predicates.add(fromFileMenuItem);
         fromFileMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -261,7 +261,7 @@ public final class Main {
                             model.addPredicate(p);
                         } else {
                             JOptionPane.showMessageDialog(frame,
-                                    "No search found.");
+                                    "No predicate found.");
                         }
                     } catch (IOException e2) {
                         JOptionPane.showMessageDialog(frame, e2
@@ -416,7 +416,7 @@ public final class Main {
 
         Box h1 = Box.createHorizontalBox();
         h1.add(Box.createHorizontalGlue());
-        h1.add(addSearchButton);
+        h1.add(addPredicateButton);
         c1.add(h1);
 
         // start/stop/define
@@ -469,9 +469,9 @@ public final class Main {
                 examplePredicateFactories, model));
     }
 
-    private static void initSearchFactories(
+    private static void initPredicateFactories(
             List<HyperFindPredicateFactory> factories,
-            final PredicateListModel model, final JPopupMenu searches,
+            final PredicateListModel model, final JPopupMenu predicates,
             final List<HyperFindPredicateFactory> examplePredicateFactories,
             final List<HyperFindPredicate> codecList) throws IOException {
         for (final HyperFindPredicateFactory f : factories) {
@@ -493,7 +493,7 @@ public final class Main {
                     }
 
                 });
-                searches.add(jm);
+                predicates.add(jm);
             }
         }
     }
