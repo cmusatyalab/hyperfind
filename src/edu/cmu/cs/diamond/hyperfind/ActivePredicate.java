@@ -1,5 +1,5 @@
 /*
- *  HyperFind, an search application for the OpenDiamond platform
+ *  HyperFind, a search application for the OpenDiamond platform
  *
  *  Copyright (c) 2009 Carnegie Mellon University
  *  All rights reserved.
