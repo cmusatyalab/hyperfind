@@ -249,7 +249,7 @@ public final class Main {
                 // get file
                 JFileChooser chooser = new JFileChooser();
                 FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                        "Search Files", "search");
+                        "Predicate Files", "pred");
                 chooser.setFileFilter(filter);
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
