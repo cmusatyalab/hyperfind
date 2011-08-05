@@ -68,7 +68,7 @@ public final class Main {
 
     private Search search;
 
-    private final SearchListModel model;
+    private final PredicateListModel model;
 
     private final List<HyperFindPredicateFactory> examplePredicateFactories;
 
@@ -78,7 +78,7 @@ public final class Main {
 
     private final JComboBox codecs;
 
-    private Main(JFrame frame, ThumbnailBox results, SearchListModel model,
+    private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
             CookieMap initialCookieMap,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             JComboBox codecs) {
@@ -123,7 +123,7 @@ public final class Main {
                 resultsList, stats, 500);
 
         // search list
-        final SearchListModel model = new SearchListModel();
+        final PredicateListModel model = new PredicateListModel();
         final SearchList searchList = new SearchList(model);
 
         // codecs / menu
@@ -471,7 +471,7 @@ public final class Main {
 
     private static void initSearchFactories(
             List<HyperFindPredicateFactory> factories,
-            final SearchListModel model, final JPopupMenu searches,
+            final PredicateListModel model, final JPopupMenu searches,
             final List<HyperFindPredicateFactory> examplePredicateFactories,
             final List<HyperFindPredicate> codecList) throws IOException {
         for (final HyperFindPredicateFactory f : factories) {

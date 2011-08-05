@@ -50,7 +50,7 @@ import javax.swing.AbstractListModel;
 
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
-class SearchListModel extends AbstractListModel {
+class PredicateListModel extends AbstractListModel {
     private static final boolean INITIALLY_SELECTED = true;
 
     private final List<SelectablePredicate> predicates =

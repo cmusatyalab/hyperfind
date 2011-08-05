@@ -85,11 +85,11 @@ final class SearchList extends JPanel implements ListDataListener {
 
     private final Box box = Box.createVerticalBox();
 
-    private final SearchListModel model;
+    private final PredicateListModel model;
 
     private final List<ListElement> elements = new ArrayList<ListElement>();
 
-    public SearchList(final SearchListModel model) {
+    public SearchList(final PredicateListModel model) {
         this.model = model;
         model.addListDataListener(this);
 

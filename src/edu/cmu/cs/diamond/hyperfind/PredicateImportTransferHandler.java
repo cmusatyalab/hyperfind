@@ -57,11 +57,11 @@ import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 public class PredicateImportTransferHandler extends TransferHandler {
     private final Main main;
 
-    private final SearchListModel model;
+    private final PredicateListModel model;
 
     private final BundleFactory bundleFactory;
 
-    public PredicateImportTransferHandler(Main main, SearchListModel model,
+    public PredicateImportTransferHandler(Main main, PredicateListModel model,
             BundleFactory bundleFactory) {
         this.main = main;
         this.model = model;

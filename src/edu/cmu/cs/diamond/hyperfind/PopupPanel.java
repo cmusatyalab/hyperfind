@@ -67,13 +67,13 @@ public class PopupPanel extends JPanel {
     private static class ExistingSearchComboModel extends AbstractListModel
             implements ComboBoxModel, ListDataListener {
 
-        private final SearchListModel model;
+        private final PredicateListModel model;
 
         private final List<SelectablePredicate> list;
 
         private Object selectedItem;
 
-        public ExistingSearchComboModel(SearchListModel model) {
+        public ExistingSearchComboModel(PredicateListModel model) {
             this.model = model;
 
             model.addListDataListener(this);
@@ -135,7 +135,7 @@ public class PopupPanel extends JPanel {
             return size;
         }
 
-        // SearchListModel will never give a range, just single elements
+        // PredicateListModel will never give a range, just single elements
         @Override
         public void contentsChanged(ListDataEvent e) {
             assert e.getIndex0() == e.getIndex1();
@@ -233,7 +233,7 @@ public class PopupPanel extends JPanel {
     public static PopupPanel createInstance(Main m, Result r,
             List<ActivePredicate> activePredicates,
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            SearchListModel model) {
+            PredicateListModel model) {
 
         BufferedImage img = Util.extractImageFromResult(r);
 
@@ -252,7 +252,7 @@ public class PopupPanel extends JPanel {
     public static PopupPanel createInstance(Main m, BufferedImage img,
             byte resultData[],
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            SearchListModel model) {
+            PredicateListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
         List<ActivePredicate> activePredicates = Collections.emptyList();
 
@@ -265,7 +265,7 @@ public class PopupPanel extends JPanel {
             List<ActivePredicate> activePredicates,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             final Map<String, byte[]> attributes,
-            SearchListModel searchListModel) {
+            PredicateListModel predicateListModel) {
         PopupPanel p = new PopupPanel(img);
 
         // sort keys
@@ -332,10 +332,10 @@ public class PopupPanel extends JPanel {
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             leftSide.add(new PatchesListPanel(activePredicates, attributes,
                     image));
-            leftSide.add(new TestSearchPanel(m, searchListModel, image,
+            leftSide.add(new TestSearchPanel(m, predicateListModel, image,
                     objectID, img, p));
-            leftSide.add(new ExampleSearchPanel(searchListModel, image, img,
-                    examplePredicateFactories));
+            leftSide.add(new ExampleSearchPanel(predicateListModel, image,
+                    img, examplePredicateFactories));
         } else {
             String text;
             try {
@@ -370,7 +370,7 @@ public class PopupPanel extends JPanel {
     }
 
     private static class ExampleSearchPanel extends JPanel {
-        private final SearchListModel model;
+        private final PredicateListModel model;
 
         private final ImagePatchesLabel image;
 
@@ -386,7 +386,7 @@ public class PopupPanel extends JPanel {
 
         private final JComboBox addToExistingCombo;
 
-        public ExampleSearchPanel(final SearchListModel model,
+        public ExampleSearchPanel(final PredicateListModel model,
                 final ImagePatchesLabel image, BufferedImage img,
                 List<HyperFindPredicateFactory> examplePredicateFactories) {
             setBorder(BorderFactory.createTitledBorder("Example Search"));
@@ -575,11 +575,11 @@ public class PopupPanel extends JPanel {
     private static class TestSearchComboModel extends AbstractListModel
             implements ComboBoxModel, ListDataListener {
 
-        private final SearchListModel model;
+        private final PredicateListModel model;
 
         private Object selectedItem;
 
-        public TestSearchComboModel(SearchListModel model) {
+        public TestSearchComboModel(PredicateListModel model) {
             this.model = model;
 
             model.addListDataListener(this);
@@ -647,7 +647,7 @@ public class PopupPanel extends JPanel {
 
         private HyperFindPredicate selected;
 
-        public TestSearchPanel(Main m, SearchListModel model,
+        public TestSearchPanel(Main m, PredicateListModel model,
                 ImagePatchesLabel image, ObjectIdentifier objectID,
                 BufferedImage img, PopupPanel pp) {
             setBorder(BorderFactory.createTitledBorder("Search Test"));
