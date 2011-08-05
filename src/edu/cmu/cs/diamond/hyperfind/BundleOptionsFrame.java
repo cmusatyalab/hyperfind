@@ -110,9 +110,9 @@ public class BundleOptionsFrame extends JFrame {
         content.add(close_button, c);
 
         if (instanceName != null) {
-            // Search name
+            // Predicate name
             StringOption opt = new StringOption();
-            opt.setDisplayName("Search name");
+            opt.setDisplayName("Predicate name");
             opt.setDefault(instanceName);
             instanceNameField = new StringField(opt);
             instanceNameField.addChangeListener(new ChangeListener() {
@@ -168,7 +168,7 @@ public class BundleOptionsFrame extends JFrame {
             detail = displayName;
         }
         if (detail.equals("")) {
-            detail = "Search";
+            detail = "Predicate";
         }
         setTitle("Edit " + detail);
     }
@@ -205,7 +205,7 @@ public class BundleOptionsFrame extends JFrame {
         c.gridwidth = 3;
         c.fill = GridBagConstraints.HORIZONTAL;
         if (label == null) {
-            // simple separator between search name and options; don't use
+            // simple separator between predicate name and options; don't use
             // pronounced section break
             c.insets = new Insets(3, 0, 3, 0);
         } else {

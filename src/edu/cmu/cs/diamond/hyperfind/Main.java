@@ -241,7 +241,7 @@ public final class Main {
         });
 
         // add from file
-        JMenuItem fromFileMenuItem = new JMenuItem("From Search File...");
+        JMenuItem fromFileMenuItem = new JMenuItem("From Predicate File...");
         searches.add(fromFileMenuItem);
         fromFileMenuItem.addActionListener(new ActionListener() {
             @Override

@@ -101,7 +101,7 @@ final class PredicateList extends JPanel implements ListDataListener {
         JScrollPane jsp = new JScrollPane(box,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jsp.setBorder(BorderFactory.createTitledBorder("Searches"));
+        jsp.setBorder(BorderFactory.createTitledBorder("Predicates"));
         jsp.getHorizontalScrollBar().setUnitIncrement(20);
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 

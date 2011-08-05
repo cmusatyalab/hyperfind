@@ -568,7 +568,7 @@ public class PopupPanel extends JPanel {
 
         private void updateCountLabel() {
             int count = model.getSize();
-            countLabel.setText("Search count: " + count);
+            countLabel.setText(count + " predicate" + (count == 1 ? "" : "s"));
         }
     }
 
@@ -650,7 +650,7 @@ public class PopupPanel extends JPanel {
         public TestSearchPanel(Main m, PredicateListModel model,
                 ImagePatchesLabel image, ObjectIdentifier objectID,
                 BufferedImage img, PopupPanel pp) {
-            setBorder(BorderFactory.createTitledBorder("Search Test"));
+            setBorder(BorderFactory.createTitledBorder("Test Predicate"));
 
             this.m = m;
             this.image = image;
