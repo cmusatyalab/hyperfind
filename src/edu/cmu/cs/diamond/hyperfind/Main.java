@@ -498,10 +498,11 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        List<ActiveSearch> activeSearches = r.getActiveSearchSet()
-                .getActiveSearches();
+        List<ActivePredicate> activePredicates = r.getActiveSearchSet()
+                .getActivePredicates();
         popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r.getResult(), activeSearches, exampleSearchFactories, model));
+                r.getResult(), activePredicates, exampleSearchFactories,
+                model));
     }
 
     private void popup(String title, PopupPanel p) {

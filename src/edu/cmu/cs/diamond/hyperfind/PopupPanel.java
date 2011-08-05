@@ -231,7 +231,7 @@ public class PopupPanel extends JPanel {
     }
 
     public static PopupPanel createInstance(Main m, Result r,
-            List<ActiveSearch> activeSearches,
+            List<ActivePredicate> activePredicates,
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
 
@@ -245,7 +245,7 @@ public class PopupPanel extends JPanel {
             }
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
-                activeSearches, exampleSearchFactories, attributes, model);
+                activePredicates, exampleSearchFactories, attributes, model);
     }
 
     public static PopupPanel createInstance(Main m, BufferedImage img,
@@ -253,15 +253,15 @@ public class PopupPanel extends JPanel {
             List<HyperFindSearchFactory> exampleSearchFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
-        List<ActiveSearch> activeSearches = Collections.emptyList();
+        List<ActivePredicate> activePredicates = Collections.emptyList();
 
-        return createInstance(m, null, img, resultData, activeSearches,
+        return createInstance(m, null, img, resultData, activePredicates,
                 exampleSearchFactories, attributes, model);
     }
 
     private static PopupPanel createInstance(Main m,
             ObjectIdentifier objectID, BufferedImage img, byte resultData[],
-            List<ActiveSearch> activeSearches,
+            List<ActivePredicate> activePredicates,
             List<HyperFindSearchFactory> exampleSearchFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
@@ -329,7 +329,7 @@ public class PopupPanel extends JPanel {
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-            leftSide.add(new PatchesListPanel(activeSearches, attributes,
+            leftSide.add(new PatchesListPanel(activePredicates, attributes,
                     image));
             leftSide.add(new TestSearchPanel(m, searchListModel, image,
                     objectID, img, p));
@@ -772,7 +772,7 @@ public class PopupPanel extends JPanel {
     }
 
     private static class PatchesListPanel extends JPanel {
-        public PatchesListPanel(List<ActiveSearch> activeSearches,
+        public PatchesListPanel(List<ActivePredicate> activePredicates,
                 Map<String, byte[]> attributes,
                 final ImagePatchesLabel image) {
             Box box = Box.createVerticalBox();
@@ -794,7 +794,7 @@ public class PopupPanel extends JPanel {
 
             add(jsp);
 
-            for (ActiveSearch h : activeSearches) {
+            for (ActivePredicate h : activePredicates) {
                 // extract patches
                 String predicateName = h.getPredicateName();
                 String name = h.getInstanceName();

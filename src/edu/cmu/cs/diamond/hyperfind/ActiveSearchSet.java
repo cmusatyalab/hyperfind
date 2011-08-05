@@ -50,8 +50,8 @@ public class ActiveSearchSet {
 
     private final Main main;
 
-    // Display-name -> filter bindings for the searches listed in the UI
-    private final List<ActiveSearch> searches;
+    // Display-name -> filter bindings for the predicates listed in the UI
+    private final List<ActivePredicate> predicates;
 
     private final SearchFactory factory;
 
@@ -59,9 +59,10 @@ public class ActiveSearchSet {
             List<HyperFindPredicate> selectedPredicates,
             SearchFactory factory) {
         this.main = main;
-        this.searches = new ArrayList<ActiveSearch>(selectedPredicates.size());
+        this.predicates = new ArrayList<ActivePredicate>(
+                selectedPredicates.size());
         for (HyperFindPredicate p : selectedPredicates) {
-            this.searches.add(new ActiveSearch(p.getPredicateName(),
+            this.predicates.add(new ActivePredicate(p.getPredicateName(),
                     p.getInstanceName(), p.getFilterNames()));
         }
         this.factory = factory;
@@ -71,8 +72,8 @@ public class ActiveSearchSet {
         return main;
     }
 
-    public List<ActiveSearch> getActiveSearches() {
-        return Collections.unmodifiableList(searches);
+    public List<ActivePredicate> getActivePredicates() {
+        return Collections.unmodifiableList(predicates);
     }
 
     public SearchFactory getSearchFactory() {

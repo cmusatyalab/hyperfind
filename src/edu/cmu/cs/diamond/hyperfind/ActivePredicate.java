@@ -44,13 +44,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ActiveSearch {
+public class ActivePredicate {
 
     private final String predicateName;
     private final String instanceName;
     private final List<String> filterNames;
 
-    ActiveSearch(String predicateName, String instanceName,
+    ActivePredicate(String predicateName, String instanceName,
             List<String> filterNames) {
         this.predicateName = predicateName;
         this.instanceName = instanceName;
