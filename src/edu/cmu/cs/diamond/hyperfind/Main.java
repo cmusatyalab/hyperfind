@@ -156,7 +156,7 @@ public final class Main {
         final Main m = new Main(frame, results, model, defaultCookieMap,
                 exampleSearchFactories, codecs);
 
-        searchList.setTransferHandler(new SearchImportTransferHandler(m,
+        searchList.setTransferHandler(new PredicateImportTransferHandler(m,
                 model, bundleFactory));
 
         // add import

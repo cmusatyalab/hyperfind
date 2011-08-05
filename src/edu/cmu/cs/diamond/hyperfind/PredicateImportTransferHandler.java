@@ -54,14 +54,14 @@ import javax.swing.TransferHandler;
 
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 
-public class SearchImportTransferHandler extends TransferHandler {
+public class PredicateImportTransferHandler extends TransferHandler {
     private final Main main;
 
     private final SearchListModel model;
 
     private final BundleFactory bundleFactory;
 
-    public SearchImportTransferHandler(Main main, SearchListModel model,
+    public PredicateImportTransferHandler(Main main, SearchListModel model,
             BundleFactory bundleFactory) {
         this.main = main;
         this.model = model;
