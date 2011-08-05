@@ -175,7 +175,7 @@ public class ThumbnailBox extends JPanel {
 
     // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
-            final ActiveSearchSet activeSearchSet,
+            final ActivePredicateSet activePredicateSet,
             final List<HyperFindSearchMonitor> monitors) {
         search = s;
         searchMonitors = monitors;
@@ -225,7 +225,7 @@ public class ThumbnailBox extends JPanel {
                                 break;
                             }
                             HyperFindResult hr = new HyperFindResult(
-                                    activeSearchSet, r);
+                                    activePredicateSet, r);
 
                             for (HyperFindSearchMonitor m : searchMonitors) {
                                 m.notify(hr);

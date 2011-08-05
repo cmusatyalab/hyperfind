@@ -339,7 +339,7 @@ public final class Main {
 
                     // start
                     m.results.start(m.search, patchAttributes,
-                            new ActiveSearchSet(m,
+                            new ActivePredicateSet(m,
                                     model.getSelectedPredicates(), factory),
                                     monitors);
                 } catch (IOException e1) {
@@ -498,7 +498,7 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        List<ActivePredicate> activePredicates = r.getActiveSearchSet()
+        List<ActivePredicate> activePredicates = r.getActivePredicateSet()
                 .getActivePredicates();
         popup(r.getResult().getName(), PopupPanel.createInstance(this,
                 r.getResult(), activePredicates, exampleSearchFactories,
@@ -522,13 +522,13 @@ public final class Main {
 
     void reexecute(HyperFindResult result) {
         ObjectIdentifier id = result.getResult().getObjectIdentifier();
-        ActiveSearchSet ss = result.getActiveSearchSet();
-        SearchFactory factory = ss.getSearchFactory();
+        ActivePredicateSet ps = result.getActivePredicateSet();
+        SearchFactory factory = ps.getSearchFactory();
         Cursor oldCursor = frame.getCursor();
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
-            popup(new HyperFindResult(ss, factory.generateResult(id,
+            popup(new HyperFindResult(ps, factory.generateResult(id,
                     attributes)));
         } catch (IOException e1) {
             e1.printStackTrace();

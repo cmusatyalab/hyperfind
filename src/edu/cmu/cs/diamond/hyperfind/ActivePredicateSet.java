@@ -46,7 +46,7 @@ import java.util.List;
 
 import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 
-public class ActiveSearchSet {
+public class ActivePredicateSet {
 
     private final Main main;
 
@@ -55,7 +55,7 @@ public class ActiveSearchSet {
 
     private final SearchFactory factory;
 
-    public ActiveSearchSet(Main main,
+    public ActivePredicateSet(Main main,
             List<HyperFindPredicate> selectedPredicates,
             SearchFactory factory) {
         this.main = main;

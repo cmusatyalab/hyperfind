@@ -46,12 +46,12 @@ import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class HyperFindResult {
 
-    private final ActiveSearchSet searchSet;
+    private final ActivePredicateSet predicateSet;
 
     private final Result result;
 
-    public HyperFindResult(ActiveSearchSet searchSet, Result result) {
-        this.searchSet = searchSet;
+    public HyperFindResult(ActivePredicateSet predicateSet, Result result) {
+        this.predicateSet = predicateSet;
         this.result = result;
     }
 
@@ -60,13 +60,13 @@ public class HyperFindResult {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                searchSet.getMain().reexecute(r);
+                predicateSet.getMain().reexecute(r);
             }
         });
     }
 
-    public ActiveSearchSet getActiveSearchSet() {
-        return searchSet;
+    public ActivePredicateSet getActivePredicateSet() {
+        return predicateSet;
     }
 
     public Result getResult() {
