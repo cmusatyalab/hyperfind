@@ -69,7 +69,7 @@ public class PopupPanel extends JPanel {
 
         private final SearchListModel model;
 
-        private final List<SelectableSearch> list;
+        private final List<SelectablePredicate> list;
 
         private Object selectedItem;
 
@@ -79,9 +79,9 @@ public class PopupPanel extends JPanel {
             model.addListDataListener(this);
 
             // copy the elements out and keep a shadow copy
-            list = new ArrayList<SelectableSearch>();
+            list = new ArrayList<SelectablePredicate>();
             for (int i = 0; i < model.getSize(); i++) {
-                SelectableSearch item = (SelectableSearch) model
+                SelectablePredicate item = (SelectablePredicate) model
                         .getElementAt(i);
                 if (item.getPredicate().needsExamples()) {
                     list.add(item);
@@ -154,7 +154,7 @@ public class PopupPanel extends JPanel {
 
             int index = e.getIndex0();
 
-            SelectableSearch item = (SelectableSearch) model
+            SelectablePredicate item = (SelectablePredicate) model
                     .getElementAt(index);
             if (!item.getPredicate().needsExamples()) {
                 item = null;
@@ -172,7 +172,7 @@ public class PopupPanel extends JPanel {
 
             int index = e.getIndex0();
 
-            SelectableSearch item = list.remove(index);
+            SelectablePredicate item = list.remove(index);
             if (item != null) {
                 fireIntervalRemoved(this, index, index);
             }
@@ -191,8 +191,8 @@ public class PopupPanel extends JPanel {
             JLabel label = (JLabel) super.getListCellRendererComponent(list,
                     value, index, isSelected, cellHasFocus);
             // We may also get "No selection"
-            if (value instanceof SelectableSearch) {
-                HyperFindPredicate p = ((SelectableSearch) value)
+            if (value instanceof SelectablePredicate) {
+                HyperFindPredicate p = ((SelectablePredicate) value)
                         .getPredicate();
                 label.setText(p.getInstanceName());
             }
@@ -490,7 +490,7 @@ public class PopupPanel extends JPanel {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     // get item
-                    SelectableSearch item = (SelectableSearch)
+                    SelectablePredicate item = (SelectablePredicate)
                             existingSearchComboModel.getSelectedItem();
                     // System.out.println(item);
                     item.getPredicate().addExamples(createExamples());
@@ -694,9 +694,9 @@ public class PopupPanel extends JPanel {
                         // clear
                         selected = null;
                     } else {
-                        SelectableSearch ss = (SelectableSearch) c
+                        SelectablePredicate sp = (SelectablePredicate) c
                                 .getSelectedItem();
-                        selected = ss.getPredicate();
+                        selected = sp.getPredicate();
                         selected.addChangeListener(listener);
                     }
                     updateResult();

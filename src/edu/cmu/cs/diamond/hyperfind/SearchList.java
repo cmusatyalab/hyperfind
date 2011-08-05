@@ -114,10 +114,10 @@ final class SearchList extends JPanel implements ListDataListener {
             public void hierarchyChanged(HierarchyEvent e) {
                 if (!e.getComponent().isDisplayable()) {
                     while (model.getSize() > 0) {
-                        SelectableSearch ss = (SelectableSearch)
+                        SelectablePredicate sp = (SelectablePredicate)
                                 model.getElementAt(0);
-                        HyperFindPredicate p = ss.getPredicate();
-                        model.remove(ss);
+                        HyperFindPredicate p = sp.getPredicate();
+                        model.remove(sp);
                         p.dispose();
                     }
                 }
@@ -143,10 +143,10 @@ final class SearchList extends JPanel implements ListDataListener {
 
     @Override
     public void contentsChanged(ListDataEvent e) {
-        SelectableSearch ss = (SelectableSearch) model.getElementAt(e
+        SelectablePredicate sp = (SelectablePredicate) model.getElementAt(e
                 .getIndex0());
         ListElement element = elements.get(e.getIndex0());
-        HyperFindPredicate p = ss.getPredicate();
+        HyperFindPredicate p = sp.getPredicate();
 
         updateCheckBox(element.getCb(), p.getPredicateName(),
                 p.getInstanceName());
@@ -156,18 +156,18 @@ final class SearchList extends JPanel implements ListDataListener {
 
     @Override
     public void intervalAdded(ListDataEvent e) {
-        final SelectableSearch ss = (SelectableSearch) model.getElementAt(e
-                .getIndex0());
-        final HyperFindPredicate p = ss.getPredicate();
+        final SelectablePredicate sp = (SelectablePredicate)
+                model.getElementAt(e.getIndex0());
+        final HyperFindPredicate p = sp.getPredicate();
 
         p.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                model.updated(ss);
+                model.updated(sp);
             }
         });
 
-        JCheckBox cb = new JCheckBox("", ss.isSelected());
+        JCheckBox cb = new JCheckBox("", sp.isSelected());
 
         JButton edit = new JButton("Edit");
         JButton delete = new JButton("X");
@@ -179,7 +179,7 @@ final class SearchList extends JPanel implements ListDataListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 p.edit(SearchList.this);
-                model.updated(ss);
+                model.updated(sp);
             }
         });
 
@@ -196,15 +196,15 @@ final class SearchList extends JPanel implements ListDataListener {
         cb.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
-                ss.setSelected(e.getStateChange() == ItemEvent.SELECTED);
-                model.updated(ss);
+                sp.setSelected(e.getStateChange() == ItemEvent.SELECTED);
+                model.updated(sp);
             }
         });
 
         delete.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                model.remove(ss);
+                model.remove(sp);
                 p.dispose();
             }
         });

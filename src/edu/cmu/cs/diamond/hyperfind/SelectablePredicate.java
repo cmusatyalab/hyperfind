@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-class SelectableSearch {
+class SelectablePredicate {
     private boolean selected;
 
     public boolean isSelected() {
@@ -57,7 +57,8 @@ class SelectableSearch {
 
     private final HyperFindPredicate predicate;
 
-    public SelectableSearch(HyperFindPredicate predicate, boolean selected) {
+    public SelectablePredicate(HyperFindPredicate predicate,
+            boolean selected) {
         this.predicate = predicate;
         this.selected = selected;
     }

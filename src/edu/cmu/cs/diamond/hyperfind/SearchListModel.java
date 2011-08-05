@@ -53,43 +53,45 @@ import edu.cmu.cs.diamond.opendiamond.Filter;
 class SearchListModel extends AbstractListModel {
     private static final boolean INITIALLY_SELECTED = true;
 
-    private final List<SelectableSearch> searches = new ArrayList<SelectableSearch>();
+    private final List<SelectablePredicate> predicates =
+            new ArrayList<SelectablePredicate>();
 
     @Override
     public Object getElementAt(int index) {
-        return searches.get(index);
+        return predicates.get(index);
     }
 
     @Override
     public int getSize() {
-        return searches.size();
+        return predicates.size();
     }
 
-    public boolean remove(SelectableSearch ss) {
-        int index = searches.indexOf(ss);
+    public boolean remove(SelectablePredicate sp) {
+        int index = predicates.indexOf(sp);
         boolean result = index != -1;
 
         if (result) {
-            searches.remove(index);
+            predicates.remove(index);
             fireIntervalRemoved(this, index, index);
         }
         return result;
     }
 
     public void addPredicate(final HyperFindPredicate p) {
-        SelectableSearch ss = new SelectableSearch(p, INITIALLY_SELECTED);
-        searches.add(ss);
+        SelectablePredicate sp = new SelectablePredicate(p,
+                INITIALLY_SELECTED);
+        predicates.add(sp);
 
-        int index = searches.size() - 1;
+        int index = predicates.size() - 1;
         fireIntervalAdded(this, index, index);
     }
 
     List<HyperFindPredicate> getSelectedPredicates() {
         List<HyperFindPredicate> result = new ArrayList<HyperFindPredicate>();
 
-        for (SelectableSearch s : searches) {
-            if (s.isSelected()) {
-                result.add(s.getPredicate());
+        for (SelectablePredicate sp : predicates) {
+            if (sp.isSelected()) {
+                result.add(sp.getPredicate());
             }
         }
 
@@ -99,9 +101,9 @@ class SearchListModel extends AbstractListModel {
     List<Filter> createFilters() throws IOException {
         // first, eliminate duplicates
         Set<HyperFindPredicate> set = new HashSet<HyperFindPredicate>();
-        for (SelectableSearch s : searches) {
-            if (s.isSelected())
-                set.add(s.getPredicate());
+        for (SelectablePredicate sp : predicates) {
+            if (sp.isSelected())
+                set.add(sp.getPredicate());
         }
 
         // System.out.println("set: " + set);
@@ -114,8 +116,8 @@ class SearchListModel extends AbstractListModel {
         return result;
     }
 
-    public void updated(SelectableSearch ss) {
-        int index = searches.indexOf(ss);
+    public void updated(SelectablePredicate sp) {
+        int index = predicates.indexOf(sp);
         if (index != -1) {
             fireContentsChanged(this, index, index);
         }
