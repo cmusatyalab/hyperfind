@@ -45,8 +45,9 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.Bundle;
+import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.BundleType;
 import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
 import edu.cmu.cs.diamond.opendiamond.bundle.Option;
 import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
@@ -74,8 +75,8 @@ public class HyperFindPredicateFactory {
         return bundle.getDisplayName();
     }
 
-    public boolean isCodec() {
-        return bundle.isCodec();
+    public BundleType getType() {
+        return bundle.getType();
     }
 
     public boolean needsExamples() {
@@ -98,7 +99,7 @@ public class HyperFindPredicateFactory {
         // System.out.println("trying " + uri);
         InputStream in = uri.toURL().openStream();
         Bundle bundle = bundleFactory.getBundle(in);
-        if (bundle.isCodec()) {
+        if (bundle.getType() != BundleType.PREDICATE) {
             throw new IOException("Codecs cannot be imported at runtime.");
         }
         return new HyperFindPredicate(bundle);

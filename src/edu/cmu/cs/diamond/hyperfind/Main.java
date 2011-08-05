@@ -249,7 +249,8 @@ public final class Main {
                 // get file
                 JFileChooser chooser = new JFileChooser();
                 FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                        "Predicate Files", "pred");
+                        "Predicate Files",
+                        BundleType.PREDICATE.getExtension());
                 chooser.setFileFilter(filter);
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -475,7 +476,7 @@ public final class Main {
             final List<HyperFindPredicateFactory> examplePredicateFactories,
             final List<HyperFindPredicate> codecList) throws IOException {
         for (final HyperFindPredicateFactory f : factories) {
-            if (f.isCodec()) {
+            if (f.getType() == BundleType.CODEC) {
                 codecList.add(f.createHyperFindPredicate());
             } else if (f.needsExamples()) {
                 examplePredicateFactories.add(f);

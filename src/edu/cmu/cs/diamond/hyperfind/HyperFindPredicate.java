@@ -48,6 +48,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import edu.cmu.cs.diamond.opendiamond.Bundle;
+import edu.cmu.cs.diamond.opendiamond.BundleType;
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
 public class HyperFindPredicate {
@@ -62,7 +63,7 @@ public class HyperFindPredicate {
 
     HyperFindPredicate(Bundle bundle) throws IOException {
         this.bundle = bundle;
-        if (bundle.isCodec()) {
+        if (bundle.getType() == BundleType.CODEC) {
             this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
                     bundle.getOptions());
         } else {
