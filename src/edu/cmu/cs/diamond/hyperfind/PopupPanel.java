@@ -64,7 +64,7 @@ import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class PopupPanel extends JPanel {
-    private static class ExistingSearchComboModel extends AbstractListModel
+    private static class ExistingPredicateComboModel extends AbstractListModel
             implements ComboBoxModel, ListDataListener {
 
         private final PredicateListModel model;
@@ -73,7 +73,7 @@ public class PopupPanel extends JPanel {
 
         private Object selectedItem;
 
-        public ExistingSearchComboModel(PredicateListModel model) {
+        public ExistingPredicateComboModel(PredicateListModel model) {
             this.model = model;
 
             model.addListDataListener(this);
@@ -472,9 +472,9 @@ public class PopupPanel extends JPanel {
             vBox.add(hBox);
 
             addToExistingButton = new JButton("Add to Existing");
-            final ExistingSearchComboModel existingSearchComboModel =
-                    new ExistingSearchComboModel(model);
-            addToExistingCombo = new JComboBox(existingSearchComboModel);
+            final ExistingPredicateComboModel existingPredicateComboModel =
+                    new ExistingPredicateComboModel(model);
+            addToExistingCombo = new JComboBox(existingPredicateComboModel);
             addToExistingCombo.setRenderer(new SearchInstanceCellRenderer());
 
             addToExistingCombo.addHierarchyListener(new HierarchyListener() {
@@ -482,8 +482,8 @@ public class PopupPanel extends JPanel {
                 public void hierarchyChanged(HierarchyEvent e) {
                     if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
                             !addToExistingCombo.isDisplayable()) {
-                        // System.out.println("destroying ExistingSearchComboModel");
-                        existingSearchComboModel.destroy();
+                        // System.out.println("destroying ExistingPredicateComboModel");
+                        existingPredicateComboModel.destroy();
                     }
                 }
             });
@@ -493,7 +493,7 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     // get item
                     SelectablePredicate item = (SelectablePredicate)
-                            existingSearchComboModel.getSelectedItem();
+                            existingPredicateComboModel.getSelectedItem();
                     // System.out.println(item);
                     item.getPredicate().addExamples(createExamples());
                 }
