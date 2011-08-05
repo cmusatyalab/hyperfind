@@ -823,7 +823,7 @@ public class PopupPanel extends JPanel {
                     Formatter f = new Formatter();
                     f.format("%s (similarity %.0f%%)", predicateName,
                             100 - 100.0 * distance);
-                    SearchList.updateCheckBox(cb, f.toString(), name);
+                    PredicateList.updateCheckBox(cb, f.toString(), name);
 
                     cb.addItemListener(new ItemListener() {
                         @Override

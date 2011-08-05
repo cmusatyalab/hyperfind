@@ -58,7 +58,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 
-final class SearchList extends JPanel implements ListDataListener {
+final class PredicateList extends JPanel implements ListDataListener {
     private static class ListElement {
         public ListElement(JCheckBox cb, Box box) {
             this.cb = cb;
@@ -89,7 +89,7 @@ final class SearchList extends JPanel implements ListDataListener {
 
     private final List<ListElement> elements = new ArrayList<ListElement>();
 
-    public SearchList(final PredicateListModel model) {
+    public PredicateList(final PredicateListModel model) {
         this.model = model;
         model.addListDataListener(this);
 
@@ -178,7 +178,7 @@ final class SearchList extends JPanel implements ListDataListener {
         edit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                p.edit(SearchList.this);
+                p.edit(PredicateList.this);
                 model.updated(sp);
             }
         });

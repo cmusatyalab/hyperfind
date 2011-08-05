@@ -124,7 +124,7 @@ public final class Main {
 
         // search list
         final PredicateListModel model = new PredicateListModel();
-        final SearchList searchList = new SearchList(model);
+        final PredicateList predicateList = new PredicateList(model);
 
         // codecs / menu
         JButton addSearchButton = new JButton("+");
@@ -157,7 +157,7 @@ public final class Main {
         final Main m = new Main(frame, results, model, defaultCookieMap,
                 examplePredicateFactories, codecs);
 
-        searchList.setTransferHandler(new PredicateImportTransferHandler(m,
+        predicateList.setTransferHandler(new PredicateImportTransferHandler(m,
                 model, bundleFactory));
 
         // add import
@@ -412,7 +412,7 @@ public final class Main {
         c1.add(codecPanel);
 
         // filters
-        c1.add(searchList);
+        c1.add(predicateList);
 
         Box h1 = Box.createHorizontalBox();
         h1.add(Box.createHorizontalGlue());
