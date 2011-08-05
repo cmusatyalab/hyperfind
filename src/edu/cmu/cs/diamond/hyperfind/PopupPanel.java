@@ -573,14 +573,14 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static class TestSearchComboModel extends AbstractListModel
+    private static class PredicateTestComboModel extends AbstractListModel
             implements ComboBoxModel, ListDataListener {
 
         private final PredicateListModel model;
 
         private Object selectedItem;
 
-        public TestSearchComboModel(PredicateListModel model) {
+        public PredicateTestComboModel(PredicateListModel model) {
             this.model = model;
 
             model.addListDataListener(this);
@@ -662,7 +662,8 @@ public class PopupPanel extends JPanel {
             Box vBox = Box.createVerticalBox();
             add(vBox);
 
-            final JComboBox c = new JComboBox(new TestSearchComboModel(model));
+            final JComboBox c = new JComboBox(
+                    new PredicateTestComboModel(model));
             c.setRenderer(new PredicateInstanceCellRenderer());
             c.setSelectedIndex(0);
             vBox.add(c);
@@ -672,9 +673,9 @@ public class PopupPanel extends JPanel {
                 public void hierarchyChanged(HierarchyEvent e) {
                     if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
                             !c.isDisplayable()) {
-                        // System.out.println("destroying TestSearchComboModel");
-                        TestSearchComboModel model = (TestSearchComboModel)
-                                c.getModel();
+                        // System.out.println("destroying PredicateTestComboModel");
+                        PredicateTestComboModel model =
+                                (PredicateTestComboModel) c.getModel();
                         model.destroy();
                     }
                 }
