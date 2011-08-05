@@ -70,7 +70,7 @@ public final class Main {
 
     private final SearchListModel model;
 
-    private final List<HyperFindSearchFactory> exampleSearchFactories;
+    private final List<HyperFindPredicateFactory> examplePredicateFactories;
 
     private final JFrame frame;
 
@@ -80,13 +80,13 @@ public final class Main {
 
     private Main(JFrame frame, ThumbnailBox results, SearchListModel model,
             CookieMap initialCookieMap,
-            List<HyperFindSearchFactory> exampleSearchFactories,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
             JComboBox codecs) {
         this.frame = frame;
         this.results = results;
         this.model = model;
         this.cookies = initialCookieMap;
-        this.exampleSearchFactories = exampleSearchFactories;
+        this.examplePredicateFactories = examplePredicateFactories;
         this.codecs = codecs;
 
         popupFrame = new JFrame();
@@ -98,8 +98,9 @@ public final class Main {
         final BundleFactory bundleFactory =
                 new BundleFactory(bundleDirectories, filterDirectories);
 
-        final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
-                .createHyperFindSearchFactories(bundleFactory);
+        final List<HyperFindPredicateFactory> factories =
+                HyperFindPredicateFactory
+                .createHyperFindPredicateFactories(bundleFactory);
 
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -144,17 +145,17 @@ public final class Main {
             e.printStackTrace();
         }
 
-        List<HyperFindSearchFactory> exampleSearchFactories =
-                new ArrayList<HyperFindSearchFactory>();
+        List<HyperFindPredicateFactory> examplePredicateFactories =
+                new ArrayList<HyperFindPredicateFactory>();
         final List<HyperFindPredicate> codecList =
                 new ArrayList<HyperFindPredicate>();
         initSearchFactories(factories, model, searches,
-                exampleSearchFactories, codecList);
+                examplePredicateFactories, codecList);
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
         final Main m = new Main(frame, results, model, defaultCookieMap,
-                exampleSearchFactories, codecs);
+                examplePredicateFactories, codecs);
 
         searchList.setTransferHandler(new PredicateImportTransferHandler(m,
                 model, bundleFactory));
@@ -253,7 +254,7 @@ public final class Main {
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
-                        HyperFindPredicate p = HyperFindSearchFactory
+                        HyperFindPredicate p = HyperFindPredicateFactory
                                 .createHyperFindPredicate(bundleFactory,
                                         chooser.getSelectedFile().toURI());
                         if (p != null) {
@@ -465,19 +466,19 @@ public final class Main {
 
     void popup(String name, BufferedImage img) {
         popup(name, PopupPanel.createInstance(this, img, null,
-                exampleSearchFactories, model));
+                examplePredicateFactories, model));
     }
 
     private static void initSearchFactories(
-            List<HyperFindSearchFactory> factories,
+            List<HyperFindPredicateFactory> factories,
             final SearchListModel model, final JPopupMenu searches,
-            final List<HyperFindSearchFactory> exampleSearchFactories,
+            final List<HyperFindPredicateFactory> examplePredicateFactories,
             final List<HyperFindPredicate> codecList) throws IOException {
-        for (final HyperFindSearchFactory f : factories) {
+        for (final HyperFindPredicateFactory f : factories) {
             if (f.isCodec()) {
                 codecList.add(f.createHyperFindPredicate());
             } else if (f.needsExamples()) {
-                exampleSearchFactories.add(f);
+                examplePredicateFactories.add(f);
             } else {
                 JMenuItem jm = new JMenuItem(f.getDisplayName());
                 jm.addActionListener(new ActionListener() {
@@ -501,7 +502,7 @@ public final class Main {
         List<ActivePredicate> activePredicates = r.getActivePredicateSet()
                 .getActivePredicates();
         popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r.getResult(), activePredicates, exampleSearchFactories,
+                r.getResult(), activePredicates, examplePredicateFactories,
                 model));
     }
 

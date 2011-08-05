@@ -232,7 +232,7 @@ public class PopupPanel extends JPanel {
 
     public static PopupPanel createInstance(Main m, Result r,
             List<ActivePredicate> activePredicates,
-            List<HyperFindSearchFactory> exampleSearchFactories,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
             SearchListModel model) {
 
         BufferedImage img = Util.extractImageFromResult(r);
@@ -245,24 +245,25 @@ public class PopupPanel extends JPanel {
             }
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
-                activePredicates, exampleSearchFactories, attributes, model);
+                activePredicates, examplePredicateFactories, attributes,
+                model);
     }
 
     public static PopupPanel createInstance(Main m, BufferedImage img,
             byte resultData[],
-            List<HyperFindSearchFactory> exampleSearchFactories,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
             SearchListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
         List<ActivePredicate> activePredicates = Collections.emptyList();
 
         return createInstance(m, null, img, resultData, activePredicates,
-                exampleSearchFactories, attributes, model);
+                examplePredicateFactories, attributes, model);
     }
 
     private static PopupPanel createInstance(Main m,
             ObjectIdentifier objectID, BufferedImage img, byte resultData[],
             List<ActivePredicate> activePredicates,
-            List<HyperFindSearchFactory> exampleSearchFactories,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
             final Map<String, byte[]> attributes,
             SearchListModel searchListModel) {
         PopupPanel p = new PopupPanel(img);
@@ -334,7 +335,7 @@ public class PopupPanel extends JPanel {
             leftSide.add(new TestSearchPanel(m, searchListModel, image,
                     objectID, img, p));
             leftSide.add(new ExampleSearchPanel(searchListModel, image, img,
-                    exampleSearchFactories));
+                    examplePredicateFactories));
         } else {
             String text;
             try {
@@ -387,7 +388,7 @@ public class PopupPanel extends JPanel {
 
         public ExampleSearchPanel(final SearchListModel model,
                 final ImagePatchesLabel image, BufferedImage img,
-                List<HyperFindSearchFactory> exampleSearchFactories) {
+                List<HyperFindPredicateFactory> examplePredicateFactories) {
             setBorder(BorderFactory.createTitledBorder("Example Search"));
 
             this.model = model;
@@ -410,7 +411,8 @@ public class PopupPanel extends JPanel {
                 }
             });
 
-            for (final HyperFindSearchFactory f : exampleSearchFactories) {
+            for (final HyperFindPredicateFactory f :
+                    examplePredicateFactories) {
                 JMenuItem jm = new JMenuItem(f.getDisplayName());
                 jm.addActionListener(new ActionListener() {
                     @Override

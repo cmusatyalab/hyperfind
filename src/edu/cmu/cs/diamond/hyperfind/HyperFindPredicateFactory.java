@@ -51,13 +51,13 @@ import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
 import edu.cmu.cs.diamond.opendiamond.bundle.Option;
 import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
 
-public class HyperFindSearchFactory {
+public class HyperFindPredicateFactory {
 
     private final Bundle bundle;
 
     private final boolean needsExamples;
 
-    private HyperFindSearchFactory(Bundle bundle) throws IOException {
+    private HyperFindPredicateFactory(Bundle bundle) throws IOException {
         this.bundle = bundle;
         boolean needsExamples = false;
         for (OptionGroup group : bundle.getOptions()) {
@@ -104,23 +104,25 @@ public class HyperFindSearchFactory {
         return new HyperFindPredicate(bundle);
     }
 
-    public static List<HyperFindSearchFactory>
-            createHyperFindSearchFactories(BundleFactory bundleFactory)
+    public static List<HyperFindPredicateFactory>
+            createHyperFindPredicateFactories(BundleFactory bundleFactory)
             throws IOException {
-        List<HyperFindSearchFactory> factories =
-                new ArrayList<HyperFindSearchFactory>();
+        List<HyperFindPredicateFactory> factories =
+                new ArrayList<HyperFindPredicateFactory>();
 
         for (Bundle b : bundleFactory.getBundles()) {
-            factories.add(new HyperFindSearchFactory(b));
+            factories.add(new HyperFindPredicateFactory(b));
         }
 
-        Collections.sort(factories, new Comparator<HyperFindSearchFactory>() {
-            @Override
-            public int compare(HyperFindSearchFactory o1,
-                    HyperFindSearchFactory o2) {
-                return o1.getDisplayName().compareTo(o2.getDisplayName());
+        Collections.sort(factories,
+            new Comparator<HyperFindPredicateFactory>() {
+                @Override
+                public int compare(HyperFindPredicateFactory o1,
+                        HyperFindPredicateFactory o2) {
+                    return o1.getDisplayName().compareTo(o2.getDisplayName());
+                }
             }
-        });
+        );
         return factories;
     }
 }
