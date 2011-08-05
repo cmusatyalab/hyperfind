@@ -332,7 +332,7 @@ public class PopupPanel extends JPanel {
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             leftSide.add(new PatchesListPanel(activePredicates, attributes,
                     image));
-            leftSide.add(new TestSearchPanel(m, predicateListModel, image,
+            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
                     objectID, img, p));
             leftSide.add(new ExampleSearchPanel(predicateListModel, image,
                     img, examplePredicateFactories));
@@ -633,7 +633,7 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static class TestSearchPanel extends JPanel {
+    private static class TestPredicatePanel extends JPanel {
         private final Main m;
 
         private final ImagePatchesLabel image;
@@ -648,7 +648,7 @@ public class PopupPanel extends JPanel {
 
         private HyperFindPredicate selected;
 
-        public TestSearchPanel(Main m, PredicateListModel model,
+        public TestPredicatePanel(Main m, PredicateListModel model,
                 ImagePatchesLabel image, ObjectIdentifier objectID,
                 BufferedImage img, PopupPanel pp) {
             setBorder(BorderFactory.createTitledBorder("Test Predicate"));
