@@ -93,10 +93,10 @@ public final class Main {
         popupFrame.setMinimumSize(new Dimension(512, 384));
     }
 
-    public static Main createMain(List<File> searchDirectories,
+    public static Main createMain(List<File> bundleDirectories,
             List<File> filterDirectories) throws IOException {
         final BundleFactory bundleFactory =
-                new BundleFactory(searchDirectories, filterDirectories);
+                new BundleFactory(bundleDirectories, filterDirectories);
 
         final List<HyperFindSearchFactory> factories = HyperFindSearchFactory
                 .createHyperFindSearchFactories(bundleFactory);
@@ -600,7 +600,7 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " search-directories filter-directories");
+                + " bundle-directories filter-directories");
     }
 
     private static List<File> splitDirs(String paths) {
@@ -620,14 +620,14 @@ public final class Main {
             System.exit(1);
         }
 
-        final List<File> searchDirectories = splitDirs(args[0]);
+        final List<File> bundleDirectories = splitDirs(args[0]);
         final List<File> filterDirectories = splitDirs(args[1]);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(searchDirectories, filterDirectories);
+                    createMain(bundleDirectories, filterDirectories);
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
