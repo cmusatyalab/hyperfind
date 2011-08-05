@@ -55,13 +55,14 @@ public class ActiveSearchSet {
 
     private final SearchFactory factory;
 
-    public ActiveSearchSet(Main main, List<HyperFindSearch> selectedSearches,
+    public ActiveSearchSet(Main main,
+            List<HyperFindPredicate> selectedPredicates,
             SearchFactory factory) {
         this.main = main;
-        this.searches = new ArrayList<ActiveSearch>(selectedSearches.size());
-        for (HyperFindSearch h : selectedSearches) {
-            this.searches.add(new ActiveSearch(h.getSearchName(),
-                    h.getInstanceName(), h.getFilterNames()));
+        this.searches = new ArrayList<ActiveSearch>(selectedPredicates.size());
+        for (HyperFindPredicate p : selectedPredicates) {
+            this.searches.add(new ActiveSearch(p.getPredicateName(),
+                    p.getInstanceName(), p.getFilterNames()));
         }
         this.factory = factory;
     }

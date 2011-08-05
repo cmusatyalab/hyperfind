@@ -146,8 +146,8 @@ public final class Main {
 
         List<HyperFindSearchFactory> exampleSearchFactories =
                 new ArrayList<HyperFindSearchFactory>();
-        final List<HyperFindSearch> codecList =
-                new ArrayList<HyperFindSearch>();
+        final List<HyperFindPredicate> codecList =
+                new ArrayList<HyperFindPredicate>();
         initSearchFactories(factories, model, searches,
                 exampleSearchFactories, codecList);
 
@@ -253,11 +253,11 @@ public final class Main {
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
                     try {
-                        HyperFindSearch s = HyperFindSearchFactory
-                                .createHyperFindSearch(bundleFactory,
+                        HyperFindPredicate p = HyperFindSearchFactory
+                                .createHyperFindPredicate(bundleFactory,
                                         chooser.getSelectedFile().toURI());
-                        if (s != null) {
-                            model.addSearch(s);
+                        if (p != null) {
+                            model.addPredicate(p);
                         } else {
                             JOptionPane.showMessageDialog(frame,
                                     "No search found.");
@@ -275,8 +275,9 @@ public final class Main {
         editCodecButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
-                s.edit(frame);
+                HyperFindPredicate p = (HyperFindPredicate)
+                        codecs.getSelectedItem();
+                p.edit(frame);
             }
         });
 
@@ -295,10 +296,10 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     // start search
-                    HyperFindSearch s = (HyperFindSearch) codecs
+                    HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
-                            s.createFilters());
+                            p.createFilters());
                     filters.addAll(model.createFilters());
 
                     SearchFactory factory = m.createFactory(filters);
@@ -326,9 +327,9 @@ public final class Main {
                     Set<String> patchAttributes = new HashSet<String>();
                     for (Filter f : filters) {
                         String n = f.getName();
-                        String p = "_filter." + n + ".patches"; // patches
-                        attributes.add(p);
-                        patchAttributes.add(p);
+                        String pa = "_filter." + n + ".patches"; // patches
+                        attributes.add(pa);
+                        patchAttributes.add(pa);
                     }
 
                     m.search = factory.createSearch(attributes);
@@ -338,8 +339,9 @@ public final class Main {
 
                     // start
                     m.results.start(m.search, patchAttributes,
-                            new ActiveSearchSet(m, model.getSelectedSearches(),
-                                    factory), monitors);
+                            new ActiveSearchSet(m,
+                                    model.getSelectedPredicates(), factory),
+                                    monitors);
                 } catch (IOException e1) {
                     stats.showException(e1.getCause());
                     e1.printStackTrace();
@@ -451,7 +453,7 @@ public final class Main {
                 // clear state from previous search
                 m.results.terminate();
                 m.popupFrame.dispose();
-                for (HyperFindSearch codec : codecList) {
+                for (HyperFindPredicate codec : codecList) {
                     codec.dispose();
                 }
             }
@@ -470,10 +472,10 @@ public final class Main {
             List<HyperFindSearchFactory> factories,
             final SearchListModel model, final JPopupMenu searches,
             final List<HyperFindSearchFactory> exampleSearchFactories,
-            final List<HyperFindSearch> codecList) throws IOException {
+            final List<HyperFindPredicate> codecList) throws IOException {
         for (final HyperFindSearchFactory f : factories) {
             if (f.isCodec()) {
-                codecList.add(f.createHyperFindSearch());
+                codecList.add(f.createHyperFindPredicate());
             } else if (f.needsExamples()) {
                 exampleSearchFactories.add(f);
             } else {
@@ -482,7 +484,7 @@ public final class Main {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         try {
-                            model.addSearch(f.createHyperFindSearch());
+                            model.addPredicate(f.createHyperFindPredicate());
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
@@ -535,17 +537,17 @@ public final class Main {
     }
 
     // returns null if object was dropped
-    private List<BoundingBox> getPatches(HyperFindSearch search,
+    private List<BoundingBox> getPatches(HyperFindPredicate predicate,
             ObjectIdentifier objectID, byte[] data) throws IOException {
         // Create factory
-        HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
-        List<Filter> filters = new ArrayList<Filter>(s.createFilters());
-        filters.addAll(search.createFilters());
+        HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
+        List<Filter> filters = new ArrayList<Filter>(p.createFilters());
+        filters.addAll(predicate.createFilters());
         SearchFactory factory = createFactory(filters);
 
         // Set push attributes
         Set<String> attributes = new HashSet<String>();
-        for (String fName : search.getFilterNames()) {
+        for (String fName : predicate.getFilterNames()) {
             attributes.add("_filter." + fName + ".patches");
         }
 
@@ -558,7 +560,7 @@ public final class Main {
         }
 
         // Check if object was dropped
-        for (String fName : search.getFilterNames()) {
+        for (String fName : predicate.getFilterNames()) {
             if (r.getValue("_filter." + fName + "_score") == null) {
                 return null;
             }
@@ -575,14 +577,14 @@ public final class Main {
         return patchList;
     }
 
-    List<BoundingBox> getPatches(HyperFindSearch search,
+    List<BoundingBox> getPatches(HyperFindPredicate predicate,
             ObjectIdentifier objectID) throws IOException {
-        return getPatches(search, objectID, null);
+        return getPatches(predicate, objectID, null);
     }
 
-    List<BoundingBox> getPatches(HyperFindSearch search, byte[] data)
+    List<BoundingBox> getPatches(HyperFindPredicate predicate, byte[] data)
             throws IOException {
-        return getPatches(search, null, data);
+        return getPatches(predicate, null, data);
     }
 
     private SearchFactory createFactory(List<Filter> filters) {
@@ -594,8 +596,8 @@ public final class Main {
     }
 
     private void updateEditCodecButton(final JButton editCodecButton) {
-        HyperFindSearch s = (HyperFindSearch) codecs.getSelectedItem();
-        editCodecButton.setEnabled(s.isEditable());
+        HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
+        editCodecButton.setEnabled(p.isEditable());
     }
 
     private static void printUsage() {

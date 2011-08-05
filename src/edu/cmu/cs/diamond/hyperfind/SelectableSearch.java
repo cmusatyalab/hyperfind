@@ -51,19 +51,19 @@ class SelectableSearch {
         this.selected = selected;
     }
 
-    public HyperFindSearch getSearch() {
-        return search;
+    public HyperFindPredicate getPredicate() {
+        return predicate;
     }
 
-    private final HyperFindSearch search;
+    private final HyperFindPredicate predicate;
 
-    public SelectableSearch(HyperFindSearch search, boolean selected) {
-        this.search = search;
+    public SelectableSearch(HyperFindPredicate predicate, boolean selected) {
+        this.predicate = predicate;
         this.selected = selected;
     }
 
     @Override
     public String toString() {
-        return search.toString();
+        return predicate.toString();
     }
 }

@@ -46,20 +46,20 @@ import java.util.List;
 
 public class ActiveSearch {
 
-    private final String searchName;
+    private final String predicateName;
     private final String instanceName;
     private final List<String> filterNames;
 
-    ActiveSearch(String searchName, String instanceName,
+    ActiveSearch(String predicateName, String instanceName,
             List<String> filterNames) {
-        this.searchName = searchName;
+        this.predicateName = predicateName;
         this.instanceName = instanceName;
         this.filterNames = Collections.unmodifiableList(
                 new ArrayList<String>(filterNames));
     }
 
-    public String getSearchName() {
-        return searchName;
+    public String getPredicateName() {
+        return predicateName;
     }
 
     public String getInstanceName() {

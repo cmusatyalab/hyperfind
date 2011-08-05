@@ -50,7 +50,7 @@ import javax.swing.event.ChangeListener;
 import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.Filter;
 
-public class HyperFindSearch {
+public class HyperFindPredicate {
     private final List<ChangeListener> listeners =
             new ArrayList<ChangeListener>();
 
@@ -60,7 +60,7 @@ public class HyperFindSearch {
 
     private List<Filter> cachedFilters;
 
-    HyperFindSearch(Bundle bundle) throws IOException {
+    HyperFindPredicate(Bundle bundle) throws IOException {
         this.bundle = bundle;
         if (bundle.isCodec()) {
             this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
@@ -89,7 +89,7 @@ public class HyperFindSearch {
         return frame.needsExamples();
     }
 
-    public String getSearchName() {
+    public String getPredicateName() {
         return bundle.getDisplayName();
     }
 
@@ -152,20 +152,20 @@ public class HyperFindSearch {
 
     @Override
     public String toString() {
-        return getSearchName();
+        return getPredicateName();
     }
 
     @Override
     public int hashCode() {
-        return getSearchName().hashCode() + getFilterNames().hashCode();
+        return getPredicateName().hashCode() + getFilterNames().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof HyperFindSearch) {
-            HyperFindSearch s = (HyperFindSearch) obj;
-            return getSearchName().equals(s.getSearchName()) &&
-                    getFilterNames().equals(s.getFilterNames());
+        if (obj instanceof HyperFindPredicate) {
+            HyperFindPredicate p = (HyperFindPredicate) obj;
+            return getPredicateName().equals(p.getPredicateName()) &&
+                    getFilterNames().equals(p.getFilterNames());
         }
         return false;
     }

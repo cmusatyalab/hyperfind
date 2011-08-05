@@ -88,10 +88,10 @@ public class PredicateImportTransferHandler extends TransferHandler {
             for (URI u : uris) {
                 // first see if any HyperFindSearchFactories will accept the
                 // URI
-                HyperFindSearch s = HyperFindSearchFactory
-                        .createHyperFindSearch(bundleFactory, u);
-                if (s != null) {
-                    model.addSearch(s);
+                HyperFindPredicate p = HyperFindSearchFactory
+                        .createHyperFindPredicate(bundleFactory, u);
+                if (p != null) {
+                    model.addPredicate(p);
                     continue;
                 }
 

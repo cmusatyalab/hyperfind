@@ -83,7 +83,7 @@ public class PopupPanel extends JPanel {
             for (int i = 0; i < model.getSize(); i++) {
                 SelectableSearch item = (SelectableSearch) model
                         .getElementAt(i);
-                if (item.getSearch().needsExamples()) {
+                if (item.getPredicate().needsExamples()) {
                     list.add(item);
                 } else {
                     list.add(null);
@@ -156,7 +156,7 @@ public class PopupPanel extends JPanel {
 
             SelectableSearch item = (SelectableSearch) model
                     .getElementAt(index);
-            if (!item.getSearch().needsExamples()) {
+            if (!item.getPredicate().needsExamples()) {
                 item = null;
             }
             list.add(index, item);
@@ -192,8 +192,9 @@ public class PopupPanel extends JPanel {
                     value, index, isSelected, cellHasFocus);
             // We may also get "No selection"
             if (value instanceof SelectableSearch) {
-                HyperFindSearch s = ((SelectableSearch) value).getSearch();
-                label.setText(s.getInstanceName());
+                HyperFindPredicate p = ((SelectableSearch) value)
+                        .getPredicate();
+                label.setText(p.getInstanceName());
             }
             return label;
         }
@@ -418,7 +419,8 @@ public class PopupPanel extends JPanel {
                             // make examples
                             List<BufferedImage> examples = createExamples();
 
-                            model.addSearch(f.createHyperFindSearch(examples));
+                            model.addPredicate(f.createHyperFindPredicate(
+                                    examples));
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
@@ -491,7 +493,7 @@ public class PopupPanel extends JPanel {
                     SelectableSearch item = (SelectableSearch)
                             existingSearchComboModel.getSelectedItem();
                     // System.out.println(item);
-                    item.getSearch().addExamples(createExamples());
+                    item.getPredicate().addExamples(createExamples());
                 }
             });
 
@@ -641,7 +643,7 @@ public class PopupPanel extends JPanel {
 
         private final JLabel label;
 
-        private HyperFindSearch selected;
+        private HyperFindPredicate selected;
 
         public TestSearchPanel(Main m, SearchListModel model,
                 ImagePatchesLabel image, ObjectIdentifier objectID,
@@ -694,7 +696,7 @@ public class PopupPanel extends JPanel {
                     } else {
                         SelectableSearch ss = (SelectableSearch) c
                                 .getSelectedItem();
-                        selected = ss.getSearch();
+                        selected = ss.getPredicate();
                         selected.addChangeListener(listener);
                     }
                     updateResult();
@@ -794,7 +796,7 @@ public class PopupPanel extends JPanel {
 
             for (ActiveSearch h : activeSearches) {
                 // extract patches
-                String searchName = h.getSearchName();
+                String predicateName = h.getPredicateName();
                 String name = h.getInstanceName();
 
                 final List<BoundingBox> bbs = new ArrayList<BoundingBox>();
@@ -817,7 +819,7 @@ public class PopupPanel extends JPanel {
                     // patches found, add them
                     JCheckBox cb = new JCheckBox();
                     Formatter f = new Formatter();
-                    f.format("%s (similarity %.0f%%)", searchName,
+                    f.format("%s (similarity %.0f%%)", predicateName,
                             100 - 100.0 * distance);
                     SearchList.updateCheckBox(cb, f.toString(), name);
 

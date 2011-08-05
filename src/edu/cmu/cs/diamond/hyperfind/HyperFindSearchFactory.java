@@ -82,18 +82,18 @@ public class HyperFindSearchFactory {
         return needsExamples;
     }
 
-    public HyperFindSearch createHyperFindSearch() throws IOException {
-        return new HyperFindSearch(bundle);
+    public HyperFindPredicate createHyperFindPredicate() throws IOException {
+        return new HyperFindPredicate(bundle);
     }
 
-    public HyperFindSearch createHyperFindSearch(List<BufferedImage> examples)
-            throws IOException {
-        HyperFindSearch search = createHyperFindSearch();
-        search.addExamples(examples);
-        return search;
+    public HyperFindPredicate createHyperFindPredicate(
+            List<BufferedImage> examples) throws IOException {
+        HyperFindPredicate predicate = createHyperFindPredicate();
+        predicate.addExamples(examples);
+        return predicate;
     }
 
-    public static HyperFindSearch createHyperFindSearch(
+    public static HyperFindPredicate createHyperFindPredicate(
             BundleFactory bundleFactory, URI uri) throws IOException {
         // System.out.println("trying " + uri);
         InputStream in = uri.toURL().openStream();
@@ -101,7 +101,7 @@ public class HyperFindSearchFactory {
         if (bundle.isCodec()) {
             throw new IOException("Codecs cannot be imported at runtime.");
         }
-        return new HyperFindSearch(bundle);
+        return new HyperFindPredicate(bundle);
     }
 
     public static List<HyperFindSearchFactory>

@@ -76,20 +76,20 @@ class SearchListModel extends AbstractListModel {
         return result;
     }
 
-    public void addSearch(final HyperFindSearch s) {
-        SelectableSearch ss = new SelectableSearch(s, INITIALLY_SELECTED);
+    public void addPredicate(final HyperFindPredicate p) {
+        SelectableSearch ss = new SelectableSearch(p, INITIALLY_SELECTED);
         searches.add(ss);
 
         int index = searches.size() - 1;
         fireIntervalAdded(this, index, index);
     }
 
-    List<HyperFindSearch> getSelectedSearches() {
-        List<HyperFindSearch> result = new ArrayList<HyperFindSearch>();
+    List<HyperFindPredicate> getSelectedPredicates() {
+        List<HyperFindPredicate> result = new ArrayList<HyperFindPredicate>();
 
         for (SelectableSearch s : searches) {
             if (s.isSelected()) {
-                result.add(s.getSearch());
+                result.add(s.getPredicate());
             }
         }
 
@@ -98,17 +98,17 @@ class SearchListModel extends AbstractListModel {
 
     List<Filter> createFilters() throws IOException {
         // first, eliminate duplicates
-        Set<HyperFindSearch> set = new HashSet<HyperFindSearch>();
+        Set<HyperFindPredicate> set = new HashSet<HyperFindPredicate>();
         for (SelectableSearch s : searches) {
             if (s.isSelected())
-                set.add(s.getSearch());
+                set.add(s.getPredicate());
         }
 
         // System.out.println("set: " + set);
 
         List<Filter> result = new ArrayList<Filter>();
-        for (HyperFindSearch s : set) {
-            result.addAll(s.createFilters());
+        for (HyperFindPredicate p : set) {
+            result.addAll(p.createFilters());
         }
 
         return result;
