@@ -176,6 +176,9 @@ public class PopupPanel extends JPanel {
             if (item != null) {
                 fireIntervalRemoved(this, index, index);
             }
+            if (getSelectedItem() == item) {
+                setSelectedItem(null);
+            }
         }
 
         public void destroy() {
@@ -580,8 +583,11 @@ public class PopupPanel extends JPanel {
 
         private Object selectedItem;
 
+        private final String NO_ITEM = "No selection";
+
         public PredicateTestComboModel(PredicateListModel model) {
             this.model = model;
+            setSelectedItem(NO_ITEM);
 
             model.addListDataListener(this);
         }
@@ -603,7 +609,7 @@ public class PopupPanel extends JPanel {
         @Override
         public Object getElementAt(int index) {
             if (index == 0) {
-                return "No selection";
+                return NO_ITEM;
             }
             return model.getElementAt(index - 1);
         }
@@ -626,6 +632,20 @@ public class PopupPanel extends JPanel {
         @Override
         public void intervalRemoved(ListDataEvent e) {
             fireIntervalRemoved(this, e.getIndex0() + 1, e.getIndex1() + 1);
+
+            int size = getSize();
+            Object item = getSelectedItem();
+            // sub-optimal
+            for (int i = 1; i < size; i++) {
+                if (getElementAt(i) == item) {
+                    item = null;
+                    break;
+                }
+            }
+            if (item != null) {
+                // item was deleted, deselect it
+                setSelectedItem(NO_ITEM);
+            }
         }
 
         public void destroy() {
@@ -665,7 +685,6 @@ public class PopupPanel extends JPanel {
             final JComboBox c = new JComboBox(
                     new PredicateTestComboModel(model));
             c.setRenderer(new PredicateInstanceCellRenderer());
-            c.setSelectedIndex(0);
             vBox.add(c);
 
             c.addHierarchyListener(new HierarchyListener() {
