@@ -86,17 +86,17 @@ public class PredicateImportTransferHandler extends TransferHandler {
         try {
             List<URI> uris = getURIs(support);
             for (URI u : uris) {
-                // first try to load it as a predicate bundle
-                HyperFindPredicate p = HyperFindPredicateFactory
-                        .createHyperFindPredicate(bundleFactory, u);
-                if (p != null) {
+                try {
+                    // first try to load it as a predicate bundle
+                    HyperFindPredicate p = HyperFindPredicateFactory
+                            .createHyperFindPredicate(bundleFactory, u);
                     model.addPredicate(p);
-                    continue;
+                } catch (IOException e) {
+                    // now try to read it as an example image
+                    BufferedImage img = ImageIO.read(u.toURL());
+                    main.popup(u.toString(), img);
                 }
 
-                // now try to read it as an example image
-                BufferedImage img = ImageIO.read(u.toURL());
-                main.popup(u.toString(), img);
             }
         } catch (UnsupportedFlavorException e) {
             return false;
