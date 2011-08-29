@@ -475,13 +475,15 @@ public final class Main {
             final PredicateListModel model, final JPopupMenu predicates,
             final List<HyperFindPredicateFactory> examplePredicateFactories,
             final List<HyperFindPredicate> codecList) throws IOException {
+        JMenuItem jm = new JMenuItem("Add search predicate:");
+        jm.setEnabled(false);
+        predicates.add(jm);
+        List<JMenuItem> exampleItems = new ArrayList<JMenuItem>();
         for (final HyperFindPredicateFactory f : factories) {
             if (f.getType() == BundleType.CODEC) {
                 codecList.add(f.createHyperFindPredicate());
-            } else if (f.needsExamples()) {
-                examplePredicateFactories.add(f);
             } else {
-                JMenuItem jm = new JMenuItem(f.getDisplayName());
+                jm = new JMenuItem(f.getDisplayName());
                 jm.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -494,8 +496,20 @@ public final class Main {
                     }
 
                 });
-                predicates.add(jm);
+                if (f.needsExamples()) {
+                    examplePredicateFactories.add(f);
+                    exampleItems.add(jm);
+                } else {
+                    predicates.add(jm);
+                }
             }
+        }
+        predicates.addSeparator();
+        jm = new JMenuItem("Add example predicate:");
+        jm.setEnabled(false);
+        predicates.add(jm);
+        for (JMenuItem ex : exampleItems) {
+            predicates.add(ex);
         }
     }
 
