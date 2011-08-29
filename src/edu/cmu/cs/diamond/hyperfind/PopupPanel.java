@@ -522,10 +522,7 @@ public class PopupPanel extends JPanel {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     image.clearDrawnPatches();
-                    addButton.setEnabled(false);
-                    clearButton.setEnabled(false);
-                    addToExistingButton.setEnabled(false);
-                    addToExistingCombo.setEnabled(false);
+                    updateComponentsEnablement();
                 }
             });
 
