@@ -126,12 +126,15 @@ final class PredicateList extends JPanel implements ListDataListener {
     }
 
     static void updateCheckBox(JCheckBox cb, String predicateName,
-            String instanceName) {
+            String instanceName, boolean needsExamples) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html>");
         sb.append(htmlEscape(predicateName));
         sb.append("<br><font size=-2>");
         sb.append(htmlEscape(instanceName));
+        if (needsExamples) {
+            sb.append("<br><font color=red>Needs examples</font>");
+        }
         sb.append("</font></html>");
 
         cb.setText(sb.toString());
@@ -149,7 +152,7 @@ final class PredicateList extends JPanel implements ListDataListener {
         HyperFindPredicate p = sp.getPredicate();
 
         updateCheckBox(element.getCb(), p.getPredicateName(),
-                p.getInstanceName());
+                p.getInstanceName(), p.missingExamples());
         revalidate();
         repaint();
     }
@@ -172,7 +175,8 @@ final class PredicateList extends JPanel implements ListDataListener {
         JButton edit = new JButton("Edit");
         JButton delete = new JButton("X");
 
-        updateCheckBox(cb, p.getPredicateName(), p.getInstanceName());
+        updateCheckBox(cb, p.getPredicateName(), p.getInstanceName(),
+                p.missingExamples());
 
         edit.setEnabled(p.isEditable());
         edit.addActionListener(new ActionListener() {

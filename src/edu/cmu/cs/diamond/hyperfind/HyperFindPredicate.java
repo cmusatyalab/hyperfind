@@ -90,6 +90,10 @@ public class HyperFindPredicate {
         return frame.needsExamples();
     }
 
+    public boolean missingExamples() {
+        return frame.needsExamples() && frame.getExamples().size() == 0;
+    }
+
     public String getPredicateName() {
         return bundle.getDisplayName();
     }
