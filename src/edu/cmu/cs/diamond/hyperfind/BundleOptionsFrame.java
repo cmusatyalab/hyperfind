@@ -41,12 +41,16 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.*;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.JTextComponent;
@@ -678,6 +682,35 @@ public class BundleOptionsFrame extends JFrame {
             list.setVisibleRowCount(0);
             list.setFixedCellHeight(CELL_SIZE);
             list.setFixedCellWidth(CELL_SIZE);
+            list.setTransferHandler(new URIImportTransferHandler() {
+                @Override
+                public boolean canImport(TransferSupport support) {
+                    support.setShowDropLocation(false);
+                    return super.canImport(support);
+                }
+
+                @Override
+                public boolean importData(TransferSupport support) {
+                    try {
+                        List<BufferedImage> images =
+                                new ArrayList<BufferedImage>();
+                        for (URI u : getURIs(support)) {
+                            try {
+                                images.add(ImageIO.read(u.toURL()));
+                            } catch (IOException e) {
+                            }
+                        }
+                        addExamples(images);
+                        return true;
+                    } catch (IOException e) {
+                        return false;
+                    } catch (UnsupportedFlavorException e) {
+                        return false;
+                    } catch (URISyntaxException e) {
+                        return false;
+                    }
+                }
+            });
             list.setCellRenderer(new DefaultListCellRenderer() {
                 @Override
                 public Component getListCellRendererComponent(JList list,

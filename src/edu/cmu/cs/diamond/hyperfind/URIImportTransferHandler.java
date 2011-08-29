@@ -40,62 +40,41 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
-import javax.imageio.ImageIO;
+import javax.swing.TransferHandler;
 
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
-
-public class PredicateImportTransferHandler extends URIImportTransferHandler {
-    private final Main main;
-
-    private final PredicateListModel model;
-
-    private final BundleFactory bundleFactory;
-
-    public PredicateImportTransferHandler(Main main, PredicateListModel model,
-            BundleFactory bundleFactory) {
-        this.main = main;
-        this.model = model;
-        this.bundleFactory = bundleFactory;
-    }
+public abstract class URIImportTransferHandler extends TransferHandler {
+    protected static final DataFlavor uriListFlavor = new DataFlavor(
+            "text/uri-list; class=java.lang.String", "URI list");
 
     @Override
-    public boolean importData(TransferSupport support) {
-        if (!canImport(support)) {
-            return false;
-        }
+    public boolean canImport(TransferSupport support) {
+        return support.isDataFlavorSupported(uriListFlavor);
+    }
 
-        try {
-            List<URI> uris = getURIs(support);
-            for (URI u : uris) {
-                try {
-                    // first try to load it as a predicate bundle
-                    HyperFindPredicate p = HyperFindPredicateFactory
-                            .createHyperFindPredicate(bundleFactory, u);
-                    model.addPredicate(p);
-                } catch (IOException e) {
-                    // now try to read it as an example image
-                    BufferedImage img = ImageIO.read(u.toURL());
-                    main.popup(u.toString(), img);
-                }
+    protected List<URI> getURIs(TransferSupport support)
+            throws IOException, UnsupportedFlavorException,
+            URISyntaxException {
+        String ss = (String) support.getTransferable().getTransferData(
+                uriListFlavor);
 
+        String uriList[] = ss.split("\r\n");
+
+        List<URI> result = new ArrayList<URI>();
+        for (String s : uriList) {
+            if (!s.startsWith("#")) {
+                URI u = new URI(s);
+                result.add(u);
             }
-        } catch (UnsupportedFlavorException e) {
-            return false;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return false;
         }
 
-        return true;
+        return result;
     }
 }
