@@ -62,6 +62,8 @@ class ImagePatchesLabel extends JLabel {
 
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
 
+    final private Rectangle entireImage;
+
     final Set<List<BoundingBox>> resultPatches = new HashSet<List<BoundingBox>>();
 
     int mouseDownX;
@@ -72,6 +74,7 @@ class ImagePatchesLabel extends JLabel {
 
     public ImagePatchesLabel(BufferedImage img) {
         super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
+        entireImage = new Rectangle(0, 0, img.getWidth(), img.getHeight());
 
         setHorizontalAlignment(SwingConstants.LEFT);
         setVerticalAlignment(SwingConstants.TOP);
@@ -138,6 +141,13 @@ class ImagePatchesLabel extends JLabel {
         }
 
         return result;
+    }
+
+    public void addEntireDrawnPatch() {
+        if (!drawnPatches.contains(entireImage)) {
+            drawnPatches.add(entireImage);
+            repaint();
+        }
     }
 
     public void addResultPatch(List<BoundingBox> rr) {

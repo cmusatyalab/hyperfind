@@ -383,6 +383,8 @@ public class PopupPanel extends JPanel {
 
         private final JButton clearButton;
 
+        private final JButton entireButton;
+
         private final JLabel countLabel;
 
         private final JButton addToExistingButton;
@@ -435,6 +437,8 @@ public class PopupPanel extends JPanel {
                 predicates.add(jm);
             }
 
+            entireButton = new JButton("Select Entire");
+
             clearButton = new JButton("Clear Patches");
             clearButton.setEnabled(false);
 
@@ -469,7 +473,7 @@ public class PopupPanel extends JPanel {
             });
 
             Box hBox = Box.createHorizontalBox();
-            hBox.add(addButton);
+            hBox.add(entireButton);
             hBox.add(Box.createHorizontalStrut(10));
             hBox.add(clearButton);
             vBox.add(hBox);
@@ -507,6 +511,8 @@ public class PopupPanel extends JPanel {
             addToExistingCombo.setEnabled(false);
 
             hBox = Box.createHorizontalBox();
+            hBox.add(addButton);
+            hBox.add(Box.createHorizontalStrut(10));
             hBox.add(addToExistingButton);
             hBox.add(Box.createHorizontalStrut(10));
             hBox.add(addToExistingCombo);
@@ -518,10 +524,20 @@ public class PopupPanel extends JPanel {
             vBox.add(hBox);
 
             // enabled/disabled behaviors
+            entireButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    image.addEntireDrawnPatch();
+                    entireButton.setEnabled(false);
+                    updateComponentsEnablement();
+                }
+            });
+
             clearButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     image.clearDrawnPatches();
+                    entireButton.setEnabled(true);
                     updateComponentsEnablement();
                 }
             });
