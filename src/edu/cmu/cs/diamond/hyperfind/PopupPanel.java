@@ -224,6 +224,8 @@ public class PopupPanel extends JPanel {
             return "JPEG";
         } else if (name.endsWith(".rgbimage")) {
             return "RGBImage";
+        } else if (name.endsWith(".binary")) {
+            return "Binary";
         } else if (name.endsWith(".patches")) {
             return BoundingBox.fromPatchesList(value).toString();
         } else {
