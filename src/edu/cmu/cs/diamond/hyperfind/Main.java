@@ -1,7 +1,7 @@
 /*
  *  HyperFind, a search application for the OpenDiamond platform
  *
- *  Copyright (c) 2009-2010 Carnegie Mellon University
+ *  Copyright (c) 2009-2012 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -302,13 +302,16 @@ public final class Main {
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
                             p.createFilters());
-                    filters.addAll(model.createFilters());
 
+                    // give the ResultExportTransferHandler a different
+                    // factory with just the codec, since it only needs the
+                    // decoded image and not the filter output attributes
+                    resultsList.setTransferHandler(
+                            new ResultExportTransferHandler(
+                                    m.createFactory(filters), executor));
+
+                    filters.addAll(model.createFilters());
                     SearchFactory factory = m.createFactory(filters);
-                    // System.out.println(factory);
-                    resultsList
-                            .setTransferHandler(new ResultExportTransferHandler(
-                                    factory, executor));
 
                     List<HyperFindSearchMonitor> monitors =
                             HyperFindSearchMonitorFactory
