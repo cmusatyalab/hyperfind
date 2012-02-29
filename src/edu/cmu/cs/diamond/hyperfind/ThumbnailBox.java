@@ -294,8 +294,14 @@ public class ThumbnailBox extends JPanel {
                     } finally {
                         // System.out.println("STOP");
 
-                        // update stats one more time
-                        updateStats();
+                        // update stats one more time, if possible
+                        try {
+                            updateStats();
+                        } catch (IOException e1) {
+                            // swallow
+                        } catch (InterruptedException e2) {
+                            Thread.currentThread().interrupt();
+                        }
 
                         for (HyperFindSearchMonitor sm : searchMonitors) {
                             sm.stopped();
