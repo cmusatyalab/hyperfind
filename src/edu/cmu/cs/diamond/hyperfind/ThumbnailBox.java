@@ -150,7 +150,8 @@ public class ThumbnailBox extends JPanel {
                 try {
                     updateStats();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    // This should also be encountered and handled by the
+                    // worker thread, so there's no need to be noisy here
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
