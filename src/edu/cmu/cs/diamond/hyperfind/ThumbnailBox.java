@@ -384,7 +384,7 @@ public class ThumbnailBox extends JPanel {
 
             boolean hasStats = false;
             for (ServerStatistics s : serverStats.values()) {
-                if (s.getTotalObjects() != 0) {
+                if (s.getServerStats().get(s.TOTAL_OBJECTS) != 0) {
                     hasStats = true;
                     break;
                 }

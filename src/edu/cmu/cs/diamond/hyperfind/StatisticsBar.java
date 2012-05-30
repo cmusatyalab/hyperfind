@@ -57,23 +57,26 @@ public class StatisticsBar extends JProgressBar {
         setNumbers(0, 0, 0);
     }
 
-    private void setNumbers(int total, int searched, int dropped) {
+    private void setNumbers(long total, long searched, long dropped) {
         setIndeterminate(false);
         String str = "Total: " + total + ", Searched: " + searched
                 + ", Dropped: " + dropped;
         setString(str);
-        setMaximum(total);
-        setValue(searched);
+        setMaximum(total > Integer.MAX_VALUE ?
+                Integer.MAX_VALUE : (int) total);
+        setValue(searched > Integer.MAX_VALUE ?
+                Integer.MAX_VALUE : (int) searched);
     }
 
     public void update(Map<String, ServerStatistics> serverStats) {
-        int t = 0;
-        int s = 0;
-        int d = 0;
+        long t = 0;
+        long s = 0;
+        long d = 0;
         for (ServerStatistics ss : serverStats.values()) {
-            t += ss.getTotalObjects();
-            s += ss.getProcessedObjects();
-            d += ss.getDroppedObjects();
+            Map<String, Long> map = ss.getServerStats();
+            t += map.get(ss.TOTAL_OBJECTS);
+            s += map.get(ss.PROCESSED_OBJECTS);
+            d += map.get(ss.DROPPED_OBJECTS);
         }
         setNumbers(t, s, d);
     }
