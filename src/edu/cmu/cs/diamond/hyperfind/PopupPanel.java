@@ -222,6 +222,8 @@ public class PopupPanel extends JPanel {
             return Double.toString(Util.extractDouble(value));
         } else if (name.endsWith(".jpeg")) {
             return "JPEG";
+        } else if (name.endsWith(".png")) {
+            return "PNG";
         } else if (name.endsWith(".rgbimage")) {
             return "RGBImage";
         } else if (name.endsWith(".binary")) {
