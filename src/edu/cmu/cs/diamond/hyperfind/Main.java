@@ -348,7 +348,8 @@ public final class Main {
                                     model.getSelectedPredicates(), factory),
                                     monitors);
                 } catch (IOException e1) {
-                    stats.showException(e1.getCause());
+                    Throwable e2 = e1.getCause();
+                    stats.showException(e2 != null ? e2 : e1);
                     e1.printStackTrace();
                 } catch (InterruptedException e1) {
                     // TODO Auto-generated catch block
