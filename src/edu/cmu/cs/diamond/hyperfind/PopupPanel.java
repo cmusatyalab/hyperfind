@@ -337,7 +337,7 @@ public class PopupPanel extends JPanel {
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-            leftSide.add(new PatchesListPanel(activePredicates, attributes,
+            leftSide.add(new RegionsListPanel(activePredicates, attributes,
                     image));
             leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
                     objectID, img, p));
@@ -811,8 +811,8 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    private static class PatchesListPanel extends JPanel {
-        public PatchesListPanel(List<ActivePredicate> activePredicates,
+    private static class RegionsListPanel extends JPanel {
+        public RegionsListPanel(List<ActivePredicate> activePredicates,
                 Map<String, byte[]> attributes,
                 final ImageRegionsLabel image) {
             Box box = Box.createVerticalBox();
@@ -828,7 +828,7 @@ public class PopupPanel extends JPanel {
             JScrollPane jsp = new JScrollPane(box,
                     ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            jsp.setBorder(BorderFactory.createTitledBorder("Patch Results"));
+            jsp.setBorder(BorderFactory.createTitledBorder("Result Regions"));
             jsp.getHorizontalScrollBar().setUnitIncrement(20);
             jsp.getVerticalScrollBar().setUnitIncrement(20);
 
