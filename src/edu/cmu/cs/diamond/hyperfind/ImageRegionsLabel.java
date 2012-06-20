@@ -1,7 +1,7 @@
 /*
  *  HyperFind, a search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2009 Carnegie Mellon University
+ *  Copyright (c) 2008-2012 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -48,8 +48,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.ImageIcon;
@@ -59,6 +61,9 @@ import javax.swing.SwingConstants;
 import org.jdesktop.swingx.graphics.GraphicsUtilities;
 
 class ImageRegionsLabel extends JLabel {
+
+    private static final HeatmapOverlayConvertOp RESULT_OVERLAY_OP =
+            new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
 
@@ -71,6 +76,9 @@ class ImageRegionsLabel extends JLabel {
     int mouseDownY;
 
     final private List<BoundingBox> testResultPatches = new ArrayList<BoundingBox>();
+
+    final private Map<List<BufferedImage>, BufferedImage> resultHeatmaps =
+            new HashMap<List<BufferedImage>, BufferedImage>();
 
     public ImageRegionsLabel(BufferedImage img) {
         super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
@@ -166,11 +174,39 @@ class ImageRegionsLabel extends JLabel {
         repaint();
     }
 
+    public void addResultHeatmap(List<BufferedImage> heatmaps) {
+        if (heatmaps.size() == 0) {
+            return;
+        }
+
+        BufferedImage image = new BufferedImage(entireImage.width,
+                entireImage.height, BufferedImage.TYPE_INT_ARGB);
+
+        // precompute merged overlay
+        Graphics2D g = image.createGraphics();
+        for (BufferedImage heatmap : heatmaps) {
+            g.drawImage(heatmap, RESULT_OVERLAY_OP, 0, 0);
+        }
+        g.dispose();
+
+        resultHeatmaps.put(heatmaps, image);
+        repaint();
+    }
+
+    public void removeResultHeatmap(List<BufferedImage> heatmaps) {
+        resultHeatmaps.remove(heatmaps);
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         Graphics2D g2 = (Graphics2D) g;
+
+        for (BufferedImage heatmap : resultHeatmaps.values()) {
+            g2.drawImage(heatmap, null, null);
+        }
 
         for (List<BoundingBox> rr : resultPatches) {
             for (BoundingBox r : rr) {

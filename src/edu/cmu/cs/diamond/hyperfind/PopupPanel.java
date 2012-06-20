@@ -1,7 +1,7 @@
 /*
  *  HyperFind, a search application for the OpenDiamond platform
  *
- *  Copyright (c) 2008-2010 Carnegie Mellon University
+ *  Copyright (c) 2008-2012 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -43,6 +43,7 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -835,15 +836,17 @@ public class PopupPanel extends JPanel {
             add(jsp);
 
             for (ActivePredicate h : activePredicates) {
-                // extract patches
+                // extract patches and heatmaps
                 String predicateName = h.getPredicateName();
                 String name = h.getInstanceName();
 
                 final List<BoundingBox> bbs = new ArrayList<BoundingBox>();
+                final List<BufferedImage> heatmaps =
+                        new ArrayList<BufferedImage>();
                 double distance = 1;
                 for (String fName : h.getFilterNames()) {
+                    // patches
                     String key = "_filter." + fName + ".patches";
-                    // System.out.println(key);
                     if (attributes.containsKey(key)) {
                         for (BoundingBox bb : BoundingBox
                                 .fromPatchesList(attributes.get(key))) {
@@ -852,24 +855,43 @@ public class PopupPanel extends JPanel {
                             distance = Math.min(distance, bb.getDistance());
                         }
                     }
+
+                    // heatmaps
+                    key = "_filter." + fName + ".heatmap.png";
+                    if (attributes.containsKey(key)) {
+                        byte[] data = attributes.get(key);
+                        ByteArrayInputStream in =
+                                new ByteArrayInputStream(data);
+                        try {
+                            heatmaps.add(ImageIO.read(in));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
 
-                if (bbs.size() > 0) {
+                if (bbs.size() > 0 || heatmaps.size() > 0) {
                     // System.out.println(" YES");
-                    // patches found, add them
+                    // regions found, add them
                     JCheckBox cb = new JCheckBox();
                     Formatter f = new Formatter();
-                    f.format("%s (similarity %.0f%%)", predicateName,
-                            100 - 100.0 * distance);
+                    f.format("%s", predicateName);
+                    if (bbs.size() > 0) {
+                        // similarity metric comes from the patches attribute
+                        f.format(" (similarity %.0f%%)",
+                                100 - 100.0 * distance);
+                    }
                     PredicateList.updateCheckBox(cb, f.toString(), name, false);
 
                     cb.addItemListener(new ItemListener() {
                         @Override
                         public void itemStateChanged(ItemEvent e) {
                             if (e.getStateChange() == ItemEvent.SELECTED) {
+                                image.addResultHeatmap(heatmaps);
                                 image.addResultPatch(bbs);
                             } else {
                                 image.removeResultPatch(bbs);
+                                image.removeResultHeatmap(heatmaps);
                             }
                         }
                     });
