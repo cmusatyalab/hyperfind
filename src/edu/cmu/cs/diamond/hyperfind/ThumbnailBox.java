@@ -1,7 +1,7 @@
 /*
  *  HyperFind, a search application for the OpenDiamond platform
  *
- *  Copyright (c) 2007-2010 Carnegie Mellon University
+ *  Copyright (c) 2007-2012 Carnegie Mellon University
  *  All rights reserved.
  *
  *  HyperFind is free software: you can redistribute it and/or modify
@@ -67,6 +67,9 @@ public class ThumbnailBox extends JPanel {
 
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
             null, null);
+
+    private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP =
+            new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
     private Search search;
 
@@ -176,6 +179,7 @@ public class ThumbnailBox extends JPanel {
 
     // called on AWT thread
     public void start(Search s, final Collection<String> patchAttributes,
+            final Collection<String> heatmapAttributes,
             final ActivePredicateSet activePredicateSet,
             final List<HyperFindSearchMonitor> monitors) {
         search = s;
@@ -251,18 +255,28 @@ public class ThumbnailBox extends JPanel {
                                         BufferedImage.TYPE_INT_RGB);
                             }
 
-                            // draw patches
+                            // set up for drawing
                             Graphics2D g = thumb.createGraphics();
                             g.setColor(Color.GREEN);
                             int origW = Util
                                     .extractInt(r.getValue("_cols.int"));
                             int origH = Util
                                     .extractInt(r.getValue("_rows.int"));
-                            g
-                                    .scale((double) thumb.getWidth()
-                                            / (double) origW, (double) thumb
-                                            .getHeight()
-                                            / (double) origH);
+                            g.scale((double) thumb.getWidth() /
+                                    (double) origW,
+                                    (double) thumb.getHeight() /
+                                    (double) origH);
+
+                            // draw heatmaps
+                            for (String p : heatmapAttributes) {
+                                // System.out.println(p);
+                                byte[] heatmap = r.getValue(p);
+                                if (heatmap != null) {
+                                    drawHeatmap(g, heatmap);
+                                }
+                            }
+
+                            // draw patches
                             for (String p : patchAttributes) {
                                 // System.out.println(p);
                                 byte[] patch = r.getValue(p);
@@ -270,6 +284,7 @@ public class ThumbnailBox extends JPanel {
                                     drawPatches(g, patch);
                                 }
                             }
+
                             g.dispose();
 
                             // check setting from server
@@ -362,6 +377,18 @@ public class ThumbnailBox extends JPanel {
             }
         };
         workerFuture.execute();
+    }
+
+    private void drawHeatmap(Graphics2D g, byte[] data) {
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        BufferedImage heatmap;
+        try {
+            heatmap = ImageIO.read(in);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        g.drawImage(heatmap, HEATMAP_OVERLAY_OP, 0, 0);
     }
 
     private void drawPatches(Graphics2D g, byte[] patches) {
