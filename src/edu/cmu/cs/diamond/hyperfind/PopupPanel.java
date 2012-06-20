@@ -333,7 +333,7 @@ public class PopupPanel extends JPanel {
         // image pane or text pane
         JScrollPane scrollPane;
         if (img != null) {
-            ImagePatchesLabel image = new ImagePatchesLabel(img);
+            ImageRegionsLabel image = new ImageRegionsLabel(img);
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
@@ -379,7 +379,7 @@ public class PopupPanel extends JPanel {
     private static class ExampleSearchPanel extends JPanel {
         private final PredicateListModel model;
 
-        private final ImagePatchesLabel image;
+        private final ImageRegionsLabel image;
 
         private final BufferedImage img;
 
@@ -396,7 +396,7 @@ public class PopupPanel extends JPanel {
         private final JComboBox addToExistingCombo;
 
         public ExampleSearchPanel(final PredicateListModel model,
-                final ImagePatchesLabel image, BufferedImage img,
+                final ImageRegionsLabel image, BufferedImage img,
                 List<HyperFindPredicateFactory> examplePredicateFactories) {
             setBorder(BorderFactory.createTitledBorder("Example Search"));
 
@@ -673,7 +673,7 @@ public class PopupPanel extends JPanel {
     private static class TestPredicatePanel extends JPanel {
         private final Main m;
 
-        private final ImagePatchesLabel image;
+        private final ImageRegionsLabel image;
 
         private final ObjectIdentifier objectID;
 
@@ -686,7 +686,7 @@ public class PopupPanel extends JPanel {
         private HyperFindPredicate selected;
 
         public TestPredicatePanel(Main m, PredicateListModel model,
-                ImagePatchesLabel image, ObjectIdentifier objectID,
+                ImageRegionsLabel image, ObjectIdentifier objectID,
                 BufferedImage img, PopupPanel pp) {
             setBorder(BorderFactory.createTitledBorder("Test Predicate"));
 
@@ -814,7 +814,7 @@ public class PopupPanel extends JPanel {
     private static class PatchesListPanel extends JPanel {
         public PatchesListPanel(List<ActivePredicate> activePredicates,
                 Map<String, byte[]> attributes,
-                final ImagePatchesLabel image) {
+                final ImageRegionsLabel image) {
             Box box = Box.createVerticalBox();
 
             setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,

@@ -58,7 +58,7 @@ import javax.swing.SwingConstants;
 
 import org.jdesktop.swingx.graphics.GraphicsUtilities;
 
-class ImagePatchesLabel extends JLabel {
+class ImageRegionsLabel extends JLabel {
 
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
 
@@ -72,7 +72,7 @@ class ImagePatchesLabel extends JLabel {
 
     final private List<BoundingBox> testResultPatches = new ArrayList<BoundingBox>();
 
-    public ImagePatchesLabel(BufferedImage img) {
+    public ImageRegionsLabel(BufferedImage img) {
         super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
         entireImage = new Rectangle(0, 0, img.getWidth(), img.getHeight());
 
