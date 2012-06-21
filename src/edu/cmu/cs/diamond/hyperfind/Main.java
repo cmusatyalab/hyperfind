@@ -517,10 +517,8 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        ActivePredicateSet activePredicateSet = r.getActivePredicateSet();
         popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r.getResult(), activePredicateSet, examplePredicateFactories,
-                model));
+                r, examplePredicateFactories, model));
     }
 
     private void popup(String title, PopupPanel p) {

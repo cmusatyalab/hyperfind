@@ -237,14 +237,14 @@ public class PopupPanel extends JPanel {
         }
     }
 
-    public static PopupPanel createInstance(Main m, Result r,
-            ActivePredicateSet activePredicateSet,
+    public static PopupPanel createInstance(Main m, HyperFindResult hr,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             PredicateListModel model) {
 
+        Result r = hr.getResult();
         BufferedImage img = Util.extractImageFromResult(r);
         ResultRegions regions = new ResultRegions(
-                activePredicateSet.getFilterNames(), r);
+                hr.getActivePredicateSet().getFilterNames(), r);
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
         for (String k : r.getKeys()) {
@@ -254,7 +254,7 @@ public class PopupPanel extends JPanel {
             }
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
-                activePredicateSet.getActivePredicates(),
+                hr.getActivePredicateSet().getActivePredicates(),
                 examplePredicateFactories, regions, attributes, model);
     }
 
