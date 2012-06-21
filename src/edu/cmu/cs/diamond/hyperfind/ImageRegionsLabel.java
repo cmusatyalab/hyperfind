@@ -65,6 +65,9 @@ class ImageRegionsLabel extends JLabel {
     private static final HeatmapOverlayConvertOp RESULT_OVERLAY_OP =
             new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
+    private static final HeatmapOverlayConvertOp TEST_OVERLAY_OP =
+            new HeatmapOverlayConvertOp(new Color(0x800000ff, true));
+
     final List<Rectangle> drawnPatches = new ArrayList<Rectangle>();
 
     final private Rectangle entireImage;
@@ -79,6 +82,8 @@ class ImageRegionsLabel extends JLabel {
 
     final private Map<List<BufferedImage>, BufferedImage> resultHeatmaps =
             new HashMap<List<BufferedImage>, BufferedImage>();
+
+    private BufferedImage testResultHeatmap;
 
     public ImageRegionsLabel(BufferedImage img) {
         super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
@@ -175,27 +180,40 @@ class ImageRegionsLabel extends JLabel {
     }
 
     public void addResultHeatmap(List<BufferedImage> heatmaps) {
-        if (heatmaps.size() == 0) {
-            return;
+        BufferedImage overlay = renderHeatmaps(heatmaps, RESULT_OVERLAY_OP);
+        if (overlay != null) {
+            resultHeatmaps.put(heatmaps, overlay);
+            repaint();
         }
-
-        BufferedImage image = new BufferedImage(entireImage.width,
-                entireImage.height, BufferedImage.TYPE_INT_ARGB);
-
-        // precompute merged overlay
-        Graphics2D g = image.createGraphics();
-        for (BufferedImage heatmap : heatmaps) {
-            g.drawImage(heatmap, RESULT_OVERLAY_OP, 0, 0);
-        }
-        g.dispose();
-
-        resultHeatmaps.put(heatmaps, image);
-        repaint();
     }
 
     public void removeResultHeatmap(List<BufferedImage> heatmaps) {
         resultHeatmaps.remove(heatmaps);
         repaint();
+    }
+
+    public void setTestResultHeatmaps(List<BufferedImage> heatmaps) {
+        testResultHeatmap = renderHeatmaps(heatmaps, TEST_OVERLAY_OP);
+        repaint();
+    }
+
+    private BufferedImage renderHeatmaps(List<BufferedImage> heatmaps,
+            HeatmapOverlayConvertOp op) {
+        if (heatmaps.size() == 0) {
+            return null;
+        }
+
+        BufferedImage image = new BufferedImage(entireImage.width,
+                entireImage.height, BufferedImage.TYPE_INT_ARGB);
+
+        // compute merged overlay
+        Graphics2D g = image.createGraphics();
+        for (BufferedImage heatmap : heatmaps) {
+            g.drawImage(heatmap, op, 0, 0);
+        }
+        g.dispose();
+
+        return image;
     }
 
     @Override
@@ -206,6 +224,10 @@ class ImageRegionsLabel extends JLabel {
 
         for (BufferedImage heatmap : resultHeatmaps.values()) {
             g2.drawImage(heatmap, null, null);
+        }
+
+        if (testResultHeatmap != null) {
+            g2.drawImage(testResultHeatmap, null, null);
         }
 
         for (List<BoundingBox> rr : resultPatches) {

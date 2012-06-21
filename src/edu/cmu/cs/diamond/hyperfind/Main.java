@@ -556,7 +556,7 @@ public final class Main {
     }
 
     // returns null if object was dropped
-    private List<BoundingBox> getPatches(HyperFindPredicate predicate,
+    private ResultRegions getRegions(HyperFindPredicate predicate,
             ObjectIdentifier objectID, byte[] data) throws IOException {
         // Create factory
         HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
@@ -564,11 +564,9 @@ public final class Main {
         filters.addAll(predicate.createFilters());
         SearchFactory factory = createFactory(filters);
 
-        // Set push attributes
-        Set<String> attributes = new HashSet<String>();
-        for (String fName : predicate.getFilterNames()) {
-            attributes.add("_filter." + fName + ".patches");
-        }
+        // Set push attributes for patches and heatmaps
+        List<String> filterNames = predicate.getFilterNames();
+        Set<String> attributes = ResultRegions.getPushAttributes(filterNames);
 
         // Generate result
         Result r;
@@ -579,31 +577,24 @@ public final class Main {
         }
 
         // Check if object was dropped
-        for (String fName : predicate.getFilterNames()) {
+        for (String fName : filterNames) {
             if (r.getValue("_filter." + fName + "_score") == null) {
                 return null;
             }
         }
 
-        // Generate bounding boxes
-        List<BoundingBox> patchList = new ArrayList<BoundingBox>();
-        for (String attr : attributes) {
-            byte[] patches = r.getValue(attr);
-            if (patches != null) {
-                patchList.addAll(BoundingBox.fromPatchesList(patches));
-            }
-        }
-        return patchList;
+        // We're safe
+        return new ResultRegions(filterNames, r);
     }
 
-    List<BoundingBox> getPatches(HyperFindPredicate predicate,
+    ResultRegions getRegions(HyperFindPredicate predicate,
             ObjectIdentifier objectID) throws IOException {
-        return getPatches(predicate, objectID, null);
+        return getRegions(predicate, objectID, null);
     }
 
-    List<BoundingBox> getPatches(HyperFindPredicate predicate, byte[] data)
+    ResultRegions getRegions(HyperFindPredicate predicate, byte[] data)
             throws IOException {
-        return getPatches(predicate, null, data);
+        return getRegions(predicate, null, data);
     }
 
     private SearchFactory createFactory(List<Filter> filters) {

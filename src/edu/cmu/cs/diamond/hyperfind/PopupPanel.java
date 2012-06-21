@@ -768,7 +768,9 @@ public class PopupPanel extends JPanel {
                 // clear
                 label.setText(" ");
                 List<BoundingBox> patches = Collections.emptyList();
+                List<BufferedImage> heatmaps = Collections.emptyList();
                 image.setTestResultPatches(patches);
+                image.setTestResultHeatmaps(heatmaps);
             } else {
                 Cursor oldCursor = pp.getCursor();
 
@@ -776,19 +778,20 @@ public class PopupPanel extends JPanel {
                     pp.setCursor(Cursor
                             .getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-                    List<BoundingBox> bb;
+                    ResultRegions regions;
                     if (objectID != null) {
-                        bb = m.getPatches(selected, objectID);
+                        regions = m.getRegions(selected, objectID);
                     } else {
-                        bb = m.getPatches(selected, encodePNM());
+                        regions = m.getRegions(selected, encodePNM());
                     }
-                    if (bb != null) {
+                    if (regions != null) {
                         label.setText("Object passed");
                     } else {
                         label.setText("Object dropped");
-                        bb = Collections.emptyList();
+                        regions = new ResultRegions();
                     }
-                    image.setTestResultPatches(bb);
+                    image.setTestResultHeatmaps(regions.getHeatmaps());
+                    image.setTestResultPatches(regions.getPatches());
                 } catch (IOException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
