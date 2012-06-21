@@ -243,8 +243,6 @@ public class PopupPanel extends JPanel {
 
         Result r = hr.getResult();
         BufferedImage img = Util.extractImageFromResult(r);
-        ResultRegions regions = new ResultRegions(
-                hr.getActivePredicateSet().getFilterNames(), r);
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
         for (String k : r.getKeys()) {
@@ -255,7 +253,7 @@ public class PopupPanel extends JPanel {
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
                 hr.getActivePredicateSet().getActivePredicates(),
-                examplePredicateFactories, regions, attributes, model);
+                examplePredicateFactories, hr.getRegions(), attributes, model);
     }
 
     public static PopupPanel createInstance(Main m, BufferedImage img,

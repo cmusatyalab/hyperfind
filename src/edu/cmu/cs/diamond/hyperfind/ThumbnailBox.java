@@ -190,8 +190,6 @@ public class ThumbnailBox extends JPanel {
         final DefaultListModel model = new DefaultListModel();
         list.setModel(model);
 
-        final List<String> filterNames = activePredicateSet.getFilterNames();
-
         // the tricky pausing, try to make it better with local variables
         final AtomicInteger resultsLeftBeforePause = new AtomicInteger(
                 resultsPerScreen);
@@ -256,8 +254,7 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             // draw heatmaps and patches
-                            ResultRegions regions =
-                                    new ResultRegions(filterNames, r);
+                            ResultRegions regions = hr.getRegions();
                             Graphics2D g = thumb.createGraphics();
                             g.setRenderingHint(
                                     RenderingHints.KEY_INTERPOLATION,

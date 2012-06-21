@@ -50,9 +50,13 @@ public class HyperFindResult {
 
     private final Result result;
 
+    private final ResultRegions regions;
+
     public HyperFindResult(ActivePredicateSet predicateSet, Result result) {
         this.predicateSet = predicateSet;
         this.result = result;
+        this.regions = new ResultRegions(predicateSet.getFilterNames(),
+                result);
     }
 
     public void popup() {
@@ -71,5 +75,9 @@ public class HyperFindResult {
 
     public Result getResult() {
         return result;
+    }
+
+    public ResultRegions getRegions() {
+        return regions;
     }
 }

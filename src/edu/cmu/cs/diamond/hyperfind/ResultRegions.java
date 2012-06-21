@@ -48,7 +48,7 @@ import javax.imageio.ImageIO;
 
 import edu.cmu.cs.diamond.opendiamond.Result;
 
-class ResultRegions {
+public class ResultRegions {
 
     private final Map<String, List<BoundingBox>> patches =
             new HashMap<String, List<BoundingBox>>();
@@ -56,11 +56,11 @@ class ResultRegions {
     private final Map<String, BufferedImage> heatmaps =
             new HashMap<String, BufferedImage>();
 
-    public ResultRegions() {
+    ResultRegions() {
         // construct a dummy object with no regions
     }
 
-    public ResultRegions(Collection<String> filterNames, Result r) {
+    ResultRegions(Collection<String> filterNames, Result r) {
         for (String name : filterNames) {
             // patches
             byte[] patch = r.getValue(getPatchAttributeName(name));
@@ -105,8 +105,7 @@ class ResultRegions {
         return heatmaps.get(filterName);
     }
 
-    public static Set<String> getPushAttributes(
-            Collection<String> filterNames) {
+    static Set<String> getPushAttributes(Collection<String> filterNames) {
         Set<String> attrs = new HashSet<String>();
         for (String name : filterNames) {
             attrs.add(getPatchAttributeName(name));
