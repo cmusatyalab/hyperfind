@@ -259,6 +259,9 @@ public class ThumbnailBox extends JPanel {
                             ResultRegions regions =
                                     new ResultRegions(filterNames, r);
                             Graphics2D g = thumb.createGraphics();
+                            g.setRenderingHint(
+                                    RenderingHints.KEY_INTERPOLATION,
+                                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                             int origW = Util
                                     .extractInt(r.getValue("_cols.int"));
                             int origH = Util
