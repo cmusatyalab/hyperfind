@@ -56,6 +56,10 @@ class ResultRegions {
     private final Map<String, BufferedImage> heatmaps =
             new HashMap<String, BufferedImage>();
 
+    public ResultRegions() {
+        // construct a dummy object with no regions
+    }
+
     public ResultRegions(Collection<String> filterNames, Result r) {
         for (String name : filterNames) {
             // patches

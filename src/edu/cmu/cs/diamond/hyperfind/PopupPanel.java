@@ -43,7 +43,6 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -239,11 +238,13 @@ public class PopupPanel extends JPanel {
     }
 
     public static PopupPanel createInstance(Main m, Result r,
-            List<ActivePredicate> activePredicates,
+            ActivePredicateSet activePredicateSet,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             PredicateListModel model) {
 
         BufferedImage img = Util.extractImageFromResult(r);
+        ResultRegions regions = new ResultRegions(
+                activePredicateSet.getFilterNames(), r);
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
         for (String k : r.getKeys()) {
@@ -253,8 +254,8 @@ public class PopupPanel extends JPanel {
             }
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
-                activePredicates, examplePredicateFactories, attributes,
-                model);
+                activePredicateSet.getActivePredicates(),
+                examplePredicateFactories, regions, attributes, model);
     }
 
     public static PopupPanel createInstance(Main m, BufferedImage img,
@@ -263,16 +264,17 @@ public class PopupPanel extends JPanel {
             PredicateListModel model) {
         Map<String, byte[]> attributes = Collections.emptyMap();
         List<ActivePredicate> activePredicates = Collections.emptyList();
+        ResultRegions regions = new ResultRegions();
 
         return createInstance(m, null, img, resultData, activePredicates,
-                examplePredicateFactories, attributes, model);
+                examplePredicateFactories, regions, attributes, model);
     }
 
     private static PopupPanel createInstance(Main m,
             ObjectIdentifier objectID, BufferedImage img, byte resultData[],
             List<ActivePredicate> activePredicates,
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            final Map<String, byte[]> attributes,
+            ResultRegions regions, final Map<String, byte[]> attributes,
             PredicateListModel predicateListModel) {
         PopupPanel p = new PopupPanel(img);
 
@@ -338,7 +340,7 @@ public class PopupPanel extends JPanel {
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
             scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-            leftSide.add(new RegionsListPanel(activePredicates, attributes,
+            leftSide.add(new RegionsListPanel(activePredicates, regions,
                     image));
             leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
                     objectID, img, p));
@@ -814,8 +816,7 @@ public class PopupPanel extends JPanel {
 
     private static class RegionsListPanel extends JPanel {
         public RegionsListPanel(List<ActivePredicate> activePredicates,
-                Map<String, byte[]> attributes,
-                final ImageRegionsLabel image) {
+                ResultRegions regions, final ImageRegionsLabel image) {
             Box box = Box.createVerticalBox();
 
             setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
@@ -846,27 +847,16 @@ public class PopupPanel extends JPanel {
                 double distance = 1;
                 for (String fName : h.getFilterNames()) {
                     // patches
-                    String key = "_filter." + fName + ".patches";
-                    if (attributes.containsKey(key)) {
-                        for (BoundingBox bb : BoundingBox
-                                .fromPatchesList(attributes.get(key))) {
-                            bbs.add(bb);
-                            // Find minimum distance
-                            distance = Math.min(distance, bb.getDistance());
-                        }
+                    for (BoundingBox bb : regions.getPatches(fName)) {
+                        bbs.add(bb);
+                        // Find minimum distance
+                        distance = Math.min(distance, bb.getDistance());
                     }
 
                     // heatmaps
-                    key = "_filter." + fName + ".heatmap.png";
-                    if (attributes.containsKey(key)) {
-                        byte[] data = attributes.get(key);
-                        ByteArrayInputStream in =
-                                new ByteArrayInputStream(data);
-                        try {
-                            heatmaps.add(ImageIO.read(in));
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                    BufferedImage heatmap = regions.getHeatmap(fName);
+                    if (heatmap != null) {
+                        heatmaps.add(heatmap);
                     }
                 }
 

@@ -517,10 +517,9 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        List<ActivePredicate> activePredicates = r.getActivePredicateSet()
-                .getActivePredicates();
+        ActivePredicateSet activePredicateSet = r.getActivePredicateSet();
         popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r.getResult(), activePredicates, examplePredicateFactories,
+                r.getResult(), activePredicateSet, examplePredicateFactories,
                 model));
     }
 
