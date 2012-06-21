@@ -178,9 +178,7 @@ public class ThumbnailBox extends JPanel {
     }
 
     // called on AWT thread
-    public void start(Search s, final Collection<String> patchAttributes,
-            final Collection<String> heatmapAttributes,
-            final ActivePredicateSet activePredicateSet,
+    public void start(Search s, final ActivePredicateSet activePredicateSet,
             final List<HyperFindSearchMonitor> monitors) {
         search = s;
         searchMonitors = monitors;
@@ -191,6 +189,8 @@ public class ThumbnailBox extends JPanel {
 
         final DefaultListModel model = new DefaultListModel();
         list.setModel(model);
+
+        final List<String> filterNames = activePredicateSet.getFilterNames();
 
         // the tricky pausing, try to make it better with local variables
         final AtomicInteger resultsLeftBeforePause = new AtomicInteger(
@@ -255,9 +255,10 @@ public class ThumbnailBox extends JPanel {
                                         BufferedImage.TYPE_INT_RGB);
                             }
 
-                            // set up for drawing
+                            // draw heatmaps and patches
+                            ResultRegions regions =
+                                    new ResultRegions(filterNames, r);
                             Graphics2D g = thumb.createGraphics();
-                            g.setColor(Color.GREEN);
                             int origW = Util
                                     .extractInt(r.getValue("_cols.int"));
                             int origH = Util
@@ -266,25 +267,14 @@ public class ThumbnailBox extends JPanel {
                                     (double) origW,
                                     (double) thumb.getHeight() /
                                     (double) origH);
-
-                            // draw heatmaps
-                            for (String p : heatmapAttributes) {
-                                // System.out.println(p);
-                                byte[] heatmap = r.getValue(p);
-                                if (heatmap != null) {
-                                    drawHeatmap(g, heatmap);
-                                }
+                            for (BufferedImage heatmap :
+                                    regions.getHeatmaps()) {
+                                drawHeatmap(g, heatmap);
                             }
-
-                            // draw patches
-                            for (String p : patchAttributes) {
-                                // System.out.println(p);
-                                byte[] patch = r.getValue(p);
-                                if (patch != null) {
-                                    drawPatches(g, patch);
-                                }
+                            g.setColor(Color.GREEN);
+                            for (BoundingBox box : regions.getPatches()) {
+                                drawPatch(g, box);
                             }
-
                             g.dispose();
 
                             // check setting from server
@@ -379,29 +369,17 @@ public class ThumbnailBox extends JPanel {
         workerFuture.execute();
     }
 
-    private void drawHeatmap(Graphics2D g, byte[] data) {
-        ByteArrayInputStream in = new ByteArrayInputStream(data);
-        BufferedImage heatmap;
-        try {
-            heatmap = ImageIO.read(in);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+    private void drawHeatmap(Graphics2D g, BufferedImage heatmap) {
         g.drawImage(heatmap, HEATMAP_OVERLAY_OP, 0, 0);
     }
 
-    private void drawPatches(Graphics2D g, byte[] patches) {
-        List<BoundingBox> boxes = BoundingBox.fromPatchesList(patches);
-
-        for (BoundingBox b : boxes) {
-            int x0 = b.getX0();
-            int y0 = b.getY0();
-            int x1 = b.getX1();
-            int y1 = b.getY1();
-            Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
-            g.draw(r);
-        }
+    private void drawPatch(Graphics2D g, BoundingBox box) {
+        int x0 = box.getX0();
+        int y0 = box.getY0();
+        int x1 = box.getX1();
+        int y1 = box.getY1();
+        Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
+        g.draw(r);
     }
 
     private void updateStats() throws IOException, InterruptedException {

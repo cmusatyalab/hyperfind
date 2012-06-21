@@ -329,17 +329,13 @@ public final class Main {
                         attributes.addAll(m.getPushAttributes());
                     }
 
-                    Set<String> patchAttributes = new HashSet<String>();
-                    Set<String> heatmapAttributes = new HashSet<String>();
+                    // patches and heatmaps
+                    Set<String> filterNames = new HashSet<String>();
                     for (Filter f : filters) {
-                        String n = f.getName();
-                        // patches
-                        patchAttributes.add("_filter." + n + ".patches");
-                        // heatmap
-                        heatmapAttributes.add("_filter." + n + ".heatmap.png");
+                        filterNames.add(f.getName());
                     }
-                    attributes.addAll(patchAttributes);
-                    attributes.addAll(heatmapAttributes);
+                    attributes.addAll(ResultRegions.
+                            getPushAttributes(filterNames));
 
                     m.search = factory.createSearch(attributes);
 
@@ -347,8 +343,7 @@ public final class Main {
                     m.results.terminate();
 
                     // start
-                    m.results.start(m.search, patchAttributes,
-                            heatmapAttributes, new ActivePredicateSet(m,
+                    m.results.start(m.search, new ActivePredicateSet(m,
                                     model.getSelectedPredicates(), factory),
                                     monitors);
                 } catch (IOException e1) {

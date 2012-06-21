@@ -76,6 +76,14 @@ public class ActivePredicateSet {
         return Collections.unmodifiableList(predicates);
     }
 
+    public List<String> getFilterNames() {
+        List<String> names = new ArrayList<String>();
+        for (ActivePredicate p : predicates) {
+            names.addAll(p.getFilterNames());
+        }
+        return names;
+    }
+
     public SearchFactory getSearchFactory() {
         return factory;
     }
