@@ -8,6 +8,7 @@
         <pathelement location="bin"/>
         <pathelement location="/usr/share/java/opendiamond.jar"/>
         <pathelement location="/usr/share/java/swingx.jar"/>
+        <pathelement location="/usr/share/java/jai_imageio.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
