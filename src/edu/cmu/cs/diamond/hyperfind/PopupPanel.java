@@ -64,128 +64,6 @@ import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class PopupPanel extends JPanel {
-    private static class ExistingPredicateComboModel extends AbstractListModel
-            implements ComboBoxModel, ListDataListener {
-
-        private final PredicateListModel model;
-
-        private final List<SelectablePredicate> list;
-
-        private Object selectedItem;
-
-        public ExistingPredicateComboModel(PredicateListModel model) {
-            this.model = model;
-
-            model.addListDataListener(this);
-
-            // copy the elements out and keep a shadow copy
-            list = new ArrayList<SelectablePredicate>();
-            for (int i = 0; i < model.getSize(); i++) {
-                SelectablePredicate item = (SelectablePredicate) model
-                        .getElementAt(i);
-                if (item.getPredicate().needsExamples()) {
-                    list.add(item);
-                } else {
-                    list.add(null);
-                }
-            }
-        }
-
-        @Override
-        public Object getSelectedItem() {
-            return selectedItem;
-        }
-
-        @Override
-        public void setSelectedItem(Object anItem) {
-            if ((selectedItem != null && !selectedItem.equals(anItem))
-                    || selectedItem == null && anItem != null) {
-                selectedItem = anItem;
-                fireContentsChanged(this, -1, -1);
-            }
-        }
-
-        @Override
-        public Object getElementAt(int index) {
-            int myIndex = -1;
-
-            Object o = null;
-            for (int i = 0; i < list.size(); i++) {
-                o = list.get(i);
-                if (o != null) {
-                    myIndex++;
-                }
-
-                if (myIndex == index) {
-                    break;
-                }
-            }
-
-            return o;
-        }
-
-        @Override
-        public int getSize() {
-            int size = 0;
-            for (Object o : list) {
-                if (o != null) {
-                    size++;
-                }
-            }
-            return size;
-        }
-
-        // PredicateListModel will never give a range, just single elements
-        @Override
-        public void contentsChanged(ListDataEvent e) {
-            assert e.getIndex0() == e.getIndex1();
-
-            int index = e.getIndex0();
-
-            // find in ours
-            if (list.get(index) != null) {
-                fireContentsChanged(this, index, index);
-            }
-        }
-
-        @Override
-        public void intervalAdded(ListDataEvent e) {
-            assert e.getIndex0() == e.getIndex1();
-
-            int index = e.getIndex0();
-
-            SelectablePredicate item = (SelectablePredicate) model
-                    .getElementAt(index);
-            if (!item.getPredicate().needsExamples()) {
-                item = null;
-            }
-            list.add(index, item);
-
-            if (item != null) {
-                fireIntervalAdded(this, index, index);
-            }
-        }
-
-        @Override
-        public void intervalRemoved(ListDataEvent e) {
-            assert e.getIndex0() == e.getIndex1();
-
-            int index = e.getIndex0();
-
-            SelectablePredicate item = list.remove(index);
-            if (item != null) {
-                fireIntervalRemoved(this, index, index);
-            }
-            if (getSelectedItem() == item) {
-                setSelectedItem(null);
-            }
-        }
-
-        public void destroy() {
-            model.removeListDataListener(this);
-        }
-    }
-
     private static class PredicateInstanceCellRenderer
             extends DefaultListCellRenderer {
         public Component getListCellRendererComponent(JList list,
@@ -392,8 +270,6 @@ public class PopupPanel extends JPanel {
 
         private final JButton addToExistingButton;
 
-        private final JComboBox addToExistingCombo;
-
         public ExampleSearchPanel(final PredicateListModel model,
                 final ImageRegionsLabel image, BufferedImage img,
                 List<HyperFindPredicateFactory> examplePredicateFactories) {
@@ -402,6 +278,32 @@ public class PopupPanel extends JPanel {
             this.model = model;
             this.image = image;
             this.img = img;
+
+            final ListDataListener listener = new ListDataListener() {
+                public void intervalAdded(ListDataEvent e) {
+                    updateComponentsEnablement();
+                }
+
+                public void intervalRemoved(ListDataEvent e) {
+                    updateComponentsEnablement();
+                }
+
+                public void contentsChanged(ListDataEvent e) {
+                    updateComponentsEnablement();
+                }
+            };
+            model.addListDataListener(listener);
+            final ExampleSearchPanel esp = this;
+            this.addHierarchyListener(new HierarchyListener() {
+                @Override
+                public void hierarchyChanged(HierarchyEvent e) {
+                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
+                            !esp.isDisplayable()) {
+                        // System.out.println("deregistering ExampleSearchPanel data listener");
+                        model.removeListDataListener(listener);
+                    }
+                }
+            });
 
             Box vBox = Box.createVerticalBox();
             add(vBox);
@@ -452,43 +354,40 @@ public class PopupPanel extends JPanel {
             vBox.add(hBox);
 
             addToExistingButton = new JButton("Add to Existing");
-            final ExistingPredicateComboModel existingPredicateComboModel =
-                    new ExistingPredicateComboModel(model);
-            addToExistingCombo = new JComboBox(existingPredicateComboModel);
-            addToExistingCombo.setRenderer(
-                    new PredicateInstanceCellRenderer());
-
-            addToExistingCombo.addHierarchyListener(new HierarchyListener() {
-                @Override
-                public void hierarchyChanged(HierarchyEvent e) {
-                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
-                            !addToExistingCombo.isDisplayable()) {
-                        // System.out.println("destroying ExistingPredicateComboModel");
-                        existingPredicateComboModel.destroy();
-                    }
-                }
-            });
-
             addToExistingButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    // get item
-                    SelectablePredicate item = (SelectablePredicate)
-                            existingPredicateComboModel.getSelectedItem();
-                    // System.out.println(item);
-                    item.getPredicate().addExamples(createExamples());
+                    JPopupMenu currentPredicates = new JPopupMenu();
+
+                    // build menu
+                    for (int i = 0; i < model.getSize(); i++) {
+                        SelectablePredicate item = (SelectablePredicate)
+                                model.getElementAt(i);
+                        final HyperFindPredicate p = item.getPredicate();
+                        if (p.needsExamples()) {
+                            JMenuItem jm = new JMenuItem(p.getInstanceName());
+                            jm.addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    // add examples
+                                    p.addExamples(createExamples());
+                                }
+                            });
+                            currentPredicates.add(jm);
+                        }
+                    }
+
+                    // show menu
+                    Component c = (Component) e.getSource();
+                    currentPredicates.show(c, 0, c.getHeight());
                 }
             });
-
             addToExistingButton.setEnabled(false);
-            addToExistingCombo.setEnabled(false);
 
             hBox = Box.createHorizontalBox();
             hBox.add(addButton);
             hBox.add(Box.createHorizontalStrut(10));
             hBox.add(addToExistingButton);
-            hBox.add(Box.createHorizontalStrut(10));
-            hBox.add(addToExistingCombo);
             vBox.add(Box.createVerticalStrut(10));
             vBox.add(hBox);
 
@@ -507,13 +406,6 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent e) {
                     image.clearDrawnPatches();
                     entireButton.setEnabled(true);
-                    updateComponentsEnablement();
-                }
-            });
-
-            addToExistingCombo.addItemListener(new ItemListener() {
-                @Override
-                public void itemStateChanged(ItemEvent e) {
                     updateComponentsEnablement();
                 }
             });
@@ -546,10 +438,17 @@ public class PopupPanel extends JPanel {
             boolean b = !image.getDrawnPatches().isEmpty();
             addButton.setEnabled(b);
             clearButton.setEnabled(b);
-            addToExistingCombo.setEnabled(b);
 
-            addToExistingButton.setEnabled(b
-                    && (addToExistingCombo.getSelectedIndex() != -1));
+            boolean haveExamplePredicates = false;
+            for (int i = 0; i < model.getSize(); i++) {
+                SelectablePredicate item = (SelectablePredicate)
+                        model.getElementAt(i);
+                if (item.getPredicate().needsExamples()) {
+                    haveExamplePredicates = true;
+                    break;
+                }
+            }
+            addToExistingButton.setEnabled(b && haveExamplePredicates);
         }
     }
 
