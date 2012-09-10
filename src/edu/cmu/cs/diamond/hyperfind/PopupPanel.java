@@ -390,8 +390,6 @@ public class PopupPanel extends JPanel {
 
         private final JButton entireButton;
 
-        private final JLabel countLabel;
-
         private final JButton addToExistingButton;
 
         private final JComboBox addToExistingCombo;
@@ -447,36 +445,6 @@ public class PopupPanel extends JPanel {
             clearButton = new JButton("Clear Patches");
             clearButton.setEnabled(false);
 
-            countLabel = new JLabel();
-            updateCountLabel();
-
-            final ListDataListener listener = new ListDataListener() {
-                @Override
-                public void contentsChanged(ListDataEvent e) {
-                }
-
-                @Override
-                public void intervalAdded(ListDataEvent e) {
-                    updateCountLabel();
-                }
-
-                @Override
-                public void intervalRemoved(ListDataEvent e) {
-                    updateCountLabel();
-                }
-            };
-            model.addListDataListener(listener);
-            countLabel.addHierarchyListener(new HierarchyListener() {
-                @Override
-                public void hierarchyChanged(HierarchyEvent e) {
-                    if ((e.getChangeFlags() & e.DISPLAYABILITY_CHANGED) != 0 &&
-                            !countLabel.isDisplayable()) {
-                        // System.out.println("removing count label listener");
-                        model.removeListDataListener(listener);
-                    }
-                }
-            });
-
             Box hBox = Box.createHorizontalBox();
             hBox.add(entireButton);
             hBox.add(Box.createHorizontalStrut(10));
@@ -522,10 +490,6 @@ public class PopupPanel extends JPanel {
             hBox.add(Box.createHorizontalStrut(10));
             hBox.add(addToExistingCombo);
             vBox.add(Box.createVerticalStrut(10));
-            vBox.add(hBox);
-
-            hBox = Box.createHorizontalBox();
-            hBox.add(countLabel);
             vBox.add(hBox);
 
             // enabled/disabled behaviors
@@ -586,11 +550,6 @@ public class PopupPanel extends JPanel {
 
             addToExistingButton.setEnabled(b
                     && (addToExistingCombo.getSelectedIndex() != -1));
-        }
-
-        private void updateCountLabel() {
-            int count = model.getSize();
-            countLabel.setText(count + " predicate" + (count == 1 ? "" : "s"));
         }
     }
 
