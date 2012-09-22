@@ -115,7 +115,9 @@ public class HyperFindPredicate {
     }
 
     public void edit() {
-        frame.setVisible(true);
+        if (isEditable()) {
+            frame.setVisible(true);
+        }
     }
 
     public void addExamples(List<BufferedImage> examples) {
