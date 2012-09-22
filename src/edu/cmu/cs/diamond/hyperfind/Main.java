@@ -162,13 +162,18 @@ public final class Main {
 
         // add import
         predicates.add(new JSeparator());
-        JMenuItem importExampleMenuItem = new JMenuItem("From Example...");
-        predicates.add(importExampleMenuItem);
-        importExampleMenuItem.addActionListener(new ActionListener() {
+        JMenuItem fromFileMenuItem = new JMenuItem("From File...");
+        predicates.add(fromFileMenuItem);
+        fromFileMenuItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // get file
                 JFileChooser chooser = new JFileChooser();
+                // predicate filter
+                FileNameExtensionFilter predicateFilter =
+                        new FileNameExtensionFilter("Predicate Files",
+                        BundleType.PREDICATE.getExtension());
+                // image filter
                 String[] suffixes = ImageIO.getReaderFileSuffixes();
                 List<String> filteredSuffixes = new ArrayList<String>();
                 for (String su : suffixes) {
@@ -176,18 +181,43 @@ public final class Main {
                         filteredSuffixes.add(su);
                     }
                 }
-                FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                        "Images", filteredSuffixes.toArray(new String[0]));
-                chooser.setFileFilter(filter);
+                FileNameExtensionFilter imageFilter =
+                        new FileNameExtensionFilter("Images",
+                        filteredSuffixes.toArray(new String[0]));
+                // combined filter
+                filteredSuffixes.add(BundleType.PREDICATE.getExtension());
+                FileNameExtensionFilter combinedFilter =
+                        new FileNameExtensionFilter("Predicate Files, Images",
+                        filteredSuffixes.toArray(new String[0]));
+                // enable filters
+                chooser.setFileFilter(combinedFilter);
+                chooser.addChoosableFileFilter(predicateFilter);
+                chooser.addChoosableFileFilter(imageFilter);
+                // show
                 int returnVal = chooser.showOpenDialog(m.frame);
                 if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    // XXX near-duplicate of code in PredicateImportTransferHandler
+                    // first try to load it as a predicate bundle
                     try {
-                        File f = chooser.getSelectedFile();
-                        BufferedImage img = ImageIO.read(f);
-                        m.popup(f.getName(), img);
+                        HyperFindPredicate p = HyperFindPredicateFactory
+                                .createHyperFindPredicate(bundleFactory,
+                                        chooser.getSelectedFile().toURI());
+                        model.addPredicate(p);
                     } catch (IOException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
+                        // now try to read it as an example image
+                        try {
+                            File f = chooser.getSelectedFile();
+                            BufferedImage img = ImageIO.read(f);
+                            if (img == null) {
+                                throw new IOException("Could not read file.");
+                            }
+                            m.popup(f.getName(), img);
+                        } catch (IOException e2) {
+                            JOptionPane.showMessageDialog(frame, e2
+                                    .getLocalizedMessage(), "Error Reading File",
+                                    JOptionPane.ERROR_MESSAGE);
+                            e2.printStackTrace();
+                        }
                     }
                 }
             }
@@ -236,39 +266,6 @@ public final class Main {
                     // ignore
                 } catch (InterruptedException e2) {
                     e2.printStackTrace();
-                }
-            }
-        });
-
-        // add from file
-        JMenuItem fromFileMenuItem = new JMenuItem("From Predicate File...");
-        predicates.add(fromFileMenuItem);
-        fromFileMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // get file
-                JFileChooser chooser = new JFileChooser();
-                FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                        "Predicate Files",
-                        BundleType.PREDICATE.getExtension());
-                chooser.setFileFilter(filter);
-                int returnVal = chooser.showOpenDialog(m.frame);
-                if (returnVal == JFileChooser.APPROVE_OPTION) {
-                    try {
-                        HyperFindPredicate p = HyperFindPredicateFactory
-                                .createHyperFindPredicate(bundleFactory,
-                                        chooser.getSelectedFile().toURI());
-                        if (p != null) {
-                            model.addPredicate(p);
-                        } else {
-                            JOptionPane.showMessageDialog(frame,
-                                    "No predicate found.");
-                        }
-                    } catch (IOException e2) {
-                        JOptionPane.showMessageDialog(frame, e2
-                                .getLocalizedMessage(), "Error Reading File",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
                 }
             }
         });
