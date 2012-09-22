@@ -182,7 +182,7 @@ final class PredicateList extends JPanel implements ListDataListener {
         edit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                p.edit(PredicateList.this);
+                p.edit();
                 model.updated(sp);
             }
         });

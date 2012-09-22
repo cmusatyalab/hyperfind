@@ -297,7 +297,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 HyperFindPredicate p = (HyperFindPredicate)
                         codecs.getSelectedItem();
-                p.edit(frame);
+                p.edit();
             }
         });
 

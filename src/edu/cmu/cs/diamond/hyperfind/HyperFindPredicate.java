@@ -114,7 +114,7 @@ public class HyperFindPredicate {
         return names;
     }
 
-    public void edit(Component parentComponent) {
+    public void edit() {
         frame.setVisible(true);
     }
 
