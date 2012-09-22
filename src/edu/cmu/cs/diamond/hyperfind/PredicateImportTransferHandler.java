@@ -79,6 +79,7 @@ public class PredicateImportTransferHandler extends URIImportTransferHandler {
                     HyperFindPredicate p = HyperFindPredicateFactory
                             .createHyperFindPredicate(bundleFactory, u);
                     model.addPredicate(p);
+                    p.edit();
                 } catch (IOException e) {
                     // now try to read it as an example image
                     BufferedImage img = ImageIO.read(u.toURL());

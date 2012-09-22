@@ -331,8 +331,10 @@ public class PopupPanel extends JPanel {
                             // make examples
                             List<BufferedImage> examples = createExamples();
 
-                            model.addPredicate(f.createHyperFindPredicate(
-                                    examples));
+                            HyperFindPredicate p = f.createHyperFindPredicate(
+                                    examples);
+                            model.addPredicate(p);
+                            p.edit();
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
@@ -371,6 +373,7 @@ public class PopupPanel extends JPanel {
                                 public void actionPerformed(ActionEvent e) {
                                     // add examples
                                     p.addExamples(createExamples());
+                                    p.edit();
                                 }
                             });
                             currentPredicates.add(jm);

@@ -224,6 +224,7 @@ public final class Main {
                                 .createHyperFindPredicate(bundleFactory,
                                         chooser.getSelectedFile().toURI());
                         model.addPredicate(p);
+                        p.edit();
                     } catch (IOException e1) {
                         // now try to read it as an example image
                         try {
@@ -509,7 +510,9 @@ public final class Main {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         try {
-                            model.addPredicate(f.createHyperFindPredicate());
+                            HyperFindPredicate p = f.createHyperFindPredicate();
+                            model.addPredicate(p);
+                            p.edit();
                         } catch (IOException e1) {
                             // TODO Auto-generated catch block
                             e1.printStackTrace();
