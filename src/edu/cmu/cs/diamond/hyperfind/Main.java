@@ -43,6 +43,8 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -160,8 +162,27 @@ public final class Main {
         predicateList.setTransferHandler(new PredicateImportTransferHandler(m,
                 model, bundleFactory));
 
-        // add import
+        // add paste
         predicates.add(new JSeparator());
+        Action pasteAction = new AbstractAction("From Clipboard") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Clipboard clip = Toolkit.getDefaultToolkit().
+                        getSystemClipboard();
+                TransferHandler.TransferSupport ts =
+                        new TransferHandler.TransferSupport(predicateList,
+                        clip.getContents(predicateList));
+                predicateList.getTransferHandler().importData(ts);
+            }
+        };
+        KeyStroke ks = KeyStroke.getKeyStroke("ctrl V");
+        pasteAction.putValue(Action.ACCELERATOR_KEY, ks);
+        frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(ks, "paste");
+        frame.getRootPane().getActionMap().put("paste", pasteAction);
+        predicates.add(new JMenuItem(pasteAction));
+
+        // add import
         JMenuItem fromFileMenuItem = new JMenuItem("From File...");
         predicates.add(fromFileMenuItem);
         fromFileMenuItem.addActionListener(new ActionListener() {
