@@ -41,6 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.net.URI;
@@ -56,14 +57,36 @@ public abstract class URIImportTransferHandler extends TransferHandler {
 
     @Override
     public boolean canImport(TransferSupport support) {
-        return support.isDataFlavorSupported(uriListFlavor);
+        if (support.isDataFlavorSupported(uriListFlavor)) {
+            // assume the URIs are valid
+            return true;
+        } else if (support.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+            // may or may not contain URIs, so try to parse
+            try {
+                getURIs(support);
+                return true;
+            } catch (UnsupportedFlavorException e1) {
+                return false;
+            } catch (URISyntaxException e2) {
+                return false;
+            } catch (IOException e3) {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     protected List<URI> getURIs(TransferSupport support)
             throws IOException, UnsupportedFlavorException,
             URISyntaxException {
-        String ss = (String) support.getTransferable().getTransferData(
-                uriListFlavor);
+        Transferable t = support.getTransferable();
+        String ss;
+        try {
+            ss = (String) t.getTransferData(uriListFlavor);
+        } catch (UnsupportedFlavorException e) {
+            ss = (String) t.getTransferData(DataFlavor.stringFlavor);
+        }
 
         String uriList[] = ss.split("\r\n");
 
