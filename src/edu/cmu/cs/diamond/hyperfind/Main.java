@@ -93,6 +93,16 @@ public final class Main {
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
+        popupFrame.getRootPane()
+                .getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "dispose");
+        popupFrame.getRootPane().getActionMap()
+                .put("dispose", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                popupFrame.dispose();
+            }
+        });
     }
 
     public static Main createMain(List<File> bundleDirectories,
