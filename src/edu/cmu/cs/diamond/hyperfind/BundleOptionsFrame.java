@@ -114,9 +114,12 @@ public class BundleOptionsFrame extends JFrame {
         content.add(close_button, c);
 
         // Escape key binding
-        frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        JComponent root = frame.getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "close");
-        frame.getRootPane().getActionMap().put("close", closeAction);
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("ctrl W"), "close");
+        root.getActionMap().put("close", closeAction);
 
         if (instanceName != null) {
             // Predicate name
