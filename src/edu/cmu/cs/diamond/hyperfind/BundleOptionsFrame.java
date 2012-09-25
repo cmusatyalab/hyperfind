@@ -99,19 +99,24 @@ public class BundleOptionsFrame extends JFrame {
         final BundleOptionsFrame frame = this;
 
         // Close button
-        JButton close_button = new JButton("Close");
-        close_button.addActionListener(new ActionListener() {
+        Action closeAction = new AbstractAction("Close") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.setVisible(false);
             }
-        });
+        };
+        JButton close_button = new JButton(closeAction);
         GridBagConstraints c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = currentRow++;
         c.anchor = GridBagConstraints.LINE_START;
         c.insets = new Insets(2, 2, 2, 2);
         content.add(close_button, c);
+
+        // Escape key binding
+        frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "close");
+        frame.getRootPane().getActionMap().put("close", closeAction);
 
         if (instanceName != null) {
             // Predicate name
