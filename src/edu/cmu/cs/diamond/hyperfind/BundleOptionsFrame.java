@@ -126,6 +126,9 @@ public class BundleOptionsFrame extends JFrame {
                 }
             });
             addField(instanceNameField);
+            JTextField tf = (JTextField) instanceNameField.getComponent();
+            tf.selectAll();
+            tf.requestFocusInWindow();
         } else {
             // We're a codec; no instance name
             instanceNameField = null;
