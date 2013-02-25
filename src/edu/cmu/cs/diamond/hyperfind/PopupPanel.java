@@ -211,7 +211,15 @@ public class PopupPanel extends JPanel {
 
         // image pane or text pane
         JScrollPane scrollPane;
-        if (img != null) {
+        if (attributes.get("hyperfind.object-display") != null) {
+        	String text;
+        	byte[] tmp = attributes.get("hyperfind.object-display-url");
+            text = Util.extractString(tmp);
+            JTextArea textArea = new JTextArea(text, 5, 80);
+            textArea.setEditable(false);
+            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+            scrollPane = new JScrollPane(textArea);
+        } else if (img != null) {
             ImageRegionsLabel image = new ImageRegionsLabel(img);
             scrollPane = new JScrollPane(image);
             scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
