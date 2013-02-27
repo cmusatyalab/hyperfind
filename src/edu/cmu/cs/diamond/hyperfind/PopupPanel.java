@@ -54,6 +54,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
@@ -215,10 +217,26 @@ public class PopupPanel extends JPanel {
         	String text;
         	byte[] tmp = attributes.get("hyperfind.object-display-url");
             text = Util.extractString(tmp);
-            JTextArea textArea = new JTextArea(text, 5, 80);
-            textArea.setEditable(false);
-            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-            scrollPane = new JScrollPane(textArea);
+            
+            JTextPane textPane = new JTextPane();
+            textPane.setEditable(false);
+            textPane.setContentType("text/html");
+            textPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+            textPane.setText(String.format("<a href='%s'>See the video</a>", text));
+            textPane.addHyperlinkListener(new HyperlinkListener() {
+                @Override
+                public void hyperlinkUpdate(HyperlinkEvent e) {
+                    if(e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    	Desktop desktop = Desktop.getDesktop();
+                        try {
+                            desktop.browse(e.getURL().toURI());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            });
+            scrollPane = new JScrollPane(textPane);
         } else if (img != null) {
             ImageRegionsLabel image = new ImageRegionsLabel(img);
             scrollPane = new JScrollPane(image);
