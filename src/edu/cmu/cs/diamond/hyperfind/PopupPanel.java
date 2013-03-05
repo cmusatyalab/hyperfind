@@ -214,9 +214,8 @@ public class PopupPanel extends JPanel {
         // image pane or text pane
         JScrollPane scrollPane;
         if (attributes.get("hyperfind.object-display") != null) {
-        	String text;
-        	byte[] tmp = attributes.get("hyperfind.object-display-url");
-            text = Util.extractString(tmp);
+            byte[] textTmp = attributes.get("hyperfind.object-display-url");
+            String text = Util.extractString(textTmp);
             
             JTextPane textPane = new JTextPane();
             textPane.setEditable(false);
