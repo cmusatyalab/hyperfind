@@ -46,6 +46,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.*;
 import java.util.List;
 
@@ -213,29 +214,26 @@ public class PopupPanel extends JPanel {
 
         // image pane or text pane
         JScrollPane scrollPane;
-        if (attributes.get("hyperfind.object-display") != null) {
+        if (attributes.get("hyperfind.object-display-url") != null) {
             byte[] textTmp = attributes.get("hyperfind.object-display-url");
-            String text = Util.extractString(textTmp);
+            final String text = Util.extractString(textTmp);
             
-            JTextPane textPane = new JTextPane();
-            textPane.setEditable(false);
-            textPane.setContentType("text/html");
-            textPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-            textPane.setText(String.format("<a href='%s'>See the video</a>", text));
-            textPane.addHyperlinkListener(new HyperlinkListener() {
-                @Override
-                public void hyperlinkUpdate(HyperlinkEvent e) {
-                    if(e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                    	Desktop desktop = Desktop.getDesktop();
-                        try {
-                            desktop.browse(e.getURL().toURI());
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
+            JButton button = new JButton("View Object");
+            button.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					Desktop desktop = Desktop.getDesktop();
+					try {
+                        desktop.browse(new URI(text));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                }
-            });
-            scrollPane = new JScrollPane(textPane);
+				}
+			});
+            
+            JPanel panel = new JPanel(new BorderLayout());
+            panel.add(button, BorderLayout.WEST);
+            scrollPane = new JScrollPane(panel);
         } else if (img != null) {
             ImageRegionsLabel image = new ImageRegionsLabel(img);
             scrollPane = new JScrollPane(image);

@@ -354,8 +354,6 @@ public final class Main {
                     attributes.add("_rows.int"); // original height
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
-                    attributes.add("hyperfind.object-display");
-                    attributes.add("hyperfind.object-display-url");
 
                     for (HyperFindSearchMonitor m : monitors) {
                         attributes.addAll(m.getPushAttributes());
