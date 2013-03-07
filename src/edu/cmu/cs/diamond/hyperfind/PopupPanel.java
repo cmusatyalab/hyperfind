@@ -220,10 +220,10 @@ public class PopupPanel extends JPanel {
             
             JButton button = new JButton("View Object");
             button.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent event) {
-					Desktop desktop = Desktop.getDesktop();
-					try {
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    Desktop desktop = Desktop.getDesktop();
+                    try {
                         desktop.browse(new URI(text));
                     } catch (Exception ex) {
                         ex.printStackTrace();
