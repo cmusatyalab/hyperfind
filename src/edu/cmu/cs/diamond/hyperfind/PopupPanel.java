@@ -228,8 +228,8 @@ public class PopupPanel extends JPanel {
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
-				}
-			});
+                }
+            });
             
             JPanel panel = new JPanel(new BorderLayout());
             panel.add(button, BorderLayout.WEST);
