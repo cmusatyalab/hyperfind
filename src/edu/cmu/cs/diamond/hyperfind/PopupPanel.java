@@ -55,8 +55,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
@@ -213,12 +211,13 @@ public class PopupPanel extends JPanel {
         Box leftSide = Box.createVerticalBox();
 
         // image pane or text pane
-        JScrollPane scrollPane;
-        if (attributes.get("hyperfind.object-display-url") != null) {
-            byte[] textTmp = attributes.get("hyperfind.object-display-url");
-            final String text = Util.extractString(textTmp);
+        JScrollPane scrollPane = new JScrollPane();
+        JButton button = new JButton();
+        byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
+        if (displayURLBytes != null) {
+            final String text = Util.extractString(displayURLBytes);
             
-            JButton button = new JButton("View Object");
+            button = new JButton("View Object");
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent event) {
@@ -230,10 +229,6 @@ public class PopupPanel extends JPanel {
                     }
                 }
             });
-            
-            JPanel panel = new JPanel(new BorderLayout());
-            panel.add(button, BorderLayout.WEST);
-            scrollPane = new JScrollPane(panel);
         } else if (img != null) {
             ImageRegionsLabel image = new ImageRegionsLabel(img);
             scrollPane = new JScrollPane(image);
@@ -261,14 +256,21 @@ public class PopupPanel extends JPanel {
 
         hBox.add(leftSide);
 
-        JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
-                scrollPane, propertiesPane);
-        int scrollPaneHeight = Math.min(700,
-                (int) scrollPane.getPreferredSize().getHeight() + 1);
-        rightSide.setDividerLocation(scrollPaneHeight);
+        JSplitPane rightSide;
+        if (displayURLBytes != null) {
+        	rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+            rightSide.add(propertiesPane);
+        } else {
+            rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+                    scrollPane, propertiesPane);
+            int scrollPaneHeight = Math.min(700,
+                    (int) scrollPane.getPreferredSize().getHeight() + 1);
+            rightSide.setDividerLocation(scrollPaneHeight);
+        }
 
         Box vBox = Box.createVerticalBox();
         vBox.add(rightSide);
+        vBox.add(button);
         hBox.add(vBox);
 
         // done
