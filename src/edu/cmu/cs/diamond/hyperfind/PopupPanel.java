@@ -224,13 +224,12 @@ public class PopupPanel extends JPanel {
         }
 
         // create rightSide for arbitrary data pane, image pane or text pane
-        JSplitPane rightSide;
         Box vBox = Box.createVerticalBox();
         byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
         if (displayURLBytes != null) {    // arbitrary data
             final String text = Util.extractString(displayURLBytes);
             JButton button = new JButton("View Object");
-            //button.setAlignmentX(CENTER_ALIGNMENT);
+            button.setAlignmentX(CENTER_ALIGNMENT);
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent event) {
@@ -242,11 +241,11 @@ public class PopupPanel extends JPanel {
                     }
                 }
             });
-            
-            rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+            JPanel rightSide = new JPanel();
+            rightSide.setLayout(new BoxLayout(rightSide, BoxLayout.Y_AXIS));
             rightSide.add(propertiesPane);
+            rightSide.add(button);
             vBox.add(rightSide);
-            vBox.add(button);
         } else {
         	JScrollPane scrollPane;
         	if (img != null) {    // image
@@ -266,7 +265,7 @@ public class PopupPanel extends JPanel {
 	            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 	            scrollPane = new JScrollPane(textArea);
 	        }
-        	rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+        	JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                     scrollPane, propertiesPane);
             int scrollPaneHeight = Math.min(700,
                     (int) scrollPane.getPreferredSize().getHeight() + 1);
