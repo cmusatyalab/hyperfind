@@ -205,19 +205,18 @@ public class PopupPanel extends JPanel {
         JTable properties = new JTable(model);
         // properties.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         JScrollPane propertiesPane = new JScrollPane(properties);
-
+        JSplitPane rightSide;
+        
         // assemble entire window
         Box hBox = Box.createHorizontalBox();
-        Box leftSide = Box.createVerticalBox();
-
-        // image pane or text pane
-        JScrollPane scrollPane = new JScrollPane();
-        JButton button = new JButton();
+        Box vBox = Box.createVerticalBox();
+        
+        // image pane, text pane or arbitrary data pane
         byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
         if (displayURLBytes != null) {
             final String text = Util.extractString(displayURLBytes);
-            
-            button = new JButton("View Object");
+            JButton button = new JButton("View Object");
+            //button.setAlignmentX(CENTER_ALIGNMENT);
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent event) {
@@ -229,48 +228,48 @@ public class PopupPanel extends JPanel {
                     }
                 }
             });
-        } else if (img != null) {
-            ImageRegionsLabel image = new ImageRegionsLabel(img);
-            scrollPane = new JScrollPane(image);
-            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
-            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-            leftSide.add(new RegionsListPanel(activePredicates, regions,
-                    image));
-            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
-                    objectID, img, p));
-            leftSide.add(new ExampleSearchPanel(predicateListModel, image,
-                    img, examplePredicateFactories));
-        } else {
-            String text;
-            try {
-                text = new String(resultData, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-                text = "";
-            }
-            JTextArea textArea = new JTextArea(text, 25, 80);
-            textArea.setEditable(false);
-            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-            scrollPane = new JScrollPane(textArea);
-        }
-
-        hBox.add(leftSide);
-
-        JSplitPane rightSide;
-        if (displayURLBytes != null) {
-        	rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+            
+            rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
             rightSide.add(propertiesPane);
+            vBox.add(rightSide);
+            vBox.add(button);
         } else {
-            rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+        	JScrollPane scrollPane;
+        	if (img != null) {
+	            ImageRegionsLabel image = new ImageRegionsLabel(img);
+	            scrollPane = new JScrollPane(image);
+	            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
+	            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+	            
+	            Box leftSide = Box.createVerticalBox();
+	            leftSide.add(new RegionsListPanel(activePredicates, regions,
+	                    image));
+	            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
+	                    objectID, img, p));
+	            leftSide.add(new ExampleSearchPanel(predicateListModel, image,
+	                    img, examplePredicateFactories));
+	            hBox.add(leftSide);
+	        } else {
+	            String text;
+	            try {
+	                text = new String(resultData, "UTF-8");
+	            } catch (UnsupportedEncodingException e) {
+	                e.printStackTrace();
+	                text = "";
+	            }
+	            JTextArea textArea = new JTextArea(text, 25, 80);
+	            textArea.setEditable(false);
+	            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+	            scrollPane = new JScrollPane(textArea);
+	        }
+        	rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                     scrollPane, propertiesPane);
             int scrollPaneHeight = Math.min(700,
                     (int) scrollPane.getPreferredSize().getHeight() + 1);
             rightSide.setDividerLocation(scrollPaneHeight);
+            vBox.add(rightSide);
         }
 
-        Box vBox = Box.createVerticalBox();
-        vBox.add(rightSide);
-        vBox.add(button);
         hBox.add(vBox);
 
         // done
