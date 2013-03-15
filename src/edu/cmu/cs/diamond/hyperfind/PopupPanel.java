@@ -205,15 +205,29 @@ public class PopupPanel extends JPanel {
         JTable properties = new JTable(model);
         // properties.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         JScrollPane propertiesPane = new JScrollPane(properties);
-        JSplitPane rightSide;
         
         // assemble entire window
         Box hBox = Box.createHorizontalBox();
-        Box vBox = Box.createVerticalBox();
         
-        // image pane, text pane or arbitrary data pane
+        // create leftSide only when object is image
+        ImageRegionsLabel image = null;
+        if (img != null) {
+        	image = new ImageRegionsLabel(img);
+        	Box leftSide = Box.createVerticalBox();
+            leftSide.add(new RegionsListPanel(activePredicates, regions,
+                    image));
+            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
+                    objectID, img, p));
+            leftSide.add(new ExampleSearchPanel(predicateListModel, image,
+                    img, examplePredicateFactories));
+            hBox.add(leftSide);
+        }
+
+        // create rightSide for arbitrary data pane, image pane or text pane
+        JSplitPane rightSide;
+        Box vBox = Box.createVerticalBox();
         byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
-        if (displayURLBytes != null) {
+        if (displayURLBytes != null) {    // arbitrary data
             final String text = Util.extractString(displayURLBytes);
             JButton button = new JButton("View Object");
             //button.setAlignmentX(CENTER_ALIGNMENT);
@@ -235,21 +249,11 @@ public class PopupPanel extends JPanel {
             vBox.add(button);
         } else {
         	JScrollPane scrollPane;
-        	if (img != null) {
-	            ImageRegionsLabel image = new ImageRegionsLabel(img);
+        	if (img != null) {    // image
 	            scrollPane = new JScrollPane(image);
 	            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
 	            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-	            
-	            Box leftSide = Box.createVerticalBox();
-	            leftSide.add(new RegionsListPanel(activePredicates, regions,
-	                    image));
-	            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
-	                    objectID, img, p));
-	            leftSide.add(new ExampleSearchPanel(predicateListModel, image,
-	                    img, examplePredicateFactories));
-	            hBox.add(leftSide);
-	        } else {
+	        } else {    // text
 	            String text;
 	            try {
 	                text = new String(resultData, "UTF-8");
