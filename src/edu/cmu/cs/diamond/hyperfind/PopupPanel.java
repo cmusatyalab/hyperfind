@@ -212,8 +212,8 @@ public class PopupPanel extends JPanel {
         // create leftSide only when object is image
         ImageRegionsLabel image = null;
         if (img != null) {
-        	image = new ImageRegionsLabel(img);
-        	Box leftSide = Box.createVerticalBox();
+            image = new ImageRegionsLabel(img);
+            Box leftSide = Box.createVerticalBox();
             leftSide.add(new RegionsListPanel(activePredicates, regions,
                     image));
             leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
@@ -247,25 +247,25 @@ public class PopupPanel extends JPanel {
             rightSide.add(button);
             vBox.add(rightSide);
         } else {
-        	JScrollPane scrollPane;
-        	if (img != null) {    // image
-	            scrollPane = new JScrollPane(image);
-	            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
-	            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
-	        } else {    // text
-	            String text;
-	            try {
-	                text = new String(resultData, "UTF-8");
-	            } catch (UnsupportedEncodingException e) {
-	                e.printStackTrace();
-	                text = "";
-	            }
-	            JTextArea textArea = new JTextArea(text, 25, 80);
-	            textArea.setEditable(false);
-	            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-	            scrollPane = new JScrollPane(textArea);
-	        }
-        	JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+            JScrollPane scrollPane;
+            if (img != null) {    // image
+                scrollPane = new JScrollPane(image);
+                scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
+                scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+            } else {    // text
+                String text;
+                try {
+                    text = new String(resultData, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    text = "";
+                }
+                JTextArea textArea = new JTextArea(text, 25, 80);
+                textArea.setEditable(false);
+                textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+                scrollPane = new JScrollPane(textArea);
+            }
+            JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                     scrollPane, propertiesPane);
             int scrollPaneHeight = Math.min(700,
                     (int) scrollPane.getPreferredSize().getHeight() + 1);
