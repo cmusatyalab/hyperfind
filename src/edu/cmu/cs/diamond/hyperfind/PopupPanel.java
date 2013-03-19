@@ -205,13 +205,14 @@ public class PopupPanel extends JPanel {
         JTable properties = new JTable(model);
         // properties.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         JScrollPane propertiesPane = new JScrollPane(properties);
-        
+
         // assemble entire window
         Box hBox = Box.createHorizontalBox();
         
         // create leftSide only when object is image
+        byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
         ImageRegionsLabel image = null;
-        if (img != null) {
+        if (displayURLBytes == null && img != null) {
             image = new ImageRegionsLabel(img);
             Box leftSide = Box.createVerticalBox();
             leftSide.add(new RegionsListPanel(activePredicates, regions,
@@ -225,9 +226,8 @@ public class PopupPanel extends JPanel {
 
         // create rightSide for arbitrary data pane, image pane or text pane
         Box vBox = Box.createVerticalBox();
-        byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
         if (displayURLBytes != null) {    // arbitrary data
-            final String text = Util.extractString(displayURLBytes);
+            final String displayURL = Util.extractString(displayURLBytes);
             JButton button = new JButton("View Object");
             button.setAlignmentX(CENTER_ALIGNMENT);
             button.addActionListener(new ActionListener() {
@@ -235,7 +235,7 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent event) {
                     Desktop desktop = Desktop.getDesktop();
                     try {
-                        desktop.browse(new URI(text));
+                        desktop.browse(new URI(displayURL));
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -243,12 +243,14 @@ public class PopupPanel extends JPanel {
             });
             JPanel rightSide = new JPanel();
             rightSide.setLayout(new BoxLayout(rightSide, BoxLayout.Y_AXIS));
+            rightSide.add(Box.createRigidArea(new Dimension(0, 10)));
+            rightSide.add(button, BoxLayout.Y_AXIS);
+            rightSide.add(Box.createRigidArea(new Dimension(0, 10)));
             rightSide.add(propertiesPane);
-            rightSide.add(button);
             vBox.add(rightSide);
         } else {
             JScrollPane scrollPane;
-            if (img != null) {    // image
+            if (image != null) {    // image
                 scrollPane = new JScrollPane(image);
                 scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
                 scrollPane.getVerticalScrollBar().setUnitIncrement(20);
