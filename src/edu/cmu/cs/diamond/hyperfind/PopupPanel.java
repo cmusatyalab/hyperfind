@@ -46,6 +46,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.*;
 import java.util.List;
 
@@ -207,45 +208,73 @@ public class PopupPanel extends JPanel {
 
         // assemble entire window
         Box hBox = Box.createHorizontalBox();
-        Box leftSide = Box.createVerticalBox();
-
-        // image pane or text pane
-        JScrollPane scrollPane;
-        if (img != null) {
-            ImageRegionsLabel image = new ImageRegionsLabel(img);
-            scrollPane = new JScrollPane(image);
-            scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
-            scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+        
+        // create leftSide only when object is image
+        byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
+        ImageRegionsLabel image = null;
+        if (displayURLBytes == null && img != null) {
+            image = new ImageRegionsLabel(img);
+            Box leftSide = Box.createVerticalBox();
             leftSide.add(new RegionsListPanel(activePredicates, regions,
                     image));
             leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
                     objectID, img, p));
             leftSide.add(new ExampleSearchPanel(predicateListModel, image,
                     img, examplePredicateFactories));
-        } else {
-            String text;
-            try {
-                text = new String(resultData, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-                text = "";
-            }
-            JTextArea textArea = new JTextArea(text, 25, 80);
-            textArea.setEditable(false);
-            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-            scrollPane = new JScrollPane(textArea);
+            hBox.add(leftSide);
         }
 
-        hBox.add(leftSide);
-
-        JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
-                scrollPane, propertiesPane);
-        int scrollPaneHeight = Math.min(700,
-                (int) scrollPane.getPreferredSize().getHeight() + 1);
-        rightSide.setDividerLocation(scrollPaneHeight);
-
+        // create rightSide for arbitrary data pane, image pane or text pane
         Box vBox = Box.createVerticalBox();
-        vBox.add(rightSide);
+        if (displayURLBytes != null) {    // arbitrary data
+            final String displayURL = Util.extractString(displayURLBytes);
+            JButton button = new JButton("View Object");
+            button.setAlignmentX(CENTER_ALIGNMENT);
+            button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    Desktop desktop = Desktop.getDesktop();
+                    try {
+                        desktop.browse(new URI(displayURL));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
+            JPanel rightSide = new JPanel();
+            rightSide.setLayout(new BoxLayout(rightSide, BoxLayout.Y_AXIS));
+            rightSide.add(Box.createRigidArea(new Dimension(0, 10)));
+            rightSide.add(button, BoxLayout.Y_AXIS);
+            rightSide.add(Box.createRigidArea(new Dimension(0, 10)));
+            rightSide.add(propertiesPane);
+            vBox.add(rightSide);
+        } else {
+            JScrollPane scrollPane;
+            if (image != null) {    // image
+                scrollPane = new JScrollPane(image);
+                scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
+                scrollPane.getVerticalScrollBar().setUnitIncrement(20);
+            } else {    // text
+                String text;
+                try {
+                    text = new String(resultData, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    text = "";
+                }
+                JTextArea textArea = new JTextArea(text, 25, 80);
+                textArea.setEditable(false);
+                textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+                scrollPane = new JScrollPane(textArea);
+            }
+            JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
+                    scrollPane, propertiesPane);
+            int scrollPaneHeight = Math.min(700,
+                    (int) scrollPane.getPreferredSize().getHeight() + 1);
+            rightSide.setDividerLocation(scrollPaneHeight);
+            vBox.add(rightSide);
+        }
+
         hBox.add(vBox);
 
         // done
