@@ -58,8 +58,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 
-import org.jdesktop.swingx.graphics.GraphicsUtilities;
-
 class ImageRegionsLabel extends JLabel {
 
     private static final HeatmapOverlayConvertOp RESULT_OVERLAY_OP =
@@ -86,7 +84,7 @@ class ImageRegionsLabel extends JLabel {
     private BufferedImage testResultHeatmap;
 
     public ImageRegionsLabel(BufferedImage img) {
-        super(new ImageIcon(GraphicsUtilities.toCompatibleImage(img)));
+        super(new ImageIcon(GraphicsUtilitiesWrapper.toCompatibleImage(img)));
         entireImage = new Rectangle(0, 0, img.getWidth(), img.getHeight());
 
         setHorizontalAlignment(SwingConstants.LEFT);

@@ -47,7 +47,6 @@ import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
-import org.jdesktop.swingx.graphics.GraphicsUtilities;
 
 class HeatmapOverlayConvertOp implements BufferedImageOp {
     private final Color overlayColor;
@@ -100,13 +99,13 @@ class HeatmapOverlayConvertOp implements BufferedImageOp {
                         overlayColor.getBlue();
         final int baseAlpha = overlayColor.getAlpha();
 
-        int[] pixels = GraphicsUtilities.getPixels(src, 0, 0, src.getWidth(),
-                src.getHeight(), null);
+        int[] pixels = GraphicsUtilitiesWrapper.getPixels(src, 0, 0,
+                src.getWidth(), src.getHeight(), null);
         for (int i = 0; i < pixels.length; i++) {
             int a = (pixels[i] & 0xff) * baseAlpha / 255;
             pixels[i] = (a << 24) | rgb;
         }
-        GraphicsUtilities.setPixels(dest, 0, 0, src.getWidth(),
+        GraphicsUtilitiesWrapper.setPixels(dest, 0, 0, src.getWidth(),
                 src.getHeight(), pixels);
 
         return dest;
