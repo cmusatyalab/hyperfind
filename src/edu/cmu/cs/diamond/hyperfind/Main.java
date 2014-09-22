@@ -48,6 +48,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -108,6 +109,17 @@ public final class Main {
 
     public static Main createMain(List<File> bundleDirectories,
             List<File> filterDirectories) throws IOException {
+        // ugly hack to set application name for GNOME Shell
+        // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
+        try {
+            Field awtAppClassName = Toolkit.getDefaultToolkit().getClass().
+                    getDeclaredField("awtAppClassName");
+            awtAppClassName.setAccessible(true);
+            awtAppClassName.set(null, "HyperFind");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         final BundleFactory bundleFactory =
                 new BundleFactory(bundleDirectories, filterDirectories);
 
