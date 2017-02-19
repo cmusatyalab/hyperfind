@@ -62,6 +62,12 @@ import javax.swing.event.ListSelectionListener;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.opendiamond.*;
 
+
+/**
+ * The ThumbnailBox contains a scrolling panel of the thumbnails of search results
+ * and a conditional "Get next xxx results" button.
+ * NOTE: Status for start, stop buttons and stats bar is changed within the class.
+ */
 public class ThumbnailBox extends JPanel {
     private final int resultsPerScreen;
 
@@ -91,6 +97,13 @@ public class ThumbnailBox extends JPanel {
 
     private List<HyperFindSearchMonitor> searchMonitors;
 
+    /**
+     * @param stopButton
+     * @param startButton
+     * @param list The Jlist of image thumbnails.
+     * @param stats
+     * @param resultsPerScreen The amount of "Get next"
+     */
     public ThumbnailBox(JButton stopButton, JButton startButton, JList list,
             StatisticsBar stats, final int resultsPerScreen) {
         super();

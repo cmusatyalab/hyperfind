@@ -109,6 +109,8 @@ public final class Main {
 
     public static Main createMain(List<File> bundleDirectories,
             List<File> filterDirectories) throws IOException {
+
+        /* Set Window title */
         // ugly hack to set application name for GNOME Shell
         // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
         try {
@@ -120,6 +122,8 @@ public final class Main {
             e.printStackTrace();
         }
 
+
+        /* Create BundleFactories according to command line arguments */
         final BundleFactory bundleFactory =
                 new BundleFactory(bundleDirectories, filterDirectories);
 
@@ -127,6 +131,8 @@ public final class Main {
                 HyperFindPredicateFactory
                 .createHyperFindPredicateFactories(bundleFactory);
 
+
+        /* Create GUI components */
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
@@ -134,16 +140,22 @@ public final class Main {
         final JList resultsList = new JList();
         final StatisticsBar stats = new StatisticsBar();
 
+
+        /* FIXME Create a thread pool to .... do what ? */
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         threadPoolExecutor.allowCoreThreadTimeOut(true);
         final ExecutorService executor = threadPoolExecutor;
 
+        /* Configure ResultList, allow multiple selection and dragging */
         resultsList.setModel(new DefaultListModel());
         resultsList
                 .setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         resultsList.setDragEnabled(true);
 
+
+        /* Thumbnail box = scrolling pane of results + "Get next" button.
+         * NOTE: Status of start button, stop button and stats bar is changed within ThumbnailBox class */
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
                 resultsList, stats, 500);
 
@@ -151,10 +163,12 @@ public final class Main {
         final PredicateListModel model = new PredicateListModel();
         final PredicateList predicateList = new PredicateList(model);
 
-        // codecs / menu
+        /* The "+" button for adding new predicates */
         JButton addPredicateButton = new JButton("+");
+        /* Popup when "+" button is clicked. */
         final JPopupMenu predicates = new JPopupMenu();
 
+        /* "+" button controller */
         addPredicateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -163,6 +177,7 @@ public final class Main {
             }
         });
 
+        /* FIXME coockie map */
         CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
         try {
             defaultCookieMap = CookieMap.createDefaultCookieMap();
@@ -170,6 +185,7 @@ public final class Main {
             e.printStackTrace();
         }
 
+        /* FIXME ??? */
         List<HyperFindPredicateFactory> examplePredicateFactories =
                 new ArrayList<HyperFindPredicateFactory>();
         final List<HyperFindPredicate> codecList =
@@ -177,15 +193,20 @@ public final class Main {
         initPredicateFactories(factories, model, predicates,
                 examplePredicateFactories, codecList);
 
+        /* ComboBox for choosing codec */
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
+        /* Create the Main object */
         final Main m = new Main(frame, results, model, defaultCookieMap,
                 examplePredicateFactories, codecs);
 
+
+        /* Set TransferHandler to support DnD/copy-n-paste into the predicate list. */
         predicateList.setTransferHandler(new PredicateImportTransferHandler(m,
                 model, bundleFactory));
 
-        // add paste
+
+        /* Add "From Clipboard" option to "+" menu */
         predicates.add(new JSeparator());
         Action pasteAction = new AbstractAction("From Clipboard") {
             @Override
@@ -205,7 +226,8 @@ public final class Main {
         frame.getRootPane().getActionMap().put("paste", pasteAction);
         predicates.add(new JMenuItem(pasteAction));
 
-        // add import
+
+        /* Add "From Screenshot" option to "+" menu */
         JMenuItem fromFileMenuItem = new JMenuItem("From File...");
         predicates.add(fromFileMenuItem);
         fromFileMenuItem.addActionListener(new ActionListener() {
@@ -268,6 +290,8 @@ public final class Main {
             }
         });
 
+
+        /* Add "From Screenshot" option to "+" menu */
         // add example from screenshot (requires ImageMagick)
         JMenuItem importScreenshotMenuItem =
                 new JMenuItem("From Screenshot...");
@@ -315,6 +339,8 @@ public final class Main {
             }
         });
 
+
+        /* Edit Codec Button ("Edit" next to codec dropdown) controller */
         final JButton editCodecButton = new JButton("Edit");
         editCodecButton.addActionListener(new ActionListener() {
             @Override
@@ -326,6 +352,8 @@ public final class Main {
         });
 
         m.updateEditCodecButton(editCodecButton);
+
+        /* Codec dropdown (combobox) controller */
         codecs.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -333,8 +361,8 @@ public final class Main {
             }
         });
 
-        // buttons
 
+        /* Start, Stop, Define Button controller */
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -419,6 +447,9 @@ public final class Main {
             }
         });
 
+
+        /* Result List Controller and Render */
+
         resultsList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -442,6 +473,10 @@ public final class Main {
         resultsList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
         resultsList.setVisibleRowCount(0);
 
+
+        /* -------------------------------------*/
+        /* Layout all components in the windows */
+        /* -------------------------------------*/
         // layout
 
         Box b = Box.createHorizontalBox();
@@ -505,6 +540,11 @@ public final class Main {
                 }
             }
         });
+
+        /* -------------------------------------*
+        /* End layout */
+        /* -------------------------------------*/
+
         frame.setVisible(true);
 
         return m;
