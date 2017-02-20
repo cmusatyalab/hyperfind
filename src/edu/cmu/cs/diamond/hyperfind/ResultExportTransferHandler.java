@@ -62,6 +62,11 @@ import javax.swing.TransferHandler;
 import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
+/**
+ * Handles content export when drag from ResultList.
+ * Images are first downloaded to a temp directory.
+ * A URI list is return.
+ */
 public class ResultExportTransferHandler extends TransferHandler {
     private static final DataFlavor uriListFlavor = new DataFlavor(
             "text/uri-list; class=java.lang.String", "URI list");

@@ -65,7 +65,7 @@ import edu.cmu.cs.diamond.opendiamond.*;
 
 /**
  * The ThumbnailBox contains a scrolling panel of the thumbnails of search results
- * and a conditional "Get next xxx results" button.
+ * + a conditional "Get next xxx results" button + statistics bar
  * NOTE: Status for start, stop buttons and stats bar is changed within the class.
  */
 public class ThumbnailBox extends JPanel {
@@ -101,7 +101,7 @@ public class ThumbnailBox extends JPanel {
      * @param stopButton
      * @param startButton
      * @param list The Jlist of image thumbnails.
-     * @param stats
+     * @param stats Stats bar. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
     public ThumbnailBox(JButton stopButton, JButton startButton, JList list,
@@ -115,6 +115,8 @@ public class ThumbnailBox extends JPanel {
         this.resultsPerScreen = resultsPerScreen;
 
         final ThumbnailBox tb = this;
+
+        // Add listeners to selection on the result list
         list.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
@@ -133,6 +135,7 @@ public class ThumbnailBox extends JPanel {
 
         setLayout(new BorderLayout());
 
+        // Scrolling panel for results
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         JScrollPane jsp = new JScrollPane(list);
@@ -143,7 +146,7 @@ public class ThumbnailBox extends JPanel {
 
         panel.add(jsp);
 
-        // more results button
+        // "Get Next xxx result" button
         moreResultsButton = new JButton("Get next " + resultsPerScreen
                 + " results");
         moreResultsButton.setVisible(false);
@@ -372,8 +375,9 @@ public class ThumbnailBox extends JPanel {
                     if (resultIcon == PAUSE_RESULT) {
                         moreResultsButton.setVisible(true);
                         revalidate();
-                        repaint();
+                        repaint();  // Repaint this Thumbnail box
                     } else {
+                        /* Add newly fetched search result to result list */
                         model.addElement(resultIcon);
                     }
                 }

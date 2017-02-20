@@ -6,7 +6,7 @@
     <property name="source" value="1.6"/>
     <path id="HyperFind.classpath">
         <pathelement location="bin"/>
-        <pathelement location="opendiamond.jar"/>
+        <pathelement location="/usr/share/java/opendiamond.jar"/>
         <pathelement location="lib/swingx.jar"/>
         <pathelement location="lib/jai_imageio.jar"/>
     </path>
@@ -27,7 +27,7 @@
       <jar destfile="hyperfind.jar" basedir="bin">
             <manifest>
                 <attribute name="Main-Class" value="edu.cmu.cs.diamond.hyperfind.Main"/>
-                <attribute name="Class-Path" value="file://opendiamond.jar file://lib/swingx.jar"/>
+                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar"/>
             </manifest>
       </jar>
     </target>

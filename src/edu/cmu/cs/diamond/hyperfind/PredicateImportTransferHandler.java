@@ -81,7 +81,11 @@ public class PredicateImportTransferHandler extends URIImportTransferHandler {
                     model.addPredicate(p);
                     p.edit();
                 } catch (IOException e) {
+                    /* XXX If more than one image is contained in the list
+                     * only the last one will shown in popup,
+                      * because there is only one popup window and previous images will be overwritten.*/
                     // now try to read it as an example image
+                    System.out.println("Image " + u.toURL() + " is dropped in predicate list. Opening in pop up.");
                     BufferedImage img = ImageIO.read(u.toURL());
                     main.popup(u.toString(), img);
                 }
