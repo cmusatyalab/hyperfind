@@ -350,9 +350,12 @@ public class BundleOptionsFrame extends JFrame {
             }
         }
 
+        public abstract void setValue(String val);
+
         public abstract JComponent getComponent();
 
         protected abstract String getEnabledValue();
+
     }
 
     private static class BooleanField extends OptionField {
@@ -370,6 +373,11 @@ public class BundleOptionsFrame extends JFrame {
                     fireChangeEvent();
                 }
             });
+        }
+
+        @Override
+        public void setValue(String val) {
+            checkbox.setSelected("true".equals(val));
         }
 
         @Override
@@ -424,6 +432,11 @@ public class BundleOptionsFrame extends JFrame {
             configureEnableToggle(option.isInitiallyEnabled(),
                     option.getDisabledValue(),
                     Arrays.asList((JComponent) field));
+        }
+
+        @Override
+        public void setValue(String val) {
+            field.setText(val);
         }
 
         @Override
@@ -540,6 +553,11 @@ public class BundleOptionsFrame extends JFrame {
         }
 
         @Override
+        public void setValue(String val) {
+            slider.setValue(sliderIndex(Double.valueOf(val)));
+        }
+
+        @Override
         public JComponent getComponent() {
             return panel;
         }
@@ -597,6 +615,16 @@ public class BundleOptionsFrame extends JFrame {
                     return str;
                 }
             };
+        }
+
+        @Override
+        public void setValue(String val) {
+            for (int i=0; i < choices.length; i++){
+                if (choices[i].getValue().equals(val)) {
+                    comboBox.setSelectedIndex(i);
+                    return;
+                }
+            }
         }
 
         @Override
@@ -781,6 +809,18 @@ public class BundleOptionsFrame extends JFrame {
         }
 
         @Override
+        public void setValue(String val) {
+            return;    // no-op
+        }
+
+        public void setExamples(List<BufferedImage> examples) {
+            model.clear();
+            for (int i=0; i < examples.size(); i++) {
+                model.addElement(new Example(examples.get(i)));
+            }
+        }
+
+        @Override
         public JComponent getComponent() {
             return panel;
         }
@@ -815,6 +855,12 @@ public class BundleOptionsFrame extends JFrame {
         return ret;
     }
 
+    public void setOptionMap(Map<String, String> map) {
+        for (OptionField opt : optionFields) {
+            opt.setValue(map.get(opt.getName()));
+        }
+    }
+
     public String getInstanceName() {
         if (instanceNameField != null) {
             return instanceNameField.getValue();
@@ -823,11 +869,21 @@ public class BundleOptionsFrame extends JFrame {
         }
     }
 
+    public void setInstanceName(String val) {
+        instanceNameField.setValue(val);
+    }
+
     public List<BufferedImage> getExamples() {
         if (exampleField != null) {
             return exampleField.getExamples();
         } else {
             return null;
+        }
+    }
+
+    public void setExamples(List<BufferedImage> examples) {
+        if (exampleField != null) {
+            exampleField.setExamples(examples);
         }
     }
 

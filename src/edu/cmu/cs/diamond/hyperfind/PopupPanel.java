@@ -365,7 +365,6 @@ public class PopupPanel extends JPanel {
                             model.addPredicate(p);
                             p.edit();
                         } catch (IOException e1) {
-                            // TODO Auto-generated catch block
                             e1.printStackTrace();
                         }
                     }
@@ -681,7 +680,6 @@ public class PopupPanel extends JPanel {
                     image.setTestResultHeatmaps(regions.getHeatmaps());
                     image.setTestResultPatches(regions.getPatches());
                 } catch (IOException e1) {
-                    // TODO Auto-generated catch block
                     e1.printStackTrace();
                 } finally {
                     pp.setCursor(oldCursor);

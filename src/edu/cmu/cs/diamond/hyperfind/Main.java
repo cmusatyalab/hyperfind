@@ -49,6 +49,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -59,7 +60,12 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+
 import edu.cmu.cs.diamond.opendiamond.*;
+
+import java.io.FileWriter;
 
 /**
  * The Main class.
@@ -82,9 +88,9 @@ public final class Main {
     private final JComboBox codecs;
 
     private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
-            CookieMap initialCookieMap,
-            List<HyperFindPredicateFactory> examplePredicateFactories,
-            JComboBox codecs) {
+                 CookieMap initialCookieMap,
+                 List<HyperFindPredicateFactory> examplePredicateFactories,
+                 JComboBox codecs) {
         this.frame = frame;
         this.results = results;
         this.model = model;
@@ -108,7 +114,7 @@ public final class Main {
     }
 
     public static Main createMain(List<File> bundleDirectories,
-            List<File> filterDirectories) throws IOException {
+                                  List<File> filterDirectories) throws IOException {
         // ugly hack to set application name for GNOME Shell
         // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
         try {
@@ -125,12 +131,14 @@ public final class Main {
 
         final List<HyperFindPredicateFactory> factories =
                 HyperFindPredicateFactory
-                .createHyperFindPredicateFactories(bundleFactory);
+                        .createHyperFindPredicateFactories(bundleFactory);
 
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton defineScopeButton = new JButton("Define Scope");
+        JButton exportPredicatesButton = new JButton("Export Predicates");
+        JButton importPredicatesButton = new JButton("Import Predicates");
         final JList resultsList = new JList();
         final StatisticsBar stats = new StatisticsBar();
 
@@ -194,7 +202,7 @@ public final class Main {
                         getSystemClipboard();
                 TransferHandler.TransferSupport ts =
                         new TransferHandler.TransferSupport(predicateList,
-                        clip.getContents(predicateList));
+                                clip.getContents(predicateList));
                 predicateList.getTransferHandler().importData(ts);
             }
         };
@@ -216,7 +224,7 @@ public final class Main {
                 // predicate filter
                 FileNameExtensionFilter predicateFilter =
                         new FileNameExtensionFilter("Predicate Files",
-                        BundleType.PREDICATE.getExtension());
+                                BundleType.PREDICATE.getExtension());
                 // image filter
                 String[] suffixes = ImageIO.getReaderFileSuffixes();
                 List<String> filteredSuffixes = new ArrayList<String>();
@@ -227,12 +235,12 @@ public final class Main {
                 }
                 FileNameExtensionFilter imageFilter =
                         new FileNameExtensionFilter("Images",
-                        filteredSuffixes.toArray(new String[0]));
+                                filteredSuffixes.toArray(new String[0]));
                 // combined filter
                 filteredSuffixes.add(BundleType.PREDICATE.getExtension());
                 FileNameExtensionFilter combinedFilter =
                         new FileNameExtensionFilter("Predicate Files, Images",
-                        filteredSuffixes.toArray(new String[0]));
+                                filteredSuffixes.toArray(new String[0]));
                 // enable filters
                 chooser.setFileFilter(combinedFilter);
                 chooser.addChoosableFileFilter(predicateFilter);
@@ -259,7 +267,7 @@ public final class Main {
                             m.popup(f.getName(), img);
                         } catch (IOException e2) {
                             JOptionPane.showMessageDialog(frame, e2
-                                    .getLocalizedMessage(), "Error Reading File",
+                                            .getLocalizedMessage(), "Error Reading File",
                                     JOptionPane.ERROR_MESSAGE);
                             e2.printStackTrace();
                         }
@@ -357,7 +365,7 @@ public final class Main {
 
                     List<HyperFindSearchMonitor> monitors =
                             HyperFindSearchMonitorFactory
-                            .getInterestedSearchMonitors(m.cookies, filters);
+                                    .getInterestedSearchMonitors(m.cookies, filters);
 
                     // push attributes
                     Set<String> attributes = new HashSet<String>();
@@ -387,13 +395,12 @@ public final class Main {
                     // start
                     m.results.start(m.search, new ActivePredicateSet(m,
                                     model.getSelectedPredicates(), factory),
-                                    monitors);
+                            monitors);
                 } catch (IOException e1) {
                     Throwable e2 = e1.getCause();
                     stats.showException(e2 != null ? e2 : e1);
                     e1.printStackTrace();
                 } catch (InterruptedException e1) {
-                    // TODO Auto-generated catch block
                     e1.printStackTrace();
                 }
             }
@@ -413,8 +420,78 @@ public final class Main {
                     m.cookies = CookieMap.createDefaultCookieMap();
                     // System.out.println(m.cookies);
                 } catch (IOException e1) {
-                    // TODO Auto-generated catch block
                     e1.printStackTrace();
+                }
+            }
+        });
+
+        // Export and import predicates
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
+                .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
+                .create();
+        final String savedSearchExtension = "hyperfindsearch";
+
+        exportPredicatesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                List<HyperFindPredicate> selectedPredicates = model.getSelectedPredicates();
+                // Serialization
+                try {
+                    JFileChooser chooser = new JFileChooser();
+                    chooser.setFileFilter(
+                            new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
+                    int retVal = chooser.showSaveDialog(m.frame);
+                    if (JFileChooser.APPROVE_OPTION == retVal) {
+                        String filename = chooser.getSelectedFile().getAbsolutePath();
+                        if (!filename.endsWith("." + savedSearchExtension)) {
+                            filename += "." + savedSearchExtension;
+                        }
+                        Writer writer = new FileWriter(filename);
+                        System.out.println("Saving predicates to " + filename);
+
+                        ArrayList<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
+                        for (HyperFindPredicate pred : selectedPredicates) {
+                            states.add(pred.export());
+                        }
+
+                        writer.write(gson.toJson(states));
+                        writer.close();
+                    }
+
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        importPredicatesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    JFileChooser chooser = new JFileChooser();
+                    chooser.setFileFilter(
+                            new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
+                    int retVal = chooser.showOpenDialog(m.frame);
+
+                    if (JFileChooser.APPROVE_OPTION == retVal) {
+
+                        System.out.println("Importing predicates from " + chooser.getSelectedFile().getCanonicalPath());
+                        Reader reader = new FileReader(chooser.getSelectedFile());
+                        ArrayList<HyperFindPredicate.HyperFindPredicateState> restored_states;
+                        Type type = new TypeToken<ArrayList<HyperFindPredicate.HyperFindPredicateState>>() {
+                        }.getType();
+                        restored_states = gson.fromJson(reader, type);
+
+                        for (HyperFindPredicate.HyperFindPredicateState state : restored_states) {
+                            model.addPredicate(HyperFindPredicate.restore(state));
+                        }
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
             }
         });
@@ -477,8 +554,14 @@ public final class Main {
         r1.add(Box.createHorizontalStrut(20));
         stopButton.setEnabled(false);
         r1.add(stopButton);
-
         v1.add(r1);
+        v1.add(Box.createVerticalStrut(4));
+
+        // Export/Import
+        Box r3 = Box.createHorizontalBox();
+        r3.add(exportPredicatesButton);
+        r3.add(importPredicatesButton);
+        v1.add(r3);
 
         c1.add(v1);
 
@@ -537,7 +620,6 @@ public final class Main {
                             model.addPredicate(p);
                             p.edit();
                         } catch (IOException e1) {
-                            // TODO Auto-generated catch block
                             e1.printStackTrace();
                         }
                     }
@@ -599,7 +681,7 @@ public final class Main {
 
     // returns null if object was dropped
     private ResultRegions getRegions(HyperFindPredicate predicate,
-            ObjectIdentifier objectID, byte[] data) throws IOException {
+                                     ObjectIdentifier objectID, byte[] data) throws IOException {
         // Create factory
         HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
         List<Filter> filters = new ArrayList<Filter>(p.createFilters());
@@ -630,7 +712,7 @@ public final class Main {
     }
 
     ResultRegions getRegions(HyperFindPredicate predicate,
-            ObjectIdentifier objectID) throws IOException {
+                             ObjectIdentifier objectID) throws IOException {
         return getRegions(predicate, objectID, null);
     }
 
@@ -683,10 +765,46 @@ public final class Main {
                 try {
                     createMain(bundleDirectories, filterDirectories);
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             }
         });
+    }
+}
+
+// https://gist.github.com/orip/3635246
+class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
+    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        return Base64.getDecoder().decode(json.getAsString());
+    }
+
+    public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
+        return new JsonPrimitive(Base64.getEncoder().encodeToString(src));
+    }
+}
+
+class BufferedImageToByteArrayTypeAdaptor implements JsonSerializer<BufferedImage>, JsonDeserializer<BufferedImage> {
+
+    @Override
+    public BufferedImage deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+        byte[] bytes = jsonDeserializationContext.deserialize(jsonElement, byte[].class);
+        BufferedImage bufferedImage = null;
+        try {
+            bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bufferedImage;
+    }
+
+    @Override
+    public JsonElement serialize(BufferedImage bufferedImage, Type type, JsonSerializationContext jsonSerializationContext) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(bufferedImage, "jpg", baos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsonSerializationContext.serialize(baos.toByteArray());
     }
 }

@@ -2,13 +2,14 @@
 <project basedir="." default="jar" name="HyperFind">
     <property environment="env"/>
     <property name="debuglevel" value="source,lines,vars"/>
-    <property name="target" value="1.6"/>
-    <property name="source" value="1.6"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
     <path id="HyperFind.classpath">
         <pathelement location="bin"/>
         <pathelement location="/usr/share/java/opendiamond.jar"/>
         <pathelement location="lib/swingx.jar"/>
         <pathelement location="lib/jai_imageio.jar"/>
+        <pathelement location="lib/gson.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -27,7 +28,7 @@
       <jar destfile="hyperfind.jar" basedir="bin">
             <manifest>
                 <attribute name="Main-Class" value="edu.cmu.cs.diamond.hyperfind.Main"/>
-                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar"/>
+                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar lib/gson.jar"/>
             </manifest>
       </jar>
     </target>

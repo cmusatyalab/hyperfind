@@ -9,7 +9,7 @@ Install `opendiamond.jar`.
 Download necessary jar libraries into the `lib/` folder by running:
 
 ```bash
-(cd lib ; ./get-lib.sh)
+lib/get-lib.sh
 ```
 
 ## Compiling

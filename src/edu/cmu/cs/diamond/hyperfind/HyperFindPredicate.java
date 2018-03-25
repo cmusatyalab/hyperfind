@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,7 +40,6 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.Component;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
@@ -175,5 +174,47 @@ public class HyperFindPredicate {
                     getFilterNames().equals(p.getFilterNames());
         }
         return false;
+    }
+
+    /**
+     * Objects to serialized/deserialized to/from JSON
+     */
+    public static class HyperFindPredicateState {
+        final public Bundle.BundleState bundleState;
+        final public HashMap<String, String> optionMap;
+        final public String instanceName;
+        final public ArrayList<BufferedImage> examples;
+
+        public HyperFindPredicateState(HyperFindPredicate predicate) throws IOException {
+            this.bundleState = predicate.bundle.export();
+            this.optionMap = new HashMap<String, String>(predicate.frame.getOptionMap());
+            this.instanceName = predicate.getInstanceName();
+            if (predicate.frame.needsExamples()) {
+                this.examples = new ArrayList<BufferedImage>(predicate.frame.getExamples());
+            }
+            else {
+                this.examples = null;
+            }
+        }
+    }
+
+    public HyperFindPredicateState export() throws IOException {
+        return new HyperFindPredicateState(this);
+    }
+
+    public static HyperFindPredicate restore(HyperFindPredicateState state) {
+        HyperFindPredicate predicate = null;
+        try {
+            Bundle bundle = Bundle.restore(state.bundleState);
+            predicate = new HyperFindPredicate(bundle);
+            predicate.frame.setOptionMap(state.optionMap);
+            predicate.frame.setInstanceName(state.instanceName);
+            if(null != state.examples) {
+                predicate.frame.setExamples(state.examples);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return predicate;
     }
 }
