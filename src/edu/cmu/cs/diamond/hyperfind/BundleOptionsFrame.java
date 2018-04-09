@@ -57,14 +57,8 @@ import javax.swing.text.JTextComponent;
 
 import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
-import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
-import edu.cmu.cs.diamond.opendiamond.bundle.Option;
-import edu.cmu.cs.diamond.opendiamond.bundle.BooleanOption;
-import edu.cmu.cs.diamond.opendiamond.bundle.StringOption;
-import edu.cmu.cs.diamond.opendiamond.bundle.NumberOption;
-import edu.cmu.cs.diamond.opendiamond.bundle.ChoiceOption;
+import edu.cmu.cs.diamond.opendiamond.bundle.*;
 import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
-import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
 
 public class BundleOptionsFrame extends JFrame {
 
@@ -157,6 +151,8 @@ public class BundleOptionsFrame extends JFrame {
                     field = new NumberField((NumberOption) option);
                 } else if (option instanceof ChoiceOption) {
                     field = new ChoiceField((ChoiceOption) option);
+                } else if (option instanceof FileOption) {
+                    field = new FileField((FileOption) option);
                 } else if (option instanceof ExampleOption) {
                     if (example != null) {
                         throw new IllegalArgumentException(
@@ -575,6 +571,65 @@ public class BundleOptionsFrame extends JFrame {
             } else {
                 return Double.toString(d);
             }
+        }
+    }
+
+    private static class FileField extends OptionField {
+        private File file = null;
+        private final JPanel panel;
+        private final JButton button;
+        private final JLabel label;
+        private final JFileChooser chooser;
+
+        public FileField(Option option) {
+            super(option);
+            this.button = new JButton("Add file");
+            this.label = new JLabel("");
+            this.panel = new JPanel(new GridBagLayout());
+            Box b1 = Box.createVerticalBox();
+            b1.add(button);
+            b1.add(label);
+            this.panel.add(b1);
+            this.panel.setPreferredSize(new Dimension(500, 60));
+
+            this.chooser = new JFileChooser();
+            this.chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            this.chooser.setMultiSelectionEnabled(false);
+
+            this.button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int retVal = chooser.showOpenDialog(panel);
+                    if (JFileChooser.APPROVE_OPTION == retVal) {
+                        file = chooser.getSelectedFile();
+                        label.setText(file.getPath());
+                        fireChangeEvent();
+                        System.out.println("Select file: " + file.toString());
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void setValue(String val) {
+            this.file = new File(val);
+        }
+
+        @Override
+        public JComponent getComponent() {
+            return this.panel;
+        }
+
+        @Override
+        protected String getEnabledValue() {
+            if (null != this.file) {
+                try {
+                    return file.getCanonicalPath();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
         }
     }
 

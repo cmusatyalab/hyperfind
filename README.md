@@ -44,8 +44,14 @@ Typically, codecs/predicates/filters come in a bundle developed separately.
 ## Tips
 
 ### Viewing ScopeCookie
+[Recommended] If you have OpenDiamond installed locally:
+```bash
+python -m opendiamond.scope $HOME/.diamond/NEWSCOPE
+```
+
 The ScopeCookie is a base64-encoded string containing the authorized search servers, data sources and expiration time.
-You can view the decoded information by
+
+Alternative:
 ```bash
 cat $HOME/.diamond/NEWSCOPE | grep -v \- | base64 -d
 ```
