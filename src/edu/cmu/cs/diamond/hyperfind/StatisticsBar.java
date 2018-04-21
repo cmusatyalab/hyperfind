@@ -59,8 +59,9 @@ public class StatisticsBar extends JProgressBar {
 
     private void setNumbers(long total, long searched, long dropped) {
         setIndeterminate(false);
-        String str = "Total: " + total + ", Searched: " + searched
-                + ", Dropped: " + dropped;
+        long passed = searched - dropped;
+        String str = String.format("Total %d, Searched %d, Dropped %d (%.2f%%), Passed %d (%.2f%%)",
+                total, searched, dropped, 100f*dropped/searched, passed, 100f*passed/searched);
         setString(str);
         setMaximum(total > Integer.MAX_VALUE ?
                 Integer.MAX_VALUE : (int) total);

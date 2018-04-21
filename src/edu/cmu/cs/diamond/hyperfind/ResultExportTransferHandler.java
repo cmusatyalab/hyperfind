@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -47,6 +47,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -59,8 +60,11 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.TransferHandler;
 
+import org.apache.commons.io.FileUtils;
+
 import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 import edu.cmu.cs.diamond.opendiamond.Util;
+import org.apache.commons.io.FilenameUtils;
 
 /**
  * Handles content export when drag from ResultList.
@@ -75,6 +79,7 @@ public class ResultExportTransferHandler extends TransferHandler {
             "text/plain; class=java.lang.String", "Plain text");
 
     private static final List<DataFlavor> flavors = new ArrayList<DataFlavor>();
+
     static {
         flavors.add(uriListFlavor);
         flavors.add(textPlainFlavor);
@@ -95,18 +100,30 @@ public class ResultExportTransferHandler extends TransferHandler {
                 futureFiles.add(executor.submit(new Callable<File>() {
                     @Override
                     public File call() throws Exception {
-                        // System.out.println("running...");
-                        BufferedImage img = Util
-                                .extractImageFromResultIdentifier(r
-                                        .getResult().getResult()
-                                        .getObjectIdentifier(), factory);
-                        File f = File.createTempFile("hyperfind-export-",
-                                ".png");
-                        f.deleteOnExit();
+                        File f = null;
 
-                        ImageIO.write(img, "png", f);
+                        // if the attribute "hyperfind.external-link" is returned, use it as download link
+                        byte[] external_link = r.getResult().getResult().getValue("hyperfind.external-link");
+                        if (null != external_link) {
+                            String dl_link = Util.extractString(external_link);
+                            System.out.println("Downloading from " + dl_link);
+                            URL url = new URL(dl_link);
+                            f = File.createTempFile("hyperfind-export-", "-" + FilenameUtils.getName(url.getFile()));
+                            f.deleteOnExit();
+                            FileUtils.copyURLToFile(url, f);
+                        } else {
+                            System.out.println("Extract image by re-execution.");
+                            BufferedImage img = Util
+                                    .extractImageFromResultIdentifier(r
+                                            .getResult().getResult()
+                                            .getObjectIdentifier(), factory);
 
-                        // System.out.println("done");
+                            f = File.createTempFile("hyperfind-export-",
+                                    ".png");
+                            f.deleteOnExit();
+
+                            ImageIO.write(img, "png", f);
+                        }
 
                         return f;
                     }
@@ -172,7 +189,7 @@ public class ResultExportTransferHandler extends TransferHandler {
     }
 
     public ResultExportTransferHandler(SearchFactory factory,
-            ExecutorService executor) {
+                                       ExecutorService executor) {
         this.factory = factory;
         this.executor = executor;
     }
