@@ -137,8 +137,8 @@ public final class Main {
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton defineScopeButton = new JButton("Define Scope");
-        JButton exportPredicatesButton = new JButton("Export Predicates");
-        JButton importPredicatesButton = new JButton("Import Predicates");
+        JButton exportPredicatesButton = new JButton("Export");
+        JButton importPredicatesButton = new JButton("Import");
         final JList resultsList = new JList();
         final StatisticsBar stats = new StatisticsBar();
 
@@ -434,6 +434,9 @@ public final class Main {
                 .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
                 .create();
         final String savedSearchExtension = "hyperfindsearch";
+        final JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(
+                new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
 
         exportPredicatesButton.addActionListener(new ActionListener() {
             @Override
@@ -441,9 +444,7 @@ public final class Main {
                 List<HyperFindPredicate> selectedPredicates = model.getSelectedPredicates();
                 // Serialization
                 try {
-                    JFileChooser chooser = new JFileChooser();
-                    chooser.setFileFilter(
-                            new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
+
                     int retVal = chooser.showSaveDialog(m.frame);
                     if (JFileChooser.APPROVE_OPTION == retVal) {
                         String filename = chooser.getSelectedFile().getAbsolutePath();
@@ -473,9 +474,6 @@ public final class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    JFileChooser chooser = new JFileChooser();
-                    chooser.setFileFilter(
-                            new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
                     int retVal = chooser.showOpenDialog(m.frame);
 
                     if (JFileChooser.APPROVE_OPTION == retVal) {
@@ -561,6 +559,7 @@ public final class Main {
         // Export/Import
         Box r3 = Box.createHorizontalBox();
         r3.add(exportPredicatesButton);
+        r3.add(Box.createHorizontalStrut(20));
         r3.add(importPredicatesButton);
         v1.add(r3);
 
