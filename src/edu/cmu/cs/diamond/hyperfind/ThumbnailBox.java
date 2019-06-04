@@ -81,6 +81,8 @@ public class ThumbnailBox extends JPanel {
 
     final private StatisticsBar stats;
 
+    final private StatisticsArea statsArea;
+
     private ScheduledExecutorService timerExecutor;
 
     private ScheduledFuture<?> statsTimerFuture;
@@ -102,15 +104,17 @@ public class ThumbnailBox extends JPanel {
      * @param startButton
      * @param list The Jlist of image thumbnails.
      * @param stats Stats bar. Event handler will be set here.
+     * @param statsArea Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
     public ThumbnailBox(JButton stopButton, JButton startButton, JList list,
-            StatisticsBar stats, final int resultsPerScreen) {
+            StatisticsBar stats, StatisticsArea statsArea, final int resultsPerScreen) {
         super();
 
         this.stopButton = stopButton;
         this.startButton = startButton;
         this.stats = stats;
+        this.statsArea = statsArea;
         this.list = list;
         this.resultsPerScreen = resultsPerScreen;
 
@@ -416,6 +420,7 @@ public class ThumbnailBox extends JPanel {
                     @Override
                     public void run() {
                         stats.update(serverStats);
+                        statsArea.update(serverStats);
                     }
                 });
             } else {
@@ -432,6 +437,7 @@ public class ThumbnailBox extends JPanel {
                 @Override
                 public void run() {
                     stats.setDone();
+                    statsArea.setDone();
                 }
             });
         }

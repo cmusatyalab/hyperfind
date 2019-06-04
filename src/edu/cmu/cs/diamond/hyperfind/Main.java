@@ -141,6 +141,7 @@ public final class Main {
         JButton importPredicatesButton = new JButton("Import");
         final JList resultsList = new JList();
         final StatisticsBar stats = new StatisticsBar();
+        final StatisticsArea statsArea = new StatisticsArea();
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
@@ -153,11 +154,12 @@ public final class Main {
         resultsList.setDragEnabled(true);
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
-                resultsList, stats, 500);
+                resultsList, stats, statsArea, 500);
 
         // predicate list
         final PredicateListModel model = new PredicateListModel();
         final PredicateList predicateList = new PredicateList(model);
+
 
         // codecs / menu
         JButton addPredicateButton = new JButton("+");
@@ -535,6 +537,9 @@ public final class Main {
 
         // filters
         c1.add(predicateList);
+      
+        // progress display
+        c1.add(statsArea);
 
         Box h1 = Box.createHorizontalBox();
         h1.add(Box.createHorizontalGlue());
