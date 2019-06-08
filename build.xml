@@ -10,10 +10,7 @@
         <pathelement location="lib/swingx.jar"/>
         <pathelement location="lib/jai_imageio.jar"/>
         <pathelement location="lib/gson.jar"/>
-        <fileset dir="lib/commons-io-2.6">
-            <include name="*.jar"/>
-        </fileset>
-
+        <pathelement location="lib/commons-io.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -32,8 +29,11 @@
       <jar destfile="hyperfind.jar" basedir="bin">
             <manifest>
                 <attribute name="Main-Class" value="edu.cmu.cs.diamond.hyperfind.Main"/>
-                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar lib/gson.jar lib/commons-io-2.6/*"/>
+                <!-- <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar lib/gson.jar lib/commons-io.jar*"/> -->
+                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar"/>
             </manifest>
+            <!-- build a fat jar: bundle in all external library jars -->
+            <zipgroupfileset dir="lib" includes="*.jar"/>
       </jar>
     </target>
     <target depends="init" name="build-project">
