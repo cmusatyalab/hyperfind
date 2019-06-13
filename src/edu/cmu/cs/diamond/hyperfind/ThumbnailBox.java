@@ -295,6 +295,9 @@ public class ThumbnailBox extends JPanel {
                             for (BoundingBox box : regions.getPatches()) {
                                 drawPatch(g, box);
                             }
+                            if (r.getKeys().contains("_gt_label")) {
+                                drawBorder(g, Color.RED, origW, origH);
+                            }
                             g.dispose();
 
                             // check setting from server
@@ -401,6 +404,16 @@ public class ThumbnailBox extends JPanel {
         int y1 = box.getY1();
         Rectangle r = new Rectangle(x0, y0, x1 - x0, y1 - y0);
         g.draw(r);
+    }
+
+    private void drawBorder(Graphics2D g, Color c, int width, int  height) {
+        Stroke currentStroke = g.getStroke();
+        g.setColor(c);
+        int thickness = 80;
+        g.setStroke(new BasicStroke(thickness));
+        Rectangle r = new Rectangle(0, 0, width, height);
+        g.draw(r);
+        g.setStroke(currentStroke);
     }
 
     private void updateStats() throws IOException, InterruptedException {
