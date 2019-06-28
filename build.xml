@@ -10,10 +10,7 @@
         <pathelement location="lib/swingx.jar"/>
         <pathelement location="lib/jai_imageio.jar"/>
         <pathelement location="lib/gson.jar"/>
-        <fileset dir="lib/commons-io-2.6">
-            <include name="*.jar"/>
-        </fileset>
-
+        <pathelement location="lib/commons-io.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -26,14 +23,22 @@
     	<delete file="hyperfind.jar"/>
     </target>
     <target depends="clean" name="cleanall"/>
-    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="get-lib">
+        <exec executable="sh" dir="lib">
+            <arg value="get-lib.sh"/>
+        </exec>
+    </target>
+    <target depends="get-lib,build-subprojects,build-project" name="build"/>
     <target name="build-subprojects"/>
     <target depends="build" name="jar">
       <jar destfile="hyperfind.jar" basedir="bin">
             <manifest>
                 <attribute name="Main-Class" value="edu.cmu.cs.diamond.hyperfind.Main"/>
-                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar lib/gson.jar lib/commons-io-2.6/*"/>
+                <!-- <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar lib/swingx.jar lib/jai_imageio.jar lib/gson.jar lib/commons-io.jar*"/> -->
+                <attribute name="Class-Path" value="/usr/share/java/opendiamond.jar"/>
             </manifest>
+            <!-- build a fat jar: bundle in all external library jars except for opendiamond.jar -->
+            <zipgroupfileset dir="lib" includes="*.jar"/>
       </jar>
     </target>
     <target depends="init" name="build-project">
