@@ -1,3 +1,9 @@
+hyperfind (1.8.2-1ubuntu1-dev) UNRELEASED; urgency=medium
+
+  * 
+
+ -- Ziqiang Feng <zf@cs.cmu.edu>  Fri, 28 Jun 2019 18:15:10 -0400
+
 hyperfind (1.8.1-1ubuntu1) stable; urgency=medium
 
   * Initial release 
