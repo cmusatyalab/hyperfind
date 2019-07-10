@@ -44,6 +44,12 @@ import java.util.List;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import java.awt.image.BufferedImage;
+import java.awt.AlphaComposite;
+import java.awt.Graphics2D;
+import java.awt.Graphics;
+import javax.imageio.ImageIO;
+import java.io.IOException;
 
 import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 
@@ -53,9 +59,30 @@ class ResultIcon {
 
     private final String name;
 
-    private final ImageIcon icon;
-
     private final ResultIconSetting displaySelection;
+    
+    private final BufferedImage originalImage;
+
+    private static final BufferedImage checkMarkImage;
+
+    private static final BufferedImage crossMarkImage;
+
+    private ImageIcon icon;
+
+    static {
+        BufferedImage check = null;
+        BufferedImage cross = null;
+        try {
+            check =
+            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream("resources/check.png")); 
+            cross =
+            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream("resources/cross.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        checkMarkImage = check;
+        crossMarkImage = cross;
+    }
 
     public String getName() {
         return name;
@@ -70,6 +97,7 @@ class ResultIcon {
         this.result = result;
         this.name = name;
         this.icon = icon;
+        this.originalImage = (icon == null) ? null : copyImage((BufferedImage)icon.getImage());
         this.displaySelection = displaySelection;
     }
 
@@ -83,5 +111,41 @@ class ResultIcon {
 
     public ResultIconSetting getDisplaySelection() {
         return displaySelection;
+    }
+
+    private static BufferedImage copyImage(BufferedImage source){
+        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
+        Graphics2D g = (Graphics2D) b.getGraphics();
+        g.drawImage(source, 0, 0, null);
+        g.dispose();
+        return b;
+    }
+
+    public void drawOverlay(String cmd) {
+        switch(cmd) 
+        {
+            case "Positive":
+                drawOverlay(checkMarkImage);
+                break;
+            case "Negative":
+                drawOverlay(crossMarkImage);
+                break;
+            default:
+                getOriginal();
+        }
+    }
+
+    private void drawOverlay(BufferedImage overlay) {
+        BufferedImage input = (BufferedImage) copyImage(this.originalImage);
+        Graphics2D g = (Graphics2D) input.getGraphics();
+        g.drawImage(input, 0, 0, null);
+        g.drawImage(overlay, 0, 0, null);
+        g.dispose();
+        icon = new ImageIcon(input);
+    }
+
+    public void getOriginal() {
+        BufferedImage input = (BufferedImage) copyImage(this.originalImage);
+        icon = new ImageIcon(input);
     }
 }

@@ -110,6 +110,7 @@ public class ResultRegions {
         for (String name : filterNames) {
             attrs.add(getPatchAttributeName(name));
             attrs.add(getHeatmapAttributeName(name));
+            attrs.add(getScoreAttributeName(name));
         }
         return attrs;
     }
@@ -118,6 +119,9 @@ public class ResultRegions {
         return "_filter." + filterName + ".patches";
     }
 
+    private static String getScoreAttributeName(String filterName) {
+        return "_filter." + filterName + "_score";
+    }
     private static String getHeatmapAttributeName(String filterName) {
         return "_filter." + filterName + ".heatmap.png";
     }

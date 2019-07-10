@@ -43,6 +43,8 @@ package edu.cmu.cs.diamond.hyperfind;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -69,6 +71,9 @@ import edu.cmu.cs.diamond.opendiamond.*;
  * NOTE: Status for start, stop buttons and stats bar is changed within the class.
  */
 public class ThumbnailBox extends JPanel {
+
+    private static final long NANOSEC_PER_MILLI = (long) 1e6;
+
     private final int resultsPerScreen;
 
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
@@ -95,6 +100,14 @@ public class ThumbnailBox extends JPanel {
 
     private final JList list;
 
+    private final JLabel timeLabel;
+
+    private final JPopupMenu popupMenu;
+
+    private long startTime;
+
+    private Timer timer;
+
     private SwingWorker<?, ?> workerFuture;
 
     private List<HyperFindSearchMonitor> searchMonitors;
@@ -117,6 +130,7 @@ public class ThumbnailBox extends JPanel {
         this.statsArea = statsArea;
         this.list = list;
         this.resultsPerScreen = resultsPerScreen;
+        this.popupMenu = new JPopupMenu();
 
         final ThumbnailBox tb = this;
 
@@ -138,6 +152,10 @@ public class ThumbnailBox extends JPanel {
         });
 
         setLayout(new BorderLayout());
+
+        //adding Label for timer
+        timeLabel = new JLabel();
+        add(timeLabel, BorderLayout.NORTH);
 
         // Scrolling panel for results
         JPanel panel = new JPanel();
@@ -163,6 +181,66 @@ public class ThumbnailBox extends JPanel {
 
         setPreferredSize(new Dimension(700, 600));
 
+        setTimerListener();
+
+        setPopUpMenu();
+    }
+
+    private void setPopUpMenu(){
+        ActionListener popUpListener = new ActionListener () {
+            public void actionPerformed(ActionEvent e)
+            {
+                for (Object o : list.getSelectedValues()) {
+                    ResultIcon icon = (ResultIcon) o;
+                    icon.drawOverlay(e.getActionCommand());
+                }
+                repaint();
+            }
+        };
+
+        list.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+               if (SwingUtilities.isRightMouseButton(e)    // if right mouse button clicked
+                     && !list.isSelectionEmpty()) {      // and list selection is not empty
+                  popupMenu.show(list, e.getX(), e.getY());
+               }
+            }
+      	});
+
+        JMenuItem positive = new JMenuItem("Positive");
+        JMenuItem negative = new JMenuItem("Negative");
+        JMenuItem ignore = new JMenuItem("Ignore");
+
+        positive.addActionListener(popUpListener);       
+        negative.addActionListener(popUpListener);       
+        ignore.addActionListener(popUpListener);       
+
+        popupMenu.add(positive);
+        popupMenu.add(negative);
+        popupMenu.add(ignore);
+
+    }
+
+    private void setTimerListener(){
+		startTime = System.nanoTime();
+        ActionListener timerListener = new ActionListener () {
+            public void actionPerformed(ActionEvent e)
+            {
+                long nowTime = System.nanoTime();
+                long timeElapsed = (nowTime - startTime)/NANOSEC_PER_MILLI;
+				String timeDisplay = String.format("%02d:%02d:%02d", 
+				    TimeUnit.MILLISECONDS.toHours(timeElapsed),
+				    TimeUnit.MILLISECONDS.toMinutes(timeElapsed) - 
+				    TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeElapsed)),
+				    TimeUnit.MILLISECONDS.toSeconds(timeElapsed) - 
+				    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
+
+                timeLabel.setText(timeDisplay);
+            }
+        };
+
+        this.timer = new Timer(1000, timerListener);
+        this.timer.setInitialDelay(0);
     }
 
     private void startStatsTimer() {
@@ -205,6 +283,8 @@ public class ThumbnailBox extends JPanel {
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
 
+		startTime = System.nanoTime();
+		timer.start(); 
         startStatsTimer();
 
         final DefaultListModel model = new DefaultListModel();
@@ -323,6 +403,7 @@ public class ThumbnailBox extends JPanel {
                     } finally {
                         // System.out.println("STOP");
 
+                        timer.stop();
                         // update stats one more time, if possible
                         try {
                             updateStats();

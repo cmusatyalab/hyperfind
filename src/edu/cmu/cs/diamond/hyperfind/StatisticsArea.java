@@ -101,7 +101,7 @@ final class StatisticsArea extends JPanel{
             long labeled_total = true_positives + false_negatives;
             str_display.append(String.format("\n %0$-16s %d / %d \n", "TP / FN", true_positives, false_negatives));
             str_display.append(String.format("\n %0$-15s %.2f%% \n", "Precision", 100f*true_positives/passed));
-            str_display.append(String.format("\n %0$-17s %.2f%% \n", "Recall", 100f*true_positives/labeled_total));
+            str_display.append(String.format("\n %0$-14s %.2f%% \n", "Curr. Recall", 100f*true_positives/labeled_total));
         }
         display.setText(str_display.toString());
     }
