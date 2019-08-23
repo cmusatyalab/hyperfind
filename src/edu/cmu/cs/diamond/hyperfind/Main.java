@@ -139,7 +139,6 @@ public final class Main {
         JButton defineScopeButton = new JButton("Define Scope");
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
-        final JList resultsList = new JList();
         final StatisticsBar stats = new StatisticsBar();
         final StatisticsArea statsArea = new StatisticsArea();
 
@@ -148,13 +147,9 @@ public final class Main {
         threadPoolExecutor.allowCoreThreadTimeOut(true);
         final ExecutorService executor = threadPoolExecutor;
 
-        resultsList.setModel(new DefaultListModel());
-        resultsList
-                .setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        resultsList.setDragEnabled(true);
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
-                resultsList, stats, statsArea, 500);
+                stats, statsArea, 500);
 
         // predicate list
         final PredicateListModel model = new PredicateListModel();
@@ -358,9 +353,11 @@ public final class Main {
                     // give the ResultExportTransferHandler a different
                     // factory with just the codec, since it only needs the
                     // decoded image and not the filter output attributes
-                    resultsList.setTransferHandler(
-                            new ResultExportTransferHandler(
-                                    m.createFactory(filters), executor));
+                    for (int i=0; i < m.results.NUM_PANELS; i++) {
+                        m.results.resultLists.get(i).setTransferHandler(
+                                new ResultExportTransferHandler(
+                                        m.createFactory(filters), executor));
+                    }
 
                     filters.addAll(model.createFilters());
                     SearchFactory factory = m.createFactory(filters);
@@ -374,6 +371,7 @@ public final class Main {
                     attributes.add("thumbnail.jpeg"); // thumbnail
                     attributes.add("_cols.int"); // original width
                     attributes.add("_rows.int"); // original height
+                    attributes.add("_score.int");
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
                     attributes.add("hyperfind.external-link");
@@ -497,28 +495,29 @@ public final class Main {
             }
         });
 
-        resultsList.addMouseListener(new MouseAdapter() {
+        MouseAdapter displayClick = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    int index = resultsList.locationToIndex(e.getPoint());
+                    JList list = (JList)e.getSource();
+                    int index = list.locationToIndex(e.getPoint());
                     if (index == -1) {
                         return;
                     }
 
-                    ResultIcon r = (ResultIcon) resultsList.getModel()
+                    ResultIcon r = (ResultIcon) list.getModel()
                             .getElementAt(index);
                     if (r != null) {
                         m.reexecute(r.getResult());
                     }
                 }
             }
-        });
 
-        // list of results
-        resultsList.setCellRenderer(new SearchPanelCellRenderer());
-        resultsList.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        resultsList.setVisibleRowCount(0);
+        };
+
+        for (int i=0; i < m.results.NUM_PANELS; i++) {
+            m.results.resultLists.get(i).addMouseListener(displayClick);
+        }
 
         // layout
 
@@ -652,6 +651,11 @@ public final class Main {
                 r, examplePredicateFactories, model));
     }
 
+    private void popup(HyperFindResult r, Result oldResult) {
+        popup(r.getResult().getName(), PopupPanel.createInstance(this,
+                r, examplePredicateFactories, model, oldResult));
+    }
+
     private void popup(String title, PopupPanel p) {
         popupFrame.setVisible(false);
         popupFrame.setTitle(title);
@@ -668,6 +672,7 @@ public final class Main {
     }
 
     void reexecute(HyperFindResult result) {
+        Result prevResult = result.getResult();
         ObjectIdentifier id = result.getResult().getObjectIdentifier();
         ActivePredicateSet ps = result.getActivePredicateSet();
         SearchFactory factory = ps.getSearchFactory();
@@ -676,7 +681,7 @@ public final class Main {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
             popup(new HyperFindResult(ps, factory.generateResult(id,
-                    attributes)));
+                    attributes)), prevResult);
         } catch (IOException e1) {
             e1.printStackTrace();
         } finally {

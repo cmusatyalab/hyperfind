@@ -118,22 +118,42 @@ public class PopupPanel extends JPanel {
 
     public static PopupPanel createInstance(Main m, HyperFindResult hr,
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            PredicateListModel model) {
+            PredicateListModel model, Result prevResult) {
 
         Result r = hr.getResult();
         BufferedImage img = Util.extractImageFromResult(r);
 
+        Set<String> keys= new HashSet<String>();
+        keys.addAll(r.getKeys());
+        if (prevResult != null) {
+            keys.addAll(prevResult.getKeys());
+        }
+
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
-        for (String k : r.getKeys()) {
+        for (String k : keys) {
             // skip "data" attribute
             if (!k.equals("")) {
-                attributes.put(k, r.getValue(k));
+                if(r.getValue(k)!=null)
+                    attributes.put(k, r.getValue(k));
+                else if(prevResult != null && prevResult.getValue(k)!=null) {
+                    //get attributes from previous run
+                    if (prevResult.getValue(k).length != 0)
+                        attributes.put(k, prevResult.getValue(k));
+                }
             }
         }
         return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
                 hr.getActivePredicateSet().getActivePredicates(),
                 examplePredicateFactories, hr.getRegions(), attributes, model);
     }
+
+    public static PopupPanel createInstance(Main m, HyperFindResult hr,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
+            PredicateListModel model) {
+
+        return createInstance(m, hr, examplePredicateFactories, model, null);
+    }
+
 
     public static PopupPanel createInstance(Main m, BufferedImage img,
             byte resultData[],

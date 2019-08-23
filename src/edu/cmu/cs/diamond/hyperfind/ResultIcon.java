@@ -41,9 +41,12 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
@@ -69,14 +72,18 @@ class ResultIcon {
 
     private ImageIcon icon;
 
+    private int score;
+
     static {
         BufferedImage check = null;
         BufferedImage cross = null;
         try {
             check =
-            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream("resources/check.png")); 
+            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
+                        "resources/check.png")); 
             cross =
-            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream("resources/cross.png"));
+            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
+                        "resources/cross.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -84,36 +91,69 @@ class ResultIcon {
         crossMarkImage = cross;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public enum ResultIconSetting {
         ICON_ONLY, LABEL_ONLY, ICON_AND_LABEL
     };
 
+    public enum ResultType {
+        Negative (0),
+        Positive (1),
+        Ignore   (2);
+
+        private static class TypeHolder {
+            static Map<Integer, ResultType> typeMap = new HashMap<>();
+        }
+
+        private final int value;
+
+        private ResultType(int value) {
+            this.value = value;
+            TypeHolder.typeMap.put(value, this);
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static ResultType getType(int value) {
+            return TypeHolder.typeMap.get(value);
+        }
+    }
+
     public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
-            ResultIconSetting displaySelection) {
+            ResultIconSetting displaySelection, int score) {
         this.result = result;
         this.name = name;
         this.icon = icon;
-        this.originalImage = (icon == null) ? null : copyImage((BufferedImage)icon.getImage());
         this.displaySelection = displaySelection;
+        this.score = score;
+        this.originalImage = (icon == null) ? null : setOriginal();
+        //resize before displaying 
+        if (icon != null) {
+            drawOverlay(ResultType.getType(score)); 
+        }
     }
 
-    public HyperFindResult getResult() {
-        return result;
+    public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
+            ResultIconSetting displaySelection) {
+        this(result, name, icon, displaySelection, 2);
     }
 
-    public Icon getIcon() {
-        return icon;
+    private BufferedImage copyImage(BufferedImage source, double scale){
+        if(scale == 1)
+            return copyImage(source);
+
+        int w = (int) (source.getWidth()*scale);
+        w = (w>250) ? 250 : w;
+        Image tmp = (Image) source.getScaledInstance(w, -1, Image.SCALE_SMOOTH);
+        BufferedImage b = new BufferedImage(tmp.getWidth(null), tmp.getHeight(null), source.getType());
+        Graphics2D g = (Graphics2D) b.getGraphics();
+        g.drawImage(tmp, 0, 0, null);
+        g.dispose();
+        return b;
     }
 
-    public ResultIconSetting getDisplaySelection() {
-        return displaySelection;
-    }
-
-    private static BufferedImage copyImage(BufferedImage source){
+    private BufferedImage copyImage(BufferedImage source){
         BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
         Graphics2D g = (Graphics2D) b.getGraphics();
         g.drawImage(source, 0, 0, null);
@@ -121,13 +161,13 @@ class ResultIcon {
         return b;
     }
 
-    public void drawOverlay(String cmd) {
-        switch(cmd) 
+    public void drawOverlay(ResultType r) {
+        switch(r) 
         {
-            case "Positive":
+            case Positive:
                 drawOverlay(checkMarkImage);
                 break;
-            case "Negative":
+            case Negative:
                 drawOverlay(crossMarkImage);
                 break;
             default:
@@ -144,8 +184,37 @@ class ResultIcon {
         icon = new ImageIcon(input);
     }
 
+    public BufferedImage setOriginal() {
+        double scale = (score == 2) ? 1: 1.5;
+        return copyImage((BufferedImage)icon.getImage(), scale);
+    }
+
     public void getOriginal() {
         BufferedImage input = (BufferedImage) copyImage(this.originalImage);
         icon = new ImageIcon(input);
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public HyperFindResult getResult() {
+        return result;
+    }
+
+    public Icon getIcon() {
+        return icon;
+    }
+
+    public ResultIconSetting getDisplaySelection() {
+        return displaySelection;
     }
 }

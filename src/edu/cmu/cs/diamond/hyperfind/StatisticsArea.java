@@ -61,7 +61,6 @@ final class StatisticsArea extends JPanel{
 
     private final Box box = Box.createVerticalBox();
 
-    // JTextArea or TextPane
     private final JTextArea display = new JTextArea();
 
     public StatisticsArea() {
@@ -87,27 +86,28 @@ final class StatisticsArea extends JPanel{
     }
 
     public void clear() {
-        setNumbers(0, 0, 0, 0, 0);
+        setNumbers(0, 0, 0, 0, 0, 0);
     }
 
-    private void setNumbers(long total, long searched, long dropped, long true_positives, long false_negatives) {
+    private void setNumbers(long total, long searched, long dropped, long true_positives, long false_negatives, long false_display) {
         long passed = searched - dropped;
         StringBuilder str_display = new StringBuilder();
         str_display.append(String.format("\n %0$-17s %d\n", "Total", total));
         str_display.append(String.format("\n %0$-14s %d\n", "Searched", searched));
         str_display.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f*dropped/searched));
         str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", passed, 100f*passed/searched));
-        if (true_positives>0 || false_negatives>0) {
-            long labeled_total = true_positives + false_negatives;
-            str_display.append(String.format("\n %0$-16s %d / %d \n", "TP / FN", true_positives, false_negatives));
+        if (true_positives>0 || false_negatives>0 || false_display>0) {
+            long labeled_total = true_positives + false_negatives + false_display;
+            str_display.append(String.format("\n %0$-12s %d/(%d,%d) \n", "TP/(FN_Disp,Drop)", true_positives, false_display, false_negatives));
             str_display.append(String.format("\n %0$-15s %.2f%% \n", "Precision", 100f*true_positives/passed));
-            str_display.append(String.format("\n %0$-14s %.2f%% \n", "Curr. Recall", 100f*true_positives/labeled_total));
+            str_display.append(String.format("\n %0$-14s %.2f%%  \n", "Curr. Recall", 100f*true_positives/labeled_total));
         }
         display.setText(str_display.toString());
     }
 
 
-    public void update(Map<String, ServerStatistics> serverStats) {
+    public void update(Map<String, ServerStatistics> serverStats, 
+        long sampled_drop, long sampled_negative) {
         long t = 0;
         long s = 0;
         long d = 0;
@@ -121,7 +121,7 @@ final class StatisticsArea extends JPanel{
             p += map.get(ss.TP_OBJECTS);
             n += map.get(ss.FN_OBJECTS);
         }
-        setNumbers(t, s, d, p, n);
+        setNumbers(t, s, d + sampled_drop, p - sampled_negative, n, sampled_negative);
     }
 
     public void setDone() {
