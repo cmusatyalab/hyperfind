@@ -98,6 +98,8 @@ public class ThumbnailBox extends JPanel {
     private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP =
             new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
+    private static Boolean PROXY_FLAG;
+
     private Search search;
 
     final private StatisticsBar stats;
@@ -111,6 +113,8 @@ public class ThumbnailBox extends JPanel {
     private final JButton stopButton;
 
     private final JButton startButton;
+
+    private final JButton retrainButton;
 
     private final JButton moreResultsButton;
 
@@ -130,20 +134,23 @@ public class ThumbnailBox extends JPanel {
 
     private HashMap<Integer, JScrollPane> resultPanes;
 
+    private HashMap<String, FeedbackObject> feedbackItems;
 
     /**
      * @param stopButton
      * @param startButton
+     * @param retrainButton
      * @param stats Stats bar. Event handler will be set here.
      * @param statsArea Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
-    public ThumbnailBox(JButton stopButton, JButton startButton, 
+    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton, 
             StatisticsBar stats, StatisticsArea statsArea, final int resultsPerScreen) {
         super();
 
         this.stopButton = stopButton;
         this.startButton = startButton;
+        this.retrainButton = retrainButton;
         this.stats = stats;
         this.statsArea = statsArea;
         this.resultLists = new ArrayList<JList>();
@@ -152,6 +159,8 @@ public class ThumbnailBox extends JPanel {
         this.popupMenu = new JPopupMenu();
 
         this.resultPanes = new HashMap<>();
+        this.feedbackItems = new HashMap<String, FeedbackObject>();
+        this.PROXY_FLAG = false;
 
         setUpResultLists();
 
@@ -223,6 +232,9 @@ public class ThumbnailBox extends JPanel {
         setPopUpMenu();
     }
 
+    public void setProxyFlag(Boolean flag) {
+        this.PROXY_FLAG = flag;
+    }
 
     //Scroll the resultPane to bottom if no item selected
 	private void scrollPanesToBottom() {
@@ -325,6 +337,19 @@ public class ThumbnailBox extends JPanel {
                 for (Object o : valuesSelected) {
                     ResultIcon icon = (ResultIcon) o;
                     icon.drawOverlay(cmd);
+                    byte [] fv = icon.getResult().getResult().getValue("feature_vector.json"); 
+                    if (cmd == ResultType.Ignore) {
+                        // If item present in the Map then delete entry
+                        feedbackItems.remove(icon.getName());
+                    }
+                    else {
+                        if (fv != null && fv.length != 0) {
+                            feedbackItems.put(icon.getName(), 
+                                new FeedbackObject(fv, cmd.getValue()));
+                        }
+                    }
+                    
+
                 }
                 repaint();
             }
@@ -399,6 +424,28 @@ public class ThumbnailBox extends JPanel {
         }
     }
 
+    public void retrainSearch() {
+        SwingWorker<?, ?> retrainWorker = new SwingWorker<Object, Void>() {
+            @Override
+            protected Object doInBackground() throws InterruptedException {
+                // non-AWT thread
+                try {
+                    search.retrainFilter(feedbackItems);
+                } catch (final IOException e) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            stats.showException(e.getCause());
+                        }
+                    });
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        };
+        retrainWorker.execute();
+    }
+
     // called on AWT thread
     public void start(Search s, final ActivePredicateSet activePredicateSet,
             final List<HyperFindSearchMonitor> monitors) {
@@ -406,6 +453,9 @@ public class ThumbnailBox extends JPanel {
         searchMonitors = monitors;
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
+        if(PROXY_FLAG) {
+            retrainButton.setEnabled(true);
+        }
         pauseState = false;
         sampledDropCount = 0;
         sampledFNCount = 0;
@@ -539,6 +589,13 @@ public class ThumbnailBox extends JPanel {
                             final ResultIcon resultIcon = new ResultIcon(
                                     hr, r.getName(), new ImageIcon(thumb), d, score);
 
+                            if (score ==1) {
+                                byte[]  fv = r.getValue("feature_vector.json");
+                                if (fv != null && fv.length != 0) {
+                                    feedbackItems.put(r.getName(), 
+                                    new FeedbackObject(fv, score));
+                                }
+                            }
                             publish(resultIcon);
                         }
                     } finally {
@@ -579,6 +636,7 @@ public class ThumbnailBox extends JPanel {
                                 }
 
                                 startButton.setEnabled(true);
+                                retrainButton.setEnabled(false);
                                 stopButton.setEnabled(false);
                                 moreResultsButton.setVisible(false);
                                 stats.setDone();

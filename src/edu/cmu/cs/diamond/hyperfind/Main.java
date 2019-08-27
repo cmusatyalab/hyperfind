@@ -71,6 +71,8 @@ import java.io.FileWriter;
  * The Main class.
  */
 public final class Main {
+    public static Boolean PROXY_FLAG = false;
+
     private final ThumbnailBox results;
 
     private CookieMap cookies;
@@ -136,9 +138,11 @@ public final class Main {
         final JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
+        JButton retrainButton = new JButton("Retrain");
         JButton defineScopeButton = new JButton("Define Scope");
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
+        JCheckBox proxyBox = new JCheckBox("Proxy Enable");
         final StatisticsBar stats = new StatisticsBar();
         final StatisticsArea statsArea = new StatisticsArea();
 
@@ -148,7 +152,7 @@ public final class Main {
         final ExecutorService executor = threadPoolExecutor;
 
 
-        ThumbnailBox results = new ThumbnailBox(stopButton, startButton,
+        ThumbnailBox results = new ThumbnailBox(stopButton, startButton, retrainButton,
                 stats, statsArea, 500);
 
         // predicate list
@@ -170,7 +174,7 @@ public final class Main {
 
         CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
         try {
-            defaultCookieMap = CookieMap.createDefaultCookieMap();
+            defaultCookieMap = CookieMap.createDefaultCookieMap(PROXY_FLAG);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -345,6 +349,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     // start search
+                    proxyBox.setEnabled(false);
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
@@ -372,6 +377,8 @@ public final class Main {
                     attributes.add("_cols.int"); // original width
                     attributes.add("_rows.int"); // original height
                     attributes.add("_score.int");
+                    attributes.add("feature_vector.json");
+                    attributes.add("Device-Name");
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
                     attributes.add("hyperfind.external-link");
@@ -398,10 +405,12 @@ public final class Main {
                                     model.getSelectedPredicates(), factory),
                             monitors);
                 } catch (IOException e1) {
+                    proxyBox.setEnabled(true);
                     Throwable e2 = e1.getCause();
                     stats.showException(e2 != null ? e2 : e1);
                     e1.printStackTrace();
                 } catch (InterruptedException e1) {
+                    proxyBox.setEnabled(true);
                     e1.printStackTrace();
                 }
             }
@@ -411,20 +420,45 @@ public final class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 m.stopSearch();
+                proxyBox.setEnabled(true);
             }
         });
+
+        retrainButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("retrain pressed");
+                m.results.retrainSearch();
+            }
+        });
+
 
         defineScopeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    m.cookies = CookieMap.createDefaultCookieMap();
+                    m.cookies = CookieMap.createDefaultCookieMap(PROXY_FLAG);
                     // System.out.println(m.cookies);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
             }
         });
+
+        //Proxy Enable CheckBox
+        proxyBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PROXY_FLAG = proxyBox.isSelected() ? true : false;
+                try {
+                    m.results.setProxyFlag(PROXY_FLAG);
+                    m.cookies = CookieMap.createDefaultCookieMap(PROXY_FLAG);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+
 
         // Export and import predicates
 
@@ -557,6 +591,9 @@ public final class Main {
         r1.add(Box.createHorizontalStrut(20));
         stopButton.setEnabled(false);
         r1.add(stopButton);
+        r1.add(Box.createHorizontalStrut(20));
+        retrainButton.setEnabled(false);
+        r1.add(retrainButton);
         v1.add(r1);
         v1.add(Box.createVerticalStrut(4));
 
@@ -566,6 +603,11 @@ public final class Main {
         r3.add(Box.createHorizontalStrut(20));
         r3.add(importPredicatesButton);
         v1.add(r3);
+        v1.add(Box.createVerticalStrut(4));
+
+        Box r4 = Box.createHorizontalBox();
+        r4.add(proxyBox);
+        v1.add(r4);
 
         c1.add(v1);
 
@@ -673,7 +715,10 @@ public final class Main {
 
     void reexecute(HyperFindResult result) {
         Result prevResult = result.getResult();
-        ObjectIdentifier id = result.getResult().getObjectIdentifier();
+        String deviceName = Util.extractString(
+                            prevResult.getValue("Device-Name"));
+        ObjectIdentifier id = prevResult.getObjectIdentifier();
+
         ActivePredicateSet ps = result.getActivePredicateSet();
         SearchFactory factory = ps.getSearchFactory();
         Cursor oldCursor = frame.getCursor();
@@ -681,7 +726,7 @@ public final class Main {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
             popup(new HyperFindResult(ps, factory.generateResult(id,
-                    attributes)), prevResult);
+                    attributes, deviceName)), prevResult);
         } catch (IOException e1) {
             e1.printStackTrace();
         } finally {
