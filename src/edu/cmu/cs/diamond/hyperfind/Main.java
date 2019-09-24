@@ -79,6 +79,8 @@ public final class Main {
 
     private Search search;
 
+    private SearchFactory codecFactory;
+
     private final PredicateListModel model;
 
     private final List<HyperFindPredicateFactory> examplePredicateFactories;
@@ -88,6 +90,8 @@ public final class Main {
     private final JFrame popupFrame;
 
     private final JComboBox codecs;
+
+    private static Properties properties;
 
     private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
                  CookieMap initialCookieMap,
@@ -99,6 +103,13 @@ public final class Main {
         this.cookies = initialCookieMap;
         this.examplePredicateFactories = examplePredicateFactories;
         this.codecs = codecs;
+        this.properties = new Properties();
+
+        try {
+            this.properties.load(getClass().getClassLoader().getResourceAsStream("resources/config.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
@@ -355,17 +366,19 @@ public final class Main {
                     List<Filter> filters = new ArrayList<Filter>(
                             p.createFilters());
 
+                    m.codecFactory = m.createFactory(filters);
                     // give the ResultExportTransferHandler a different
                     // factory with just the codec, since it only needs the
                     // decoded image and not the filter output attributes
                     for (int i=0; i < m.results.NUM_PANELS; i++) {
                         m.results.resultLists.get(i).setTransferHandler(
                                 new ResultExportTransferHandler(
-                                        m.createFactory(filters), executor));
+                                        m.codecFactory, executor));
                     }
 
                     filters.addAll(model.createFilters());
                     SearchFactory factory = m.createFactory(filters);
+
 
                     List<HyperFindSearchMonitor> monitors =
                             HyperFindSearchMonitorFactory
@@ -421,6 +434,40 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 m.stopSearch();
                 proxyBox.setEnabled(true);
+
+                boolean download_results = Boolean.parseBoolean(properties.getProperty("download"));
+
+                if (download_results) {
+
+                    Map<String, FeedbackObject> map = m.results.getFeedBackItems();
+
+                    try {
+                        String downloadDir = properties.getProperty("download_dir");
+                        downloadDir = downloadDir.trim().isEmpty()? 
+                                            System.getProperty("user.home") : properties.getProperty("download_dir");
+                        List<String> dirPaths = Util.createDirStructure(downloadDir);
+
+                        for (Map.Entry<String, FeedbackObject> item : map.entrySet()) {
+                            FeedbackObject object = item.getValue();
+
+                            System.out.println("Downloaded item: "+item.getKey());
+
+                            BufferedImage img = Util
+                                    .extractImageFromResultIdentifier(object.getObjectIdentifier(), m.codecFactory);
+
+                            File f = File.createTempFile("hyperfind-export-",
+                                    ".png", new File(dirPaths.get(object.label)));
+
+                            ImageIO.write(img, "png", f);
+                        }
+                    }
+                    catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+
+                    m.results.clearFeedBackItems();
+                    
+                }
             }
         });
 
@@ -451,7 +498,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 PROXY_FLAG = proxyBox.isSelected() ? true : false;
                 try {
-                    m.results.setProxyFlag(PROXY_FLAG);
+                    m.results.setProxyFlag(PROXY_FLAG, properties.getProperty("experiment"));
                     m.cookies = CookieMap.createDefaultCookieMap(PROXY_FLAG);
                 } catch (IOException e1) {
                     e1.printStackTrace();

@@ -100,6 +100,8 @@ public class ThumbnailBox extends JPanel {
 
     private static Boolean PROXY_FLAG;
 
+    private static String experimentType = "eureka";
+
     private Search search;
 
     final private StatisticsBar stats;
@@ -134,7 +136,7 @@ public class ThumbnailBox extends JPanel {
 
     private HashMap<Integer, JScrollPane> resultPanes;
 
-    private HashMap<String, FeedbackObject> feedbackItems;
+    private  HashMap<String, FeedbackObject> feedbackItems;
 
     /**
      * @param stopButton
@@ -232,8 +234,10 @@ public class ThumbnailBox extends JPanel {
         setPopUpMenu();
     }
 
-    public void setProxyFlag(Boolean flag) {
+    public void setProxyFlag(Boolean flag, String expType) {
         this.PROXY_FLAG = flag;
+        this.experimentType = expType;
+        System.out.println(this.experimentType);
     }
 
     //Scroll the resultPane to bottom if no item selected
@@ -337,15 +341,16 @@ public class ThumbnailBox extends JPanel {
                 for (Object o : valuesSelected) {
                     ResultIcon icon = (ResultIcon) o;
                     icon.drawOverlay(cmd);
-                    byte [] fv = icon.getResult().getResult().getValue("feature_vector.json"); 
+                    Result r = icon.getResult().getResult();
+                    byte [] fv = r.getValue("feature_vector.json"); 
                     if (cmd == ResultType.Ignore) {
                         // If item present in the Map then delete entry
                         feedbackItems.remove(icon.getName());
                     }
                     else {
-                        if (fv != null && fv.length != 0) {
+                        if ((fv != null && fv.length != 0) || experimentType == "eureka") {
                             feedbackItems.put(icon.getName(), 
-                                new FeedbackObject(fv, cmd.getValue()));
+                                new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
                         }
                     }
                     
@@ -424,13 +429,33 @@ public class ThumbnailBox extends JPanel {
         }
     }
 
+    public Map<String, FeedbackObject> getFeedBackItems() {
+        return feedbackItems;
+    }
+
+    public void clearFeedBackItems() {
+        feedbackItems.clear();
+    }
+    
     public void retrainSearch() {
         SwingWorker<?, ?> retrainWorker = new SwingWorker<Object, Void>() {
             @Override
             protected Object doInBackground() throws InterruptedException {
                 // non-AWT thread
                 try {
+                    pauseState = true;
+                    sampledDropCount = 0;
+                    sampledFNCount = 0;
+                    for (int l=0; l < resultLists.size(); l++) {
+                        DefaultListModel model = (DefaultListModel) resultLists.get(l).getModel();
+                        model.removeAllElements();
+                    }
+                    repaint();
                     search.retrainFilter(feedbackItems);
+                    clearFeedBackItems();
+                    //TODO remove
+                    System.out.println("Retrain finish !");
+                    pauseState = false;
                 } catch (final IOException e) {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
@@ -507,6 +532,10 @@ public class ThumbnailBox extends JPanel {
 
                             Result r = search.getNextResult();
                             if (r == null) {
+                                if (pauseState) {
+                                    continue;
+                                }
+                                System.out.println("RESULT NULL");
                                 break;
                             }
                             HyperFindResult hr = new HyperFindResult(
@@ -593,7 +622,7 @@ public class ThumbnailBox extends JPanel {
                                 byte[]  fv = r.getValue("feature_vector.json");
                                 if (fv != null && fv.length != 0) {
                                     feedbackItems.put(r.getName(), 
-                                    new FeedbackObject(fv, score));
+                                    new FeedbackObject(fv, score, r.getObjectIdentifier()));
                                 }
                             }
                             publish(resultIcon);
@@ -700,6 +729,10 @@ public class ThumbnailBox extends JPanel {
 
     private void updateStats() throws IOException, InterruptedException {
         try {
+            if (pauseState) {
+                return;
+            }
+
             final Map<String, ServerStatistics> serverStats = search
                     .getStatistics();
 
