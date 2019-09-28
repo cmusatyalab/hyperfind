@@ -81,6 +81,8 @@ public final class Main {
 
     private SearchFactory codecFactory;
 
+    private static HyperFindProperty properties;
+
     private final PredicateListModel model;
 
     private final List<HyperFindPredicateFactory> examplePredicateFactories;
@@ -90,8 +92,6 @@ public final class Main {
     private final JFrame popupFrame;
 
     private final JComboBox codecs;
-
-    private static Properties properties;
 
     private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
                  CookieMap initialCookieMap,
@@ -103,13 +103,7 @@ public final class Main {
         this.cookies = initialCookieMap;
         this.examplePredicateFactories = examplePredicateFactories;
         this.codecs = codecs;
-        this.properties = new Properties();
-
-        try {
-            this.properties.load(getClass().getClassLoader().getResourceAsStream("resources/config.properties"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.properties = new HyperFindProperty();
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
@@ -124,6 +118,7 @@ public final class Main {
                 popupFrame.dispose();
             }
         });
+
     }
 
     public static Main createMain(List<File> bundleDirectories,
@@ -150,6 +145,7 @@ public final class Main {
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton retrainButton = new JButton("Retrain");
+        JButton configButton = new JButton("Set Config");
         JButton defineScopeButton = new JButton("Define Scope");
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
@@ -185,7 +181,7 @@ public final class Main {
 
         CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
         try {
-            defaultCookieMap = CookieMap.createDefaultCookieMap(PROXY_FLAG);
+            defaultCookieMap = CookieMap.createDefaultCookieMap(null);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -361,6 +357,7 @@ public final class Main {
                 try {
                     // start search
                     proxyBox.setEnabled(false);
+                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload());
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
@@ -434,39 +431,28 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 m.stopSearch();
                 proxyBox.setEnabled(true);
+                boolean downloadResults = m.properties.checkDownload();
 
-                boolean download_results = Boolean.parseBoolean(properties.getProperty("download"));
-
-                if (download_results) {
-
+                if (downloadResults) {
                     Map<String, FeedbackObject> map = m.results.getFeedBackItems();
-
                     try {
-                        String downloadDir = properties.getProperty("download_dir");
-                        downloadDir = downloadDir.trim().isEmpty()? 
-                                            System.getProperty("user.home") : properties.getProperty("download_dir");
-                        List<String> dirPaths = Util.createDirStructure(downloadDir);
-
+                        String downloadDir = m.properties.getDownloadDirectory();
+                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir) 
+                                                                : null;
                         for (Map.Entry<String, FeedbackObject> item : map.entrySet()) {
                             FeedbackObject object = item.getValue();
-
                             System.out.println("Downloaded item: "+item.getKey());
-
                             BufferedImage img = Util
                                     .extractImageFromResultIdentifier(object.getObjectIdentifier(), m.codecFactory);
-
                             File f = File.createTempFile("hyperfind-export-",
                                     ".png", new File(dirPaths.get(object.label)));
-
                             ImageIO.write(img, "png", f);
                         }
                     }
                     catch (IOException e1) {
                         e1.printStackTrace();
                     }
-
                     m.results.clearFeedBackItems();
-                    
                 }
             }
         });
@@ -480,12 +466,19 @@ public final class Main {
         });
 
 
+        configButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                m.properties = new HyperFindProperty();
+            }
+        });
+
         defineScopeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    m.cookies = CookieMap.createDefaultCookieMap(PROXY_FLAG);
-                    // System.out.println(m.cookies);
+                    m.cookies = CookieMap.createDefaultCookieMap(
+                                    PROXY_FLAG ? m.properties.getProxyIP() : null);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -498,8 +491,9 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 PROXY_FLAG = proxyBox.isSelected() ? true : false;
                 try {
-                    m.results.setProxyFlag(PROXY_FLAG, properties.getProperty("experiment"));
-                    m.cookies = CookieMap.createDefaultCookieMap(PROXY_FLAG);
+                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload());
+                    m.cookies = CookieMap.createDefaultCookieMap(
+                                    PROXY_FLAG ? m.properties.getProxyIP() : null);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -630,6 +624,9 @@ public final class Main {
         Box v1 = Box.createVerticalBox();
         Box r2 = Box.createHorizontalBox();
         r2.add(defineScopeButton);
+        r2.add(Box.createHorizontalStrut(20));
+        r2.add(configButton);
+        r2.add(Box.createHorizontalStrut(20));
         v1.add(r2);
         v1.add(Box.createVerticalStrut(4));
 
@@ -762,8 +759,6 @@ public final class Main {
 
     void reexecute(HyperFindResult result) {
         Result prevResult = result.getResult();
-        String deviceName = Util.extractString(
-                            prevResult.getValue("Device-Name"));
         ObjectIdentifier id = prevResult.getObjectIdentifier();
 
         ActivePredicateSet ps = result.getActivePredicateSet();
@@ -773,7 +768,7 @@ public final class Main {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
             popup(new HyperFindResult(ps, factory.generateResult(id,
-                    attributes, deviceName)), prevResult);
+                    attributes)), prevResult);
         } catch (IOException e1) {
             e1.printStackTrace();
         } finally {

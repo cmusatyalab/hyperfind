@@ -100,7 +100,7 @@ public class ThumbnailBox extends JPanel {
 
     private static Boolean PROXY_FLAG;
 
-    private static String experimentType = "eureka";
+    private static Boolean downloadResults = false;
 
     private Search search;
 
@@ -234,10 +234,9 @@ public class ThumbnailBox extends JPanel {
         setPopUpMenu();
     }
 
-    public void setProxyFlag(Boolean flag, String expType) {
+    public void setConfig(Boolean flag, Boolean downloadResults) {
         this.PROXY_FLAG = flag;
-        this.experimentType = expType;
-        System.out.println(this.experimentType);
+        this.downloadResults = downloadResults;
     }
 
     //Scroll the resultPane to bottom if no item selected
@@ -348,7 +347,7 @@ public class ThumbnailBox extends JPanel {
                         feedbackItems.remove(icon.getName());
                     }
                     else {
-                        if ((fv != null && fv.length != 0) || experimentType == "eureka") {
+                        if ((fv != null && fv.length != 0) || downloadResults) {
                             feedbackItems.put(icon.getName(), 
                                 new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
                         }
@@ -397,6 +396,12 @@ public class ThumbnailBox extends JPanel {
         this.timer.setInitialDelay(0);
     }
 
+    private double getTimeNow(){
+        long nowTime = System.nanoTime();
+        long timeElapsed = (nowTime - startTime)/NANOSEC_PER_MILLI;
+        return (timeElapsed/1000.)/60.;
+    }
+
     private void startStatsTimer() {
         timerExecutor = Executors.newSingleThreadScheduledExecutor();
         statsTimerFuture = timerExecutor.scheduleWithFixedDelay(new Runnable() {
@@ -419,6 +424,9 @@ public class ThumbnailBox extends JPanel {
         if (workerFuture != null) {
             workerFuture.cancel(true);
         }
+        pauseState = true;
+        sampledDropCount = 0;
+        sampledFNCount = 0;
     }
 
     public void terminate() {
@@ -452,10 +460,8 @@ public class ThumbnailBox extends JPanel {
                     }
                     repaint();
                     search.retrainFilter(feedbackItems);
-                    clearFeedBackItems();
-                    //TODO remove
                     System.out.println("Retrain finish !");
-                    pauseState = false;
+                    clearFeedBackItems();
                 } catch (final IOException e) {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
@@ -538,6 +544,9 @@ public class ThumbnailBox extends JPanel {
                                 System.out.println("RESULT NULL");
                                 break;
                             }
+                            else {
+                                pauseState = false;
+                            }
                             HyperFindResult hr = new HyperFindResult(
                                     activePredicateSet, r);
 
@@ -547,7 +556,6 @@ public class ThumbnailBox extends JPanel {
 
                             int score = (r.getKeys().contains("_score.int")) ? 
                                             Util.extractInt(r.getValue("_score.int")) : 2;
-
 
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
                             BufferedImage thumb = null;
@@ -748,7 +756,7 @@ public class ThumbnailBox extends JPanel {
                     @Override
                     public void run() {
                         stats.update(serverStats);
-                        if (!(pauseState && sampledDropCount>0))
+                        if (!pauseState)
                             statsArea.update(serverStats, sampledDropCount, sampledFNCount);
                     }
                 });
