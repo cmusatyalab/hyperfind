@@ -99,7 +99,7 @@ To do so, you should enable X11 forwarding in your SSH connection and install a 
 
 ### Hyperfind Configuration Settings
 Hyperfind configuration file can be found in [config.properties](src/resources/config.properties)\
-experiment=eureka :arrow_right: Will enable user-marking even if image does not have attribute `feature_vector.json`\
-download_dir=/\<download-path\> :arrow_right: Path to download images. If empty images are stores in `$HOME`   
-download=true :arrow_right: Will enable download of user-marked images to directory `download_dir` 
+proxyIP=172.xx.xx.xxx :arrow_right: IP Address of Proxy Server  
+downloadResults=true :arrow_right: Will enable download of user-marked images to directory `downloadDirectory` 
+downloadDirectory=/\<download-path\> :arrow_right: Path to download images. If empty images are stores in `$HOME`   
 
