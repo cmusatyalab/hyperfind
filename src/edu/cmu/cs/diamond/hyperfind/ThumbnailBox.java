@@ -88,7 +88,7 @@ public class ThumbnailBox extends JPanel {
 
     private static long sampledFNCount = 0;
 
-    private static boolean pauseState = false;
+    private static volatile boolean pauseState = false;
 
     private final int resultsPerScreen;
 
@@ -136,7 +136,7 @@ public class ThumbnailBox extends JPanel {
 
     private HashMap<Integer, JScrollPane> resultPanes;
 
-    private  HashMap<String, FeedbackObject> feedbackItems;
+    private HashMap<String, FeedbackObject> feedbackItems;
 
     /**
      * @param stopButton
@@ -454,14 +454,21 @@ public class ThumbnailBox extends JPanel {
                     pauseState = true;
                     sampledDropCount = 0;
                     sampledFNCount = 0;
+                    moreResultsButton.doClick();
+                    pauseState = true;
                     for (int l=0; l < resultLists.size(); l++) {
                         DefaultListModel model = (DefaultListModel) resultLists.get(l).getModel();
                         model.removeAllElements();
                     }
+                    moreResultsButton.setVisible(false);
+                    stats.setIndeterminateMessage("Retraining in Progress...");
+                    statsArea.setDone();
+                    revalidate();
                     repaint();
                     search.retrainFilter(feedbackItems);
                     System.out.println("Retrain finish !");
                     clearFeedBackItems();
+                    pauseState = false;
                 } catch (final IOException e) {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
@@ -495,10 +502,8 @@ public class ThumbnailBox extends JPanel {
 		timer.start(); 
         startStatsTimer();
 
-        final List<DefaultListModel> modelLists = new ArrayList<DefaultListModel>();
         for (int l=0; l < resultLists.size(); l++) {
             DefaultListModel model = new DefaultListModel();
-            modelLists.add(model);
             resultLists.get(l).setModel(model);
         }
 
@@ -529,6 +534,9 @@ public class ThumbnailBox extends JPanel {
                 try {
                     try {
                         while (true) {
+                            if (pauseState) {
+                                continue;
+                            }
                             if (resultsLeftBeforePause.getAndDecrement() == 0) {
                                 publish(PAUSE_RESULT);
 
@@ -537,15 +545,10 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             Result r = search.getNextResult();
+
                             if (r == null) {
-                                if (pauseState) {
-                                    continue;
-                                }
                                 System.out.println("RESULT NULL");
                                 break;
-                            }
-                            else {
-                                pauseState = false;
                             }
                             HyperFindResult hr = new HyperFindResult(
                                     activePredicateSet, r);
@@ -695,7 +698,11 @@ public class ThumbnailBox extends JPanel {
             @Override
             protected void process(List<ResultIcon> chunks) {
                 // AWT thread
+
                 for (ResultIcon resultIcon : chunks) {
+                    if(pauseState) {
+                        break;
+                    }
                     if (resultIcon == PAUSE_RESULT) {
                         pauseState = true;
                         moreResultsButton.setVisible(true);
@@ -704,7 +711,8 @@ public class ThumbnailBox extends JPanel {
                     } else {
                         /* Add newly fetched search result to result list */
                         int score = resultIcon.getScore(); //score in range 0-2
-                        modelLists.get(score).addElement(resultIcon);
+                        DefaultListModel model = (DefaultListModel) resultLists.get(score).getModel();
+                        model.addElement(resultIcon);
                     }
                 }
             }

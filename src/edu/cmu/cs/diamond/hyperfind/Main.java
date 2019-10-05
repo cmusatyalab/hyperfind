@@ -442,11 +442,23 @@ public final class Main {
                         for (Map.Entry<String, FeedbackObject> item : map.entrySet()) {
                             FeedbackObject object = item.getValue();
                             System.out.println("Downloaded item: "+item.getKey());
+                            ObjectIdentifier identifier = object.getObjectIdentifier();
                             BufferedImage img = Util
-                                    .extractImageFromResultIdentifier(object.getObjectIdentifier(), m.codecFactory);
-                            File f = File.createTempFile("hyperfind-export-",
-                                    ".png", new File(dirPaths.get(object.label)));
-                            ImageIO.write(img, "png", f);
+                                    .extractImageFromResultIdentifier(identifier, m.codecFactory);
+
+                            //Download Image with the same filename as ObjectID
+                            //Block start
+                            String[] name_splits = (identifier.getObjectID()).split("/");
+                            String filename = name_splits[name_splits.length -1];
+                            filename = filename.substring(0,filename.length()-4)+".png";
+                            File f = new File(dirPaths.get(object.label), "hyperfind_export_"+ filename);
+                            //Block end
+                            //UNCOMMENT for RANDOM file name 
+                            //f = File.createTempFile("hyperfind-export-",
+                            //        ".png", new File(dirPaths.get(object.label)));
+                            if(f.createNewFile()) {
+                                ImageIO.write(img, "png", f);
+                            }
                         }
                     }
                     catch (IOException e1) {
