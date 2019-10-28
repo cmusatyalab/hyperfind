@@ -84,7 +84,7 @@ public class ThumbnailBox extends JPanel {
 
     private static final int PREFERRED_WIDTH = 275;
     
-    private static long sampledDropCount = 0;
+    private static long sampledTPCount = 0;
 
     private static long sampledFNCount = 0;
 
@@ -131,6 +131,8 @@ public class ThumbnailBox extends JPanel {
     private Timer timer;
 
     private SwingWorker<?, ?> workerFuture;
+
+    private SwingWorker<?, ?> retrainWorker;
 
     private List<HyperFindSearchMonitor> searchMonitors;
 
@@ -424,9 +426,17 @@ public class ThumbnailBox extends JPanel {
         if (workerFuture != null) {
             workerFuture.cancel(true);
         }
+        if (retrainWorker != null) {
+            retrainWorker.cancel(true);
+        }
         pauseState = true;
-        sampledDropCount = 0;
+        sampledTPCount = 0;
         sampledFNCount = 0;
+        startButton.setEnabled(true);
+        retrainButton.setEnabled(false);
+        stopButton.setEnabled(false);
+        moreResultsButton.setVisible(false);
+        clearFeedBackItems();
     }
 
     public void terminate() {
@@ -446,14 +456,14 @@ public class ThumbnailBox extends JPanel {
     }
     
     public void retrainSearch() {
-        SwingWorker<?, ?> retrainWorker = new SwingWorker<Object, Void>() {
+        retrainWorker = new SwingWorker<Object, Void>() {
             @Override
             protected Object doInBackground() throws InterruptedException {
                 // non-AWT thread
                 try {
                     pauseState = true;
-                    sampledDropCount = 0;
                     sampledFNCount = 0;
+                    sampledTPCount = 0;
                     moreResultsButton.doClick();
                     pauseState = true;
                     for (int l=0; l < resultLists.size(); l++) {
@@ -487,6 +497,8 @@ public class ThumbnailBox extends JPanel {
     // called on AWT thread
     public void start(Search s, final ActivePredicateSet activePredicateSet,
             final List<HyperFindSearchMonitor> monitors) {
+        stats.setDone();
+        statsArea.setDone();
         search = s;
         searchMonitors = monitors;
         startButton.setEnabled(false);
@@ -495,7 +507,7 @@ public class ThumbnailBox extends JPanel {
             retrainButton.setEnabled(true);
         }
         pauseState = false;
-        sampledDropCount = 0;
+        sampledTPCount = 0;
         sampledFNCount = 0;
 
 		startTime = System.nanoTime();
@@ -537,12 +549,6 @@ public class ThumbnailBox extends JPanel {
                             if (pauseState) {
                                 continue;
                             }
-                            if (resultsLeftBeforePause.getAndDecrement() == 0) {
-                                publish(PAUSE_RESULT);
-
-                                pauseSemaphore.acquire();
-                                continue;
-                            }
 
                             Result r = search.getNextResult();
 
@@ -550,15 +556,33 @@ public class ThumbnailBox extends JPanel {
                                 System.out.println("RESULT NULL");
                                 break;
                             }
+
+                            int score = (r.getKeys().contains("_score.string")) ? 
+                                             Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 2;
+
+                            if (score != 0) {
+                                if (resultsLeftBeforePause.getAndDecrement() == 0) {
+                                    publish(PAUSE_RESULT);
+
+                                    pauseSemaphore.acquire();
+                                    continue;
+                                }
+                            }
+                            else {
+                                DefaultListModel model = (DefaultListModel) resultLists.get(0).getModel();
+                                if (model.getSize() >500 ) {
+                                    model.removeAllElements();
+                                }
+                                revalidate();
+                                repaint();
+                            }
+
                             HyperFindResult hr = new HyperFindResult(
                                     activePredicateSet, r);
 
                             for (HyperFindSearchMonitor m : searchMonitors) {
                                 m.notify(hr);
                             }
-
-                            int score = (r.getKeys().contains("_score.int")) ? 
-                                            Util.extractInt(r.getValue("_score.int")) : 2;
 
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
                             BufferedImage thumb = null;
@@ -603,8 +627,12 @@ public class ThumbnailBox extends JPanel {
 
                                 drawBorder(g, Color.RED, origW, origH);
 
-                                if (score == 0)
+                                if (score == 0) {
                                     sampledFNCount += 1;
+                                }
+                                else {
+                                    sampledTPCount += 1;
+                                }
                             }
                             g.dispose();
 
@@ -622,9 +650,6 @@ public class ThumbnailBox extends JPanel {
                                     d = ResultIconSetting.ICON_AND_LABEL;
                                 }
                             }
-
-                            if (score == 0)
-                                sampledDropCount += 1;
 
                             final ResultIcon resultIcon = new ResultIcon(
                                     hr, r.getName(), new ImageIcon(thumb), d, score);
@@ -704,6 +729,14 @@ public class ThumbnailBox extends JPanel {
                         break;
                     }
                     if (resultIcon == PAUSE_RESULT) {
+                        try {
+                            updateStats();
+                        } catch (IOException e) {
+                            // This should also be encountered and handled by the
+                            // worker thread, so there's no need to be noisy here
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                         pauseState = true;
                         moreResultsButton.setVisible(true);
                         revalidate();
@@ -763,9 +796,13 @@ public class ThumbnailBox extends JPanel {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
+                        long passed = 0;
+                        for (int l=1; l < resultLists.size(); l++) {
+                            DefaultListModel model = (DefaultListModel) resultLists.get(l).getModel();
+                            passed += model.getSize();
+                        }
                         stats.update(serverStats);
-                        if (!pauseState)
-                            statsArea.update(serverStats, sampledDropCount, sampledFNCount);
+                        statsArea.update(serverStats, passed, sampledTPCount, sampledFNCount);
                     }
                 });
             } else {

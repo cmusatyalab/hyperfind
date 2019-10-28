@@ -88,27 +88,28 @@ final class StatisticsArea extends JPanel{
     }
 
     public void clear() {
-        setNumbers(0, 0, 0, 0, 0, 0);
+        setNumbers(0, 0, 0, 0, 0, 0, 0);
     }
 
     public String getStatistics(){
         return currentString;
     }
 
-    private void setNumbers(long total, long searched, long dropped, long true_positives, long false_negatives, long false_display) {
+    private void setNumbers(long total, long searched, long dropped, long displayed, long true_positives, long false_negatives, long false_display) {
         long passed = searched - dropped;
         StringBuilder str_display = new StringBuilder();
         str_display.append(String.format("\n %0$-17s %d\n", "Total", total));
         str_display.append(String.format("\n %0$-14s %d\n", "Searched", searched));
         str_display.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f*dropped/searched));
         str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", passed, 100f*passed/searched));
+        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed, 100f*displayed/searched));
         if (true_positives>0 || false_negatives>0 || false_display>0) {
             str_display.append(String.format("\n x------- AUGMENTED --------x \n"));
             long labeled_total = true_positives + false_negatives + false_display;
             str_display.append(String.format("\n %0$-18s %d \n", "True Positives", true_positives));
             str_display.append(String.format("\n %0$-18s %d \n", "FN Displayed", false_display));
             str_display.append(String.format("\n %0$-17s %d \n", "FN Dropped", false_negatives));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, passed, 100f*true_positives/passed));
+            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f*true_positives/displayed));
             str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Curr. Recall", true_positives, labeled_total, 100f*true_positives/labeled_total));
         }
         display.setText(str_display.toString());
@@ -117,7 +118,7 @@ final class StatisticsArea extends JPanel{
 
 
     public void update(Map<String, ServerStatistics> serverStats, 
-        long sampled_drop, long sampled_negative) {
+        long displayed, long sampled_positive, long sampled_negative) {
         long t = 0;
         long s = 0;
         long d = 0;
@@ -131,7 +132,9 @@ final class StatisticsArea extends JPanel{
             p += map.get(ss.TP_OBJECTS);
             n += map.get(ss.FN_OBJECTS);
         }
-        setNumbers(t, s, d + sampled_drop, p - sampled_negative, n, sampled_negative);
+        setNumbers(t, s, d, displayed, sampled_positive, n, sampled_negative);
+        //System.out.println(String.format("Server \n Total %d\n Processed %d \n Dropped %d \n Passed %d\n Sampled Neg %d ", 
+        //    t, s, d, displayed, sampled_negative));
     }
 
     public void setDone() {
