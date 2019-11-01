@@ -54,6 +54,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
@@ -61,10 +64,12 @@ import javax.swing.JList;
 import javax.swing.TransferHandler;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import edu.cmu.cs.diamond.opendiamond.SearchFactory;
+import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
-import org.apache.commons.io.FilenameUtils;
+
 
 /**
  * Handles content export when drag from ResultList.
@@ -113,16 +118,28 @@ public class ResultExportTransferHandler extends TransferHandler {
                             FileUtils.copyURLToFile(url, f);
                         } else {
                             System.out.println("Extract image by re-execution.");
-                            BufferedImage img = Util
-                                    .extractImageFromResultIdentifier(r
-                                            .getResult().getResult()
-                                            .getObjectIdentifier(), factory);
+                            Set<String> desiredAttributes = new HashSet<String>();
+                            desiredAttributes.add("");
 
-                            f = File.createTempFile("hyperfind-export-",
-                                    ".png");
+                            Result result = factory.generateResult(r.getResult().getResult().getObjectIdentifier(), desiredAttributes);
+                            String ext = FilenameUtils.getExtension(r.getResult().getResult().getObjectIdentifier().getObjectID());
+
+                            f = File.createTempFile("hyperfind-export-", "."+ext);
                             f.deleteOnExit();
+                            System.out.println("writing bytes " + result.getData().length);
 
-                            ImageIO.write(img, "png", f);
+                            FileUtils.writeByteArrayToFile(f, result.getData());
+
+                            // BufferedImage img = Util
+                            //         .extractImageFromResultIdentifier(r
+                            //                 .getResult().getResult()
+                            //                 .getObjectIdentifier(), factory);
+
+                            // f = File.createTempFile("hyperfind-export-",
+                            //         ".png");
+                            // f.deleteOnExit();
+
+                            // ImageIO.write(img, "png", f);
                         }
 
                         return f;
