@@ -101,6 +101,10 @@ public class HyperFindPredicate {
         return frame.getInstanceName();
     }
 
+    public String getExtraDependencies() {
+        return frame.getExtraDependencies();
+    }
+
     public List<String> getFilterNames() {
         List<String> names = new ArrayList<String>();
         try {

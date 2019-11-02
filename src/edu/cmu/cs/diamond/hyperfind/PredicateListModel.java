@@ -66,6 +66,17 @@ class PredicateListModel extends AbstractListModel {
         return predicates.size();
     }
 
+    public void moveUp(SelectablePredicate sp) {
+        int index = predicates.indexOf(sp);
+        if (index > 0) {
+            // can move up
+            remove(sp);
+            predicates.add(index-1, sp);
+            fireIntervalAdded(this, index - 1, index - 1);
+        }
+
+    }
+
     public boolean remove(SelectablePredicate sp) {
         int index = predicates.indexOf(sp);
         boolean result = index != -1;
@@ -101,16 +112,17 @@ class PredicateListModel extends AbstractListModel {
     List<Filter> createFilters() throws IOException {
         // first, eliminate duplicates
         Set<HyperFindPredicate> set = new HashSet<HyperFindPredicate>();
-        for (SelectablePredicate sp : predicates) {
-            if (sp.isSelected())
-                set.add(sp.getPredicate());
-        }
-
-        // System.out.println("set: " + set);
-
         List<Filter> result = new ArrayList<Filter>();
-        for (HyperFindPredicate p : set) {
-            result.addAll(p.createFilters());
+
+        for (SelectablePredicate sp : predicates) {
+            if (sp.isSelected()) {
+                // dedup
+                if (!set.contains(sp)){
+                    System.out.println("Creating filters from " + sp);
+                    result.addAll(sp.getPredicate().createFilters());
+                    set.add(sp.getPredicate());
+                }
+            }
         }
 
         return result;

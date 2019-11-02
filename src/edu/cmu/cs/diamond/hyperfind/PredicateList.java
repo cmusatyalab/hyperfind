@@ -174,6 +174,7 @@ final class PredicateList extends JPanel implements ListDataListener {
 
         JButton edit = new JButton("Edit");
         JButton delete = new JButton("X");
+        JButton up = new JButton("\u2191"); // up arrow
 
         updateCheckBox(cb, p.getPredicateName(), p.getInstanceName(),
                 p.missingExamples());
@@ -192,8 +193,9 @@ final class PredicateList extends JPanel implements ListDataListener {
         item.add(Box.createHorizontalGlue());
         item.add(edit);
         item.add(delete);
+        item.add(up);
 
-        box.add(item);
+        box.add(item, e.getIndex0());
 
         elements.add(e.getIndex0(), new ListElement(cb, item));
 
@@ -213,12 +215,20 @@ final class PredicateList extends JPanel implements ListDataListener {
             }
         });
 
+        up.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                model.moveUp(sp);
+            }
+        });
+
         revalidate();
         repaint();
     }
 
     @Override
     public void intervalRemoved(ListDataEvent e) {
+
         ListElement element = elements.remove(e.getIndex0());
 
         box.remove(element.getBox());

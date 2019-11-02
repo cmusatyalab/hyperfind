@@ -73,10 +73,13 @@ public class BundleOptionsFrame extends JFrame {
 
     private final ExampleField exampleField;
 
+    private final StringField extraDepsField;
+
     private final ArrayList<OptionField> optionFields = new
             ArrayList<OptionField>();
 
     private int currentRow;
+
 
     // Constructor for use by codecs, which don't have an instance name
     public BundleOptionsFrame(String displayName, List<OptionGroup> options) {
@@ -168,6 +171,20 @@ public class BundleOptionsFrame extends JFrame {
             }
         }
         this.exampleField = example;
+
+        // Extra dependencies given by user that were not specified in predicate files
+        if (instanceNameField != null) {
+            addSeparator("More");
+            StringOption extraDepsOpt = new StringOption();
+            extraDepsOpt.setDisplayName("Extra dependencies");
+            extraDepsOpt.setDefault("");
+            extraDepsOpt.setMultiLine(true);
+            extraDepsField = new StringField(extraDepsOpt);
+            addField(extraDepsField);
+        } else {
+            // codec cannot have extra deps
+            extraDepsField = null;
+        }
 
         pack();
     }
@@ -926,6 +943,14 @@ public class BundleOptionsFrame extends JFrame {
 
     public void setInstanceName(String val) {
         instanceNameField.setValue(val);
+    }
+
+    public String getExtraDependencies() {
+        if (extraDepsField != null) {
+            return extraDepsField.getValue();
+        } else {
+            return null;
+        }
     }
 
     public List<BufferedImage> getExamples() {
