@@ -436,7 +436,6 @@ public class ThumbnailBox extends JPanel {
         retrainButton.setEnabled(false);
         stopButton.setEnabled(false);
         moreResultsButton.setVisible(false);
-        clearFeedBackItems();
     }
 
     public void terminate() {

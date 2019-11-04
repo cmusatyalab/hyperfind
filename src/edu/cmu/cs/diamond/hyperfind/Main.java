@@ -464,8 +464,8 @@ public final class Main {
                     catch (IOException e1) {
                         e1.printStackTrace();
                     }
-                    m.results.clearFeedBackItems();
                 }
+                m.results.clearFeedBackItems();
             }
         });
 
