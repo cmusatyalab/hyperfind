@@ -136,6 +136,15 @@ public class HyperFindPredicate {
             } else {
                 list = bundle.getFilters(frame.getOptionMap());
             }
+
+            // Add extra deps specified by user
+            String extraDeps = getExtraDependencies();
+            if (!(null == extraDeps || "".equals(extraDeps))) {
+                for (Filter f : list) {
+                    f.getDependencies().add(extraDeps);
+                }
+            }
+
             cachedFilters = Collections.unmodifiableList(list);
         }
         return cachedFilters;
