@@ -72,10 +72,14 @@ public class HyperFindProperty extends JFrame {
 	private JLabel labelProxy = new JLabel("Proxy IP: ");
 	private JLabel labelDownload = new JLabel("Download Results: ");
 	private JLabel labelDirectory = new JLabel("Download directory: ");
+	private JLabel labelSessionName = new JLabel("Session Name (for history window): ");
+
 	private JTextField textProxy = new JTextField();
 	private JTextField textDownload = new JTextField(); //TODO: Boolean Option
 	private JTextField textDirectory = new JTextField();
-	private JButton buttonSave = new JButton("Save");
+    private JTextField textSessionName = new JTextField();
+
+    private JButton buttonSave = new JButton("Save");
 
 	public HyperFindProperty() {
 
@@ -116,6 +120,16 @@ public class HyperFindProperty extends JFrame {
 		constraints.gridy += 1;
 		constraints.gridx = 0;
 		constraints.weightx = 0;
+		add(labelSessionName, constraints);
+
+		constraints.gridx = 1;
+		constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+		add(textSessionName, constraints);
+
+		constraints.gridy += 1;
+		constraints.gridx = 0;
+		constraints.weightx = 0;
 		constraints.gridwidth = 2;
 		constraints.anchor = GridBagConstraints.CENTER;
 		add(buttonSave, constraints);
@@ -127,7 +141,7 @@ public class HyperFindProperty extends JFrame {
 					saveProperties();
                     dispose();
 				} catch (IOException ex) {
-					JOptionPane.showMessageDialog(HyperFindProperty.this, 
+					JOptionPane.showMessageDialog(HyperFindProperty.this,
 							"Error saving properties file: " + ex.getMessage());
                     dispose();
 				}
@@ -149,6 +163,7 @@ public class HyperFindProperty extends JFrame {
 		textProxy.setText(configProps.getProperty("proxyIP"));
 		textDownload.setText(configProps.getProperty("downloadResults"));
 		textDirectory.setText(configProps.getProperty("downloadDirectory"));
+        textSessionName.setText(configProps.getProperty("sessionName"));
 	}
 
 	private void loadProperties() throws IOException {
@@ -157,6 +172,7 @@ public class HyperFindProperty extends JFrame {
 		defaultProps.setProperty("proxyIP", "");
 		defaultProps.setProperty("downloadResults", "false");
 		defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
+        defaultProps.setProperty("sessionName", "search_history");
 		configProps = new Properties(defaultProps);
 
 		// loads properties from file
@@ -169,6 +185,7 @@ public class HyperFindProperty extends JFrame {
 		configProps.setProperty("proxyIP", textProxy.getText());
 		configProps.setProperty("downloadResults", textDownload.getText());
 		configProps.setProperty("downloadDirectory", textDirectory.getText());
+        configProps.setProperty("sessionName", textSessionName.getText());
 		OutputStream outputStream = new FileOutputStream(configFile);
 		configProps.store(outputStream, "hyperfind settings");
 		outputStream.close();
@@ -184,5 +201,9 @@ public class HyperFindProperty extends JFrame {
 
     public String getDownloadDirectory() {
         return textDirectory.getText();
+    }
+
+    public String getSessionName() {
+        return textSessionName.getText();
     }
 }

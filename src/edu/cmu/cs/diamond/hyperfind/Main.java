@@ -421,6 +421,7 @@ public final class Main {
                     // clear old state
                     m.results.terminate();
 
+                    historyLogger.updateSessionName(properties.getSessionName());
                     historyLogger.historyLogSearchSessionStart(model);
 
                     // start

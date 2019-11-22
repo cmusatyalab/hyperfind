@@ -25,8 +25,8 @@ public class HistoryLogger {
 
     // current session
     private static int roundNum = -1;
-    //public static final String HISTORY_PATH = "~/.diamond/history_logs/";
-    public static final String HISTORY_PATH = "/home/kaiwenw/.diamond/history_logs/";
+    private static String diamondFolder = System.getProperty("user.home") + "/.diamond/";
+    private String historyFolder;
     private static Map<String, String> sessionInfo = new HashMap<String, String>();
 
     // reset each time when start is pressed
@@ -38,11 +38,17 @@ public class HistoryLogger {
     }
 
     private void createHistoryFolder() {
-        File historyDir = new File(HISTORY_PATH);
+        File historyDir = new File(historyFolder);
         if (historyDir.exists()) {
             deleteDir(historyDir);
         }
         historyDir.mkdir();
+    }
+
+    public void updateSessionName(String name) {
+        assert(name.length() > 0);
+        assert(!name.contains("."));
+        historyFolder = diamondFolder + name + "/";
     }
 
     /* Stores history data when session is starting, including
@@ -75,13 +81,13 @@ public class HistoryLogger {
      */
     public void historyLogSearchSessionStop() {
         // write the info to file system and clear mapping for next session
-        String infoPath = HISTORY_PATH + Integer.toString(roundNum) + "/info.json";
+        String infoPath = historyFolder + Integer.toString(roundNum) + "/info.json";
         sessionInfo.put("end_time(ms)", getCurrentTimeString());
         tryWriteNewFile(infoPath, gson.toJson(sessionInfo));
         sessionInfo.clear();
 
 
-        String endStatsPath = HISTORY_PATH + Integer.toString(roundNum) + "/end_stats.json";
+        String endStatsPath = historyFolder + Integer.toString(roundNum) + "/end_stats.json";
         Map<String, String> endStats = new HashMap<String, String>();
         statsArea.getStatisticsMap().forEach((k,v) -> {
             endStats.put(k, Long.toString(v));
@@ -231,7 +237,7 @@ public class HistoryLogger {
     }
 
     private String getSessionDir() {
-        return HISTORY_PATH + Integer.toString(roundNum) + "/";
+        return historyFolder + Integer.toString(roundNum) + "/";
     }
 
     private String getCurrentTimeString() {
