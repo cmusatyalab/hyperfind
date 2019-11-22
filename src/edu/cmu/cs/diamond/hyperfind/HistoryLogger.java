@@ -47,8 +47,25 @@ public class HistoryLogger {
 
     public void updateSessionName(String name) {
         assert(name.length() > 0);
+        // TODO: shift these constraints to the config window itself
+        // doesn't support names with . (to prevent malicious paths)
+        if (name.contains(".")) {
+            System.out.println("Invalid name " + name + " containing '.'");
+        }
         assert(!name.contains("."));
-        historyFolder = diamondFolder + name + "/";
+        // some prohibited folder
+        if (name.equals("filters") || name.equals("codecs") || name.equals("predicates")) {
+            System.out.println("Invalid name " + name + " that is reserved already!");
+        }
+        assert(!name.equals("filters"));
+        assert(!name.equals("codecs"));
+        assert(!name.equals("predicates"));
+        String newHistoryFolder = diamondFolder + name + "/";
+        if (roundNum >= 0) {
+            assert(newHistoryFolder.equals(historyFolder));
+        } else {
+            historyFolder = newHistoryFolder;
+        }
     }
 
     /* Stores history data when session is starting, including
