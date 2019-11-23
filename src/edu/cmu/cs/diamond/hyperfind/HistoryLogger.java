@@ -25,7 +25,7 @@ public class HistoryLogger {
 
     // current session
     private static int roundNum = -1;
-    private static String diamondFolder = System.getProperty("user.home") + "/.diamond/";
+    private static String logFolder = System.getProperty("user.home") + "/.diamond/history_logs/";
     private String historyFolder;
     private static Map<String, String> sessionInfo = new HashMap<String, String>();
 
@@ -42,7 +42,7 @@ public class HistoryLogger {
         if (historyDir.exists()) {
             deleteDir(historyDir);
         }
-        historyDir.mkdir();
+        historyDir.mkdirs();
     }
 
     public void updateSessionName(String name) {
@@ -53,14 +53,7 @@ public class HistoryLogger {
             System.out.println("Invalid name " + name + " containing '.'");
         }
         assert(!name.contains("."));
-        // some prohibited folder
-        if (name.equals("filters") || name.equals("codecs") || name.equals("predicates")) {
-            System.out.println("Invalid name " + name + " that is reserved already!");
-        }
-        assert(!name.equals("filters"));
-        assert(!name.equals("codecs"));
-        assert(!name.equals("predicates"));
-        String newHistoryFolder = diamondFolder + name + "/";
+        String newHistoryFolder = logFolder + name + "/";
         if (roundNum >= 0) {
             assert(newHistoryFolder.equals(historyFolder));
         } else {
