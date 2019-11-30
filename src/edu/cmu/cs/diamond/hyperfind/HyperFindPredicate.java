@@ -195,11 +195,9 @@ public class HyperFindPredicate {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
                 String entryName = entry.getName();
-                // count number of positives and negatives;
-                // ignore the folders themselves, but count the elements inside
-                if (!entryName.endsWith("/")) {
+                // ignore folders or other extraneous non-folder files
+                if (!entryName.endsWith("/") && entryName.indexOf("/") > 0) {
                     int idx = entryName.indexOf("/");
-                    assert(idx > 0); // must exist and this is relative path
                     String folderName = entryName.substring(0, idx);
                     if (folderCount.containsKey(folderName)) {
                         folderCount.replace(folderName, folderCount.get(folderName) + 1);

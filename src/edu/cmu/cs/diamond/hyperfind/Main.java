@@ -171,7 +171,7 @@ public final class Main {
 
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton, retrainButton,
-                stats, statsArea, 500, historyLogger);
+                stats, statsArea, 25, historyLogger);
 
         // predicate list
         final PredicateListModel model = new PredicateListModel();

@@ -27,7 +27,6 @@ public class HistoryLogger {
     private static int roundNum = -1;
     private static String logFolder = System.getProperty("user.home") + "/.diamond/history_logs/";
     private String historyFolder;
-    private static Map<String, String> sessionInfo = new HashMap<String, String>();
 
     // reset each time when start is pressed
     private static int imgCounter;
@@ -77,13 +76,16 @@ public class HistoryLogger {
         assert(!sessionDirFile.exists());
         sessionDirFile.mkdir();
 
-        assert(sessionInfo.isEmpty());
-        sessionInfo.put("start_time(ms)", getCurrentTimeString());
-        sessionInfo.put("type", "search");
+        String startInfoPath = historyFolder + Integer.toString(roundNum) + "/start_info.json";
+        Map<String, String> startInfo = new HashMap<String, String>();
+        startInfo.put("start_time(ms)", getCurrentTimeString());
+        startInfo.put("session_type", "search");
+        tryWriteNewFile(startInfoPath, gson.toJson(startInfo));
 
         String predicateFile = sessionDir + "pred.hyperfindsearch";
         exportPredicatesToFile(model, predicateFile);
 
+        // initialize image counter
         imgCounter = -1;
     }
 
@@ -91,19 +93,16 @@ public class HistoryLogger {
      */
     public void historyLogSearchSessionStop() {
         // write the info to file system and clear mapping for next session
-        String infoPath = historyFolder + Integer.toString(roundNum) + "/info.json";
-        sessionInfo.put("end_time(ms)", getCurrentTimeString());
-        tryWriteNewFile(infoPath, gson.toJson(sessionInfo));
-        sessionInfo.clear();
+        String endInfoPath = historyFolder + Integer.toString(roundNum) + "/end_info.json";
+        Map<String, String> endInfo = new HashMap<String, String>();
+        endInfo.put("end_time(ms)", getCurrentTimeString());
+        tryWriteNewFile(endInfoPath, gson.toJson(endInfo));
 
-
-        String endStatsPath = historyFolder + Integer.toString(roundNum) + "/end_stats.json";
-        Map<String, String> endStats = new HashMap<String, String>();
         statsArea.getStatisticsMap().forEach((k,v) -> {
-            endStats.put(k, Long.toString(v));
+            endInfo.put(k, Long.toString(v));
         });
 
-        tryWriteNewFile(endStatsPath, gson.toJson(endStats));
+        tryWriteNewFile(endInfoPath, gson.toJson(endInfo));
     }
 
     /* Stores the result for one image
