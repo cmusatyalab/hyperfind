@@ -395,7 +395,7 @@ public class ThumbnailBox extends JPanel {
 				    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
 
                 timeLabel.setText(timeDisplay);
-                //scrollPanesToBottom();
+                scrollPanesToBottom();
             }
         };
 
