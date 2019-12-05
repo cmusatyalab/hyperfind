@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!--fontawesome is used for icons-->
+    <link href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" rel="stylesheet"/>
+    <style>
+      * {
+        font-size: 20px;
+      }
+      td {
+        padding-left: 10px;
+        padding-right: 10px;
+        text-align: center;
+      }
+      .container {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        <!--float: left;-->
+      }
+      .container img {
+        display: block;
+      }
+      .container .fas {
+        position: absolute;
+        font-size: 40px;
+        bottom: 0;
+        left: 0;
+      }
+      .fa-check {
+        color: green;
+      }
+      .fa-times {
+        color: red;
+      }
+    </style>
+    <title>Eureka Replay</title>
+  </head>
+  <body>
+    {% if per_img is defined and per_img != None %}
+        {% for img in per_img %}
+          <div class="container">
+            <!--Put img id as parameter to prevent caching-->
+          <img src="{{ url_for('replay_img', filename=img['img_path']) }}?img_id={{ img['metadata']['_ObjectID'] }}" alt="thumbnail">
+          {% if img['metadata']['_ObjectID'] in pos_ids %}
+          <i class="fas fa-check fa-lg"></i>
+          {% elif img['metadata']['_ObjectID'] in neg_ids %}
+          <i class="fas fa-times fa-lg"></i>
+          {% endif %}
+          </div>
+        {% endfor %}
+    {% endif %}
+  </body>
+</html>

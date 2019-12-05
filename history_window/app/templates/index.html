@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link href={{ url_for('static', filename='styles.css') }} rel="stylesheet">
+    <title>Eureka History Window</title>
+  </head>
+  <body>
+
+    <div style="float:left; width:25%">
+      <h1>Currently showing {{ session_name }}.</h1>
+      <form>
+        Select a folder to analyze:
+        <select value={{session_name}}, id='select_log' onchange='refreshPage()'>
+        {% for log_name in candidates %}
+          {% if log_name == session_name %}
+          <option selected>{{ log_name }}</option>
+          {% else %}
+          <option>{{ log_name }}</option>
+          {% endif %}
+        {% endfor %}
+        </select>
+      </form>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+
+  {% if rows is defined and rows != None and rows | length > 0 %}
+    <table border=1 frame=void rules=rows>
+    <!-- headers -->
+     <tr>
+      <td>Session</td>
+      <td>Predicates</td>
+
+      <!-- statistics -->
+      {% if stat_keys is defined and stat_keys != None %}
+          {% for stat_key in stat_keys %}
+            <td>{{ stat_key }}</td>
+          {% endfor %}
+       {% endif %}
+    </tr>
+
+    <!-- data per row -->
+    {% for i in range(rows | length) %}
+    <tr>
+        <!-- session metadata -->
+        <td>
+          <br>
+          Num: {{ i }}<br>
+          Type: {{ rows[i]['start_info']['session_type'] }}<br>
+          <br>
+          <a href="/replay/{{i}}" target="blank">
+            <button class='btn btn-default'>Replay</button>
+          </a>
+        </td>
+
+        <!-- predicate metadata and download -->
+        <td>
+            {% for pred in rows[i]['predicates'] %}
+                {% if pred.dataZipState is defined and pred.dataZipState.folderCount is defined %}
+                    - {{ pred.predicateName }}<br>
+                      Pos: {{ pred.dataZipState.folderCount.positive }}, Neg: {{ pred.dataZipState.folderCount.negative }}<br>
+                {% endif %}
+            {% endfor %}
+            <br>
+            <a href="/download_predicate/{{i}}" target="blank">
+              <button class='btn btn-default'>Download Predicates!</button>
+            </a>
+        </td>
+
+        <!-- statistics data for last one (overall) -->
+        {% if stat_keys is defined and stat_keys != None %}
+            {% if rows[i]['end_stats'] is defined %}
+                {% for stat_key, stat_val in rows[i]['end_stats']['derived_stats'].items() %}
+                    <!-- hacky check for whether it's a float -->
+                    {% if (stat_val | int) != stat_val %}
+                      <td>{{ "%.3f" | format(stat_val) }}</td>
+                    {% else %}
+                      <td>{{ stat_val }}</td>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- if end stats hasn't come out, then not available -->
+                {% for stat_key in stat_keys %}
+                    <td>Session not Stopped</td>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    </tr>
+    {% endfor %}
+    </table>
+
+    <br>
+    <br>
+    <div style="float:left; width:25%">
+      <form>
+        <!-- Each parameter is a field of derived stats -->
+        Select a parameter to plot time-series:
+        <select id='select_plot' onchange='plotDataSelector()'>
+        {% for stat_key in stat_keys %}
+          <option>{{ stat_key }}</option>
+        {% endfor %}
+        </select>
+      </form>
+    </div>
+    <div style="float:left; width:25%" id="history_plots">
+    </div>
+
+  {% endif %}
+
+  </body>
+<script src={{ url_for('static', filename='plot.js') }}></script>
+<script>
+
+
+function refreshPage() {
+  var mylist = document.getElementById('select_log')
+  var selection = mylist.options[mylist.selectedIndex].text;
+  var req = new XMLHttpRequest();
+  req.open('GET', '/update_log_folder/' + selection, true);
+  req.send();
+  window.location.assign("/")
+}
+
+data = null;
+
+// method called when selection changes, to plot the selected curve
+function plotDataSelector() {
+  if (data == null) {
+    console.log("no data!");
+    return;
+  }
+  svg.selectAll('*').remove();
+  var mylist = document.getElementById('select_plot')
+  var selection = mylist.options[mylist.selectedIndex].text;
+  plot_data(data, function(d) {return d['metadata']['arrival_time(ms)']; }, 'Time',
+                  function(d) {return d['derived_stats'][selection]; }, selection)
+}
+
+function refreshPlot() {
+  var req = new XMLHttpRequest();
+  req.open('GET', '/refresh_plot', true);
+  req.onreadystatechange = function(e) {
+    if(req.readyState !== 4) {
+        return;
+    }
+    if ([200, 304].indexOf(req.status) === -1) {
+        console.warn('Error! XHR failed.');
+    } else {
+      data = JSON.parse(e.target.responseText);
+      plotDataSelector();
+    }
+  };
+  req.send();
+}
+
+// refresh plot every 1s
+refreshPlot();
+
+setInterval(function() {
+  refreshPlot();
+}, 2000);
+
+</script>
+
+</html>

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# kill children when foreground is killed
+trap "trap - TERM && kill -- -$$" INT TERM EXIT
+
+# subshell to start history window
+(cd history_window; echo "starting history window!"; ./start)&
+./hyperfind
