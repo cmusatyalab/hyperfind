@@ -4,5 +4,7 @@
 trap "trap - TERM && kill -- -$$" INT TERM EXIT
 
 # subshell to start history window
-(cd history_window; echo "starting history window!"; ./start)&
-./hyperfind
+(cd hyperboard; echo "starting hyperboard!"; ./hyperboard)&
+
+# start hyperfind
+./hyperfind $@

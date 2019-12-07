@@ -171,3 +171,4 @@ def replay_homepage(sess_num):
 def replay_img(filename):
     """Serves GET request in replay, sending actual thumbnail contents"""
     return send_from_directory(app.config["LOG_FOLDER"], filename)
+

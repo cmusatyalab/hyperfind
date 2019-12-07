@@ -93,7 +93,8 @@ public final class Main {
 
     private final JComboBox codecs;
 
-    static private HistoryLogger historyLogger;
+    static private String historyFolder = null;
+    static private HistoryLogger historyLogger = null;
 
     private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
                  CookieMap initialCookieMap,
@@ -162,7 +163,8 @@ public final class Main {
                 .create();
 
         // create the history logger
-        historyLogger = new HistoryLogger(gson, statsArea);
+        if (historyFolder != null)
+            historyLogger = new HistoryLogger(historyFolder, gson, statsArea);
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
@@ -421,8 +423,9 @@ public final class Main {
                     // clear old state
                     m.results.terminate();
 
-                    historyLogger.updateSessionName(properties.getSessionName());
-                    historyLogger.historyLogSearchSessionStart(model);
+                    // log session start!
+                    if (historyLogger != null)
+                        historyLogger.historyLogSearchSessionStart(model);
 
                     // start
                     m.results.start(m.search, new ActivePredicateSet(m,
@@ -443,7 +446,10 @@ public final class Main {
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                historyLogger.historyLogSearchSessionStop();
+                // log session end!
+                if (historyLogger != null)
+                    historyLogger.historyLogSearchSessionStop();
+
                 m.stopSearch();
                 proxyBox.setEnabled(true);
                 boolean downloadResults = m.properties.checkDownload();
@@ -545,7 +551,8 @@ public final class Main {
                     if (!filename.endsWith("." + savedSearchExtension)) {
                         filename += "." + savedSearchExtension;
                     }
-                    historyLogger.exportPredicatesToFile(model, filename);
+                    // use history logger's static method for exporting
+                    HistoryLogger.exportPredicatesToFile(model, filename);
                 }
             }
         });
@@ -838,7 +845,7 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " bundle-directories filter-directories");
+                + " bundle-directories filter-directories [session name (for hyperboard)]");
     }
 
     private static List<File> splitDirs(String paths) {
@@ -853,13 +860,29 @@ public final class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
+        if (args.length != 2 && args.length != 3) {
             printUsage();
             System.exit(1);
         }
 
         final List<File> bundleDirectories = splitDirs(args[0]);
         final List<File> filterDirectories = splitDirs(args[1]);
+        if (args.length >= 3) {
+            historyFolder = (new File(args[2])).getAbsolutePath();
+            File file = new File(historyFolder);
+            if (file.exists()) {
+                System.out.println("Input file " + historyFolder +
+                        " already exists! Please input path that doesn't exist");
+                System.exit(1);
+            }
+            if (file.getAbsoluteFile().getParent() == null) {
+                System.out.println("Hyperboard File " + historyFolder +
+                        " doesn't have a parent! Please input path with a parent folder");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Hyperboard disabled!");
+        }
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override

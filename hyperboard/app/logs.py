@@ -93,7 +93,7 @@ def float_div(num, denom):
 
 
 def process_data(root_dir):
-    """Get all the metadata given the root_dir.
+    """Get all the attributes given the root_dir.
     Expects the following directory tree with S sessions
     root_dir
         |
@@ -107,7 +107,7 @@ def process_data(root_dir):
         |    |----start_info.json
         |    |----end_info.json
         |    |----feedback.csv
-        |    |----metadata/
+        |    |----attributes/
         |    |       |
         |    |       |----0.json, 1.json,...
         |    |----stats/
@@ -129,7 +129,7 @@ def process_data(root_dir):
     - 'feedback' an OrderedDict representing feedbacks.csv
     - 'per_img' an array B where B[j] is an OrderedDict for the jth image.
         B[j] will contain:
-        - 'metadata' field contains an OrderedDict of metadata jsons
+        - 'attributes' field contains an OrderedDict of attributes jsons
         - 'stats' field contains an OrderedDict of stat jsons
         - 'img_path' field contains the path to this image
         - 'derived_stats' field contains an OrderedDict of derived statistics. This
@@ -223,7 +223,7 @@ def process_data(root_dir):
                 )
                 return derived
 
-            meta_dir = os.path.join(sess_dir, "metadata")
+            meta_dir = os.path.join(sess_dir, "attributes")
             stat_dir = os.path.join(sess_dir, "stats")
             img_dir = os.path.join(sess_dir, "thumbnail")
 
@@ -233,10 +233,10 @@ def process_data(root_dir):
                 for img_num in sort_numbered_files(stat_dir, ext=".json"):
                     cur_img = OrderedDict()
 
-                    # first load in metadata, stats and img path
+                    # first load in attributes, stats and img path
                     meta_path = os.path.join(meta_dir, "%d.json" % img_num)
                     with open(meta_path, "r") as f:
-                        cur_img["metadata"] = OrderedDict(json.load(f))
+                        cur_img["attributes"] = OrderedDict(json.load(f))
 
                     stat_path = os.path.join(stat_dir, "%d.json" % img_num)
                     with open(stat_path, "r") as f:
@@ -246,7 +246,7 @@ def process_data(root_dir):
                     cur_img["img_path"] = "%d/thumbnail/%d.jpeg" % (sess_num, img_num)
 
                     cur_img["derived_stats"] = calc_derived_stats(
-                        cur_img["stats"], int(cur_img["metadata"]["arrival_time(ms)"])
+                        cur_img["stats"], int(cur_img["attributes"]["arrival_time(ms)"])
                     )
                     per_img.append(cur_img)
                 row["per_img"] = per_img
@@ -265,9 +265,9 @@ def process_data(root_dir):
                 # there may be feedbacks in this session despite having seen the last image
                 # the last data point is using info from info.json
                 last_elem = OrderedDict()
-                last_elem["metadata"] = OrderedDict()
+                last_elem["attributes"] = OrderedDict()
                 # emulate the last arrival
-                last_elem["metadata"]["arrival_time(ms)"] = sess_end_time
+                last_elem["attributes"]["arrival_time(ms)"] = sess_end_time
                 last_elem["derived_stats"] = calc_derived_stats(
                     row["end_info"], sess_end_time
                 )

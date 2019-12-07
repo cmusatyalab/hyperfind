@@ -49,7 +49,7 @@
     <!-- data per row -->
     {% for i in range(rows | length) %}
     <tr>
-        <!-- session metadata -->
+        <!-- session attributes -->
         <td>
           <br>
           Num: {{ i }}<br>
@@ -60,7 +60,7 @@
           </a>
         </td>
 
-        <!-- predicate metadata and download -->
+        <!-- predicate attributes and download -->
         <td>
             {% for pred in rows[i]['predicates'] %}
                 {% if pred.dataZipState is defined and pred.dataZipState.folderCount is defined %}
@@ -139,7 +139,7 @@ function plotDataSelector() {
   svg.selectAll('*').remove();
   var mylist = document.getElementById('select_plot')
   var selection = mylist.options[mylist.selectedIndex].text;
-  plot_data(data, function(d) {return d['metadata']['arrival_time(ms)']; }, 'Time',
+  plot_data(data, function(d) {return d['attributes']['arrival_time(ms)']; }, 'Time',
                   function(d) {return d['derived_stats'][selection]; }, selection)
 }
 

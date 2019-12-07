@@ -20,69 +20,55 @@ import com.google.gson.*;
 import edu.cmu.cs.diamond.opendiamond.*;
 
 public class HistoryLogger {
-    private final Gson gson;
+    static private Gson gson;
     private final StatisticsArea statsArea;
 
     // current session
     private static int roundNum = -1;
-    private static String logFolder = System.getProperty("user.home") + "/.diamond/history_logs/";
-    private String historyFolder;
+    private final String historyFolder;
 
     // reset each time when start is pressed
     private static int imgCounter;
 
-    public HistoryLogger(Gson gson, StatisticsArea statsArea) {
+    public HistoryLogger(String historyFolder, Gson gson, StatisticsArea statsArea) {
+        this.historyFolder = historyFolder;
+        // make the mega session directory
+        File historyDir = new File(historyFolder);
+        assert(!historyDir.exists());
+        assert(historyDir.getParent() != null);
+        // should've been set as absolute by main already
+        assert(historyDir.getAbsolutePath().equals(historyFolder));
+        historyDir.mkdir();
+        System.out.println("HistoryLogger activated: " + historyFolder);
+
         this.gson = gson;
         this.statsArea = statsArea;
-    }
-
-    private void createHistoryFolder() {
-        File historyDir = new File(historyFolder);
-        if (historyDir.exists()) {
-            deleteDir(historyDir);
-        }
-        historyDir.mkdirs();
-    }
-
-    public void updateSessionName(String name) {
-        assert(name.length() > 0);
-        // TODO: shift these constraints to the config window itself
-        // doesn't support names with . (to prevent malicious paths)
-        if (name.contains(".")) {
-            System.out.println("Invalid name " + name + " containing '.'");
-        }
-        assert(!name.contains("."));
-        String newHistoryFolder = logFolder + name + "/";
-        if (roundNum >= 0) {
-            assert(newHistoryFolder.equals(historyFolder));
-        } else {
-            historyFolder = newHistoryFolder;
-        }
     }
 
     /* Stores history data when session is starting, including
      * - start_time
      * - type
-     * Also, exports predicates.
+     * - exports predicates
      */
     public void historyLogSearchSessionStart(PredicateListModel model) {
-        // create history folder when first session starts
-        if (roundNum == -1) {
-            createHistoryFolder();
-        }
+        // update session number
         roundNum++;
+
+        // make session directory
         String sessionDir = getSessionDir();
         File sessionDirFile = new File(sessionDir);
         assert(!sessionDirFile.exists());
         sessionDirFile.mkdir();
 
-        String startInfoPath = historyFolder + Integer.toString(roundNum) + "/start_info.json";
+        // log start info
+        String startInfoPath = joinPaths(sessionDir, "start_info.json");
         Map<String, String> startInfo = new HashMap<String, String>();
         startInfo.put("start_time(ms)", getCurrentTimeString());
         startInfo.put("session_type", "search");
         tryWriteNewFile(startInfoPath, gson.toJson(startInfo));
 
-        String predicateFile = sessionDir + "pred.hyperfindsearch";
+        // export predicate
+        String predicateFile = joinPaths(sessionDir, "pred.hyperfindsearch");
         exportPredicatesToFile(model, predicateFile);
 
         // initialize image counter
@@ -92,17 +78,18 @@ public class HistoryLogger {
     /* Logs session info to file system.
      */
     public void historyLogSearchSessionStop() {
-        // write the info to file system and clear mapping for next session
-        String endInfoPath = historyFolder + Integer.toString(roundNum) + "/end_info.json";
+        // log end info
+        String endInfoPath = joinPaths(getSessionDir(), "end_info.json");
         Map<String, String> endInfo = new HashMap<String, String>();
         endInfo.put("end_time(ms)", getCurrentTimeString());
         tryWriteNewFile(endInfoPath, gson.toJson(endInfo));
 
-        statsArea.getStatisticsMap().forEach((k,v) -> {
-            endInfo.put(k, Long.toString(v));
-        });
-
-        tryWriteNewFile(endInfoPath, gson.toJson(endInfo));
+        // log end stats
+        String endStatsPath = joinPaths(getSessionDir(), "end_stats.json");
+        //statsArea.getStatisticsMap().forEach((k,v) -> {
+            //endInfo.put(k, Long.toString(v));
+        //});
+        tryWriteNewFile(endStatsPath, gson.toJson(statsArea.getStatisticsMap()));
     }
 
     /* Stores the result for one image
@@ -116,7 +103,7 @@ public class HistoryLogger {
         assert(sessionDirFile.exists());
 
         // get/make directory for thumbnails
-        String thumbnailDir = sessionDir + "thumbnail/";
+        String thumbnailDir = joinPaths(sessionDir, "thumbnail");
         File thumbnailDirFile = new File(thumbnailDir);
         if (!thumbnailDirFile.exists()) {
             thumbnailDirFile.mkdir();
@@ -126,15 +113,15 @@ public class HistoryLogger {
 
         // save the thumbnail
         String thumbnailKey = "thumbnail.jpeg";
-        String imgPath = thumbnailDir + Integer.toString(imgCounter) + ".jpeg";
+        String imgPath = joinPaths(thumbnailDir, Integer.toString(imgCounter) + ".jpeg");
         assert(keys.contains(thumbnailKey));
         tryWriteNewFile(imgPath, r.getValue(thumbnailKey));
 
-        // get/make directory for metadata
-        String metadataDir = sessionDir + "metadata/";
-        File metadataDirFile = new File(metadataDir);
-        if (!metadataDirFile.exists()) {
-            metadataDirFile.mkdir();
+        // get/make directory for attributes
+        String attributesDir = joinPaths(sessionDir, "attributes");
+        File attributesDirFile = new File(attributesDir);
+        if (!attributesDirFile.exists()) {
+            attributesDirFile.mkdir();
         }
 
         // reconstruct attributes
@@ -149,10 +136,10 @@ public class HistoryLogger {
         attributes.put("arrival_time(ms)", getCurrentTimeString());
 
         // save json
-        String metadataPath = metadataDir + Integer.toString(imgCounter) + ".json";
-        tryWriteNewFile(metadataPath, gson.toJson(attributes));
+        String attributesPath = joinPaths(attributesDir, Integer.toString(imgCounter) + ".json");
+        tryWriteNewFile(attributesPath, gson.toJson(attributes));
 
-        String statsDir = sessionDir + "stats/";
+        String statsDir = joinPaths(sessionDir, "stats");
         File statsDirFile = new File(statsDir);
         if (!statsDirFile.exists()) {
             statsDirFile.mkdir();
@@ -160,14 +147,14 @@ public class HistoryLogger {
 
         // build json for the stats
         Map<String, Long> statisticsMap = statsArea.getStatisticsMap();
-        String statsJsonPath = statsDir + Integer.toString(imgCounter) + ".json";
+        String statsJsonPath = joinPaths(statsDir, Integer.toString(imgCounter) + ".json");
         tryWriteNewFile(statsJsonPath, gson.toJson(statisticsMap));
     }
 
     public void historyLogFeedback(Result r, ResultType cmd) {
         assert(roundNum >= 0);
         String sessionDir = getSessionDir();
-        String feedbackPath = sessionDir + "feedback.csv";
+        String feedbackPath = joinPaths(sessionDir, "feedback.csv");
         // if csv file doesn't yet exist (first feedback)
         if (!(new File(feedbackPath).exists())) {
             String header = "absolute time(ms),id,feedback_label\n";
@@ -246,28 +233,14 @@ public class HistoryLogger {
     }
 
     private String getSessionDir() {
-        return historyFolder + Integer.toString(roundNum) + "/";
+        return joinPaths(historyFolder, Integer.toString(roundNum));
     }
 
     private String getCurrentTimeString() {
         return Long.toString(System.currentTimeMillis());
     }
 
-    /* Equivalent to rm -rf /path/to/file */
-    private void deleteDir(File dir) {
-    	assert(dir.exists() && dir.isDirectory());
-        for (String child : dir.list()) {
-            File childF = new File(dir, child);
-            if (childF.isDirectory()) {
-                deleteDir(childF);
-            } else {
-                childF.delete();
-            }
-        }
-        dir.delete();
-    }
-
-    public void exportPredicatesToFile(PredicateListModel model, String filename) {
+    static public void exportPredicatesToFile(PredicateListModel model, String filename) {
         try {
             List<HyperFindPredicate> selectedPredicates = model.getSelectedPredicates();
 
@@ -283,6 +256,12 @@ public class HistoryLogger {
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    static public String joinPaths(String parentPath, String subdirPath) {
+        // make sure that path2
+        assert(!(new File(subdirPath)).getAbsolutePath().equals(subdirPath));
+        return new File(parentPath, subdirPath).getPath();
     }
 }
 

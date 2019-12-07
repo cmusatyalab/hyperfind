@@ -140,7 +140,7 @@ public class ThumbnailBox extends JPanel {
 
     private HashMap<String, FeedbackObject> feedbackItems;
 
-    private HistoryLogger historyLogger;
+    private HistoryLogger historyLogger = null;
 
     /**
      * @param stopButton
@@ -360,7 +360,8 @@ public class ThumbnailBox extends JPanel {
                     }
 
                     // log feedback data
-                    historyLogger.historyLogFeedback(r, cmd);
+                    if (historyLogger != null)
+                        historyLogger.historyLogFeedback(r, cmd);
                 }
                 repaint();
             }
@@ -555,7 +556,8 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             Result r = search.getNextResult();
-                            historyLogger.historyLogResult(r);
+                            if (historyLogger != null)
+                                historyLogger.historyLogResult(r);
 
                             if (r == null) {
                                 System.out.println("RESULT NULL");
