@@ -9,7 +9,7 @@
   </head>
   <body>
 
-    <div style="float:left; width:25%">
+    <div>
       <h1>Currently showing {{ session_name }}.</h1>
       <form>
         Select a folder to analyze:
@@ -24,13 +24,11 @@
         </select>
       </form>
     </div>
-    <br>
-    <br>
-    <br>
+
     <br>
     <br>
 
-
+  <h1> Summary Table </h1>
   {% if rows is defined and rows != None and rows | length > 0 %}
     <table border=1 frame=void rules=rows>
     <!-- headers -->
@@ -95,13 +93,16 @@
     </tr>
     {% endfor %}
     </table>
+    {% endif %}
 
     <br>
     <br>
-    <div style="float:left; width:25%">
+
+    <h1> Time-series statistic plots </h1>
+    <div>
       <form>
         <!-- Each parameter is a field of derived stats -->
-        Select a parameter to plot time-series:
+        Select a statistic to plot:
         <select id='select_plot' onchange='plotDataSelector()'>
         {% for stat_key in stat_keys %}
           <option>{{ stat_key }}</option>
@@ -112,7 +113,6 @@
     <div style="float:left; width:25%" id="history_plots">
     </div>
 
-  {% endif %}
 
   </body>
 <script src={{ url_for('static', filename='plot.js') }}></script>

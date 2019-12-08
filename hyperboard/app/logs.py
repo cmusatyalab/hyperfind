@@ -25,44 +25,43 @@ def sort_numbered_files(folder, ext=""):
     return sorted(numbered_files)
 
 
-def get_valid_session_paths(root_folder, depth=2):
-    """Return a list of "valid" session paths starting from given root_folder
+def get_valid_search_paths(root_folder, depth=2):
+    """Return a list of "valid" search paths starting from given root_folder
     and within a specified depth. Since it is expensive to try to process all
     files, we do a crude estimate. Namely, we mark a folder as "valid" if it
     contains subfolders with consecutive numbers (i.e. "0/", "1/", "2/", etc.)
     """
-
-    def get_valid_session_paths_(search_from_path, depth):
+    candidate_searches = []
+    def get_valid_search_paths_(search_from_path, depth):
+        nonlocal candidate_searches
         """Performs search from given child path"""
         assert depth >= 0
-        if not os.path.isdir(search_from_path):
-            return []
-        res = []
-        for file in os.listdir(search_from_path):
-            new_path = os.path.join(search_from_path, file)
-            if not os.path.isdir(new_path):
-                continue
-            # it is a candidate if it has a direct subfolder of 0, 1, 2...
-            sorted_subfolders = sort_numbered_files(new_path, ext="")
-            if len(sorted_subfolders) > 0:
-                good = True
-                for i in range(len(sorted_subfolders)):
-                    if sorted_subfolders[i] != i:
-                        good = False
-                        print(i, "not in", sorted_subfolders)
-                        break
-                if good:
-                    assert new_path[: len(root_folder)] == root_folder
-                    rest = new_path[len(root_folder) :]
-                    print(sorted_subfolders, "good", new_path, rest)
-                    res.append(rest)
+        assert os.path.isdir(search_from_path)
 
-            if depth >= 1:
-                res.extend(get_valid_session_paths_(new_path, depth - 1))
-        return res
+        # it is a "candidate" search if it has direct subfolders of 0/, 1/, 2/, ...
+        sorted_subfolders = sort_numbered_files(search_from_path, ext="")
+        if len(sorted_subfolders) > 0:
+            good = True
+            for i in range(len(sorted_subfolders)):
+                if sorted_subfolders[i] != i:
+                    good = False
+                    print(i, "not in", sorted_subfolders)
+                    break
+            if good:
+                print(sorted_subfolders, "good", search_from_path)
+                candidate_searches.append(search_from_path)
+                print(candidate_searches)
 
-    return get_valid_session_paths_(root_folder, depth)
+        if depth > 0:
+            for child in os.listdir(search_from_path):
+                new_path = os.path.join(search_from_path, child)
+                if os.path.isdir(new_path):
+                    get_valid_search_paths_(new_path, depth - 1)
+        return
 
+    get_valid_search_paths_(root_folder, depth)
+    print("result is ", candidate_searches);
+    return candidate_searches
 
 def load_feedbacks_csv(csv_path):
     """Return a mapping of abs_time -> an OrderedDict containing ID and Label

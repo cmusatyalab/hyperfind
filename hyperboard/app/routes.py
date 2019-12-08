@@ -12,6 +12,14 @@ app.config["CURRENT_SESSION_NAME"] = None
 ######## SESSION STATES ########
 ################################
 
+def invalid_root():
+    if not os.path.exists(app.config["ROOT_FOLDER"]):
+        print("%s doesn't exist. " % app.config["ROOT_FOLDER"])
+        return True
+    if not os.path.isdir(app.config["ROOT_FOLDER"]):
+        print("%s exists but is not a directory. " % app.config["ROOT_FOLDER"])
+        return True
+    return False
 
 def reset_states():
     app.config["LOG_FOLDER"] = None
@@ -19,17 +27,22 @@ def reset_states():
 
 
 def inconsistent_state():
-    return (
-        app.config["LOG_FOLDER"] is None or app.config["CURRENT_SESSION_NAME"] is None
-        or not os.path.isdir(app.config["LOG_FOLDER"])
-    )
-
+    if app.config["LOG_FOLDER"] is None:
+        print("log folder is none!")
+        return True
+    if app.config["CURRENT_SESSION_NAME"] is None:
+        print("current session name is none!")
+        return True
+    if not os.path.isdir(app.config["LOG_FOLDER"]):
+        print("log folder %s is not a directory!" % app.config["LOG_FOLDER"])
+        return True
+    return False
 
 @app.route("/update_log_folder/<path:session_name>")
 def update_log_folder(session_name):
-    print("Updated with ", session_name)
     app.config["CURRENT_SESSION_NAME"] = session_name
     app.config["LOG_FOLDER"] = os.path.join(app.config["ROOT_FOLDER"], session_name)
+    print("Updated with ", session_name, " log folder", app.config["LOG_FOLDER"])
     return homepage()
 
 
@@ -93,10 +106,15 @@ def download_predicate(sess_num):
 @app.route("/")
 def homepage():
     """Loads the main page, with tables and plots, and buttons to replay"""
-    candidates = get_valid_session_paths(app.config["ROOT_FOLDER"])
+
+    # invalid root folder
+    if invalid_root():
+        return render_template("index.html")
+
+    candidates = get_valid_search_paths(app.config["ROOT_FOLDER"])
     # nothing to show, since no valid candidate folder
     if len(candidates) == 0:
-        print("No candidates!")
+        print("No valid search paths with root folder %s" % app.config["ROOT_FOLDER"])
         return render_template("index.html")
 
     # make current state consistent (can become inconsistent after this, but let's assume not)
@@ -151,7 +169,7 @@ def replay_homepage(sess_num):
     that the state remains consistent. This may not be the case, as the user
     can maliciously delete files in this time frame. We assume this isn't the case.
     """
-    if inconsistent_state():
+    if invalid_root() or inconsistent_state():
         print("inconsistent state, returning to homepage")
         return homepage()
 
