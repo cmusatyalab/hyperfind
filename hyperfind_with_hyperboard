@@ -4,7 +4,16 @@
 trap "trap - TERM && kill -- -$$" INT TERM EXIT
 
 # subshell to start history window
-(cd hyperboard; echo "starting hyperboard!"; ./hyperboard $1) &
+(
+CWD=$(pwd);
+cd hyperboard;
+echo "starting hyperboard!";
+echo "CWD";
+echo $CWD;
+echo "PWD";
+echo $(pwd);
+./hyperboard $1 $CWD;
+) &
 
 # start hyperfind
 ./hyperfind $1
