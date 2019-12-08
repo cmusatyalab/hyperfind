@@ -3,7 +3,8 @@ import os, json
 from collections import OrderedDict
 from flask import redirect, request, render_template, send_from_directory, jsonify
 from app import app
-from app.logs import *
+from app.process_logs import *
+from app.logs_helpers import *
 
 app.config["LOG_FOLDER"] = None
 app.config["CURRENT_SESSION_NAME"] = None

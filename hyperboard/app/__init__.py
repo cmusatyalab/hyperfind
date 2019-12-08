@@ -26,5 +26,6 @@ app.config["ROOT_FOLDER"] = logdir
 print("Hyperboard using as root folder ", app.config["ROOT_FOLDER"])
 
 from app import routes
-from app import logs
-
+from app import process_logs
+from app import predicate
+from app import logs_helpers

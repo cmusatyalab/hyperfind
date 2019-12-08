@@ -35,8 +35,6 @@
      <tr>
       <td>Session</td>
       <td>Predicates</td>
-
-      <!-- statistics -->
       {% if stat_keys is defined and stat_keys != None %}
           {% for stat_key in stat_keys %}
             <td>{{ stat_key }}</td>
@@ -44,7 +42,7 @@
        {% endif %}
     </tr>
 
-    <!-- data per row -->
+    <!-- session data -->
     {% for i in range(rows | length) %}
     <tr>
         <!-- session attributes -->
@@ -61,10 +59,9 @@
         <!-- predicate attributes and download -->
         <td>
             {% for pred in rows[i]['predicates'] %}
-                {% if pred.dataZipState is defined and pred.dataZipState.folderCount is defined %}
-                    - {{ pred.predicateName }}<br>
-                      Pos: {{ pred.dataZipState.folderCount.positive }}, Neg: {{ pred.dataZipState.folderCount.negative }}<br>
-                {% endif %}
+                <br>
+                <strong>{{ pred.predicateName }}</strong><br>
+                {{ pred.predicate_desc }}
             {% endfor %}
             <br>
             <a href="/download_predicate/{{i}}" target="blank">
