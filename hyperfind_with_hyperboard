@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# kill children when foreground is killed
+trap "trap - TERM && kill -- -$$" INT TERM EXIT
+
+# subshell to start history window
+(./run_hyperboard $1) &
+
+# start hyperfind
+./hyperfind $1

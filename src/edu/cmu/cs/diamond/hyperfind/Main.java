@@ -93,6 +93,9 @@ public final class Main {
 
     private final JComboBox codecs;
 
+    static private String historyFolder = null;
+    static private HistoryLogger historyLogger = null;
+
     private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
                  CookieMap initialCookieMap,
                  List<HyperFindPredicateFactory> examplePredicateFactories,
@@ -153,6 +156,16 @@ public final class Main {
         final StatisticsBar stats = new StatisticsBar();
         final StatisticsArea statsArea = new StatisticsArea();
 
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
+                .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
+                .create();
+
+        // create the history logger
+        if (historyFolder != null)
+            historyLogger = new HistoryLogger(historyFolder, gson, statsArea);
+
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         threadPoolExecutor.allowCoreThreadTimeOut(true);
@@ -160,7 +173,7 @@ public final class Main {
 
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton, retrainButton,
-                stats, statsArea, 500);
+                stats, statsArea, 500, historyLogger);
 
         // predicate list
         final PredicateListModel model = new PredicateListModel();
@@ -410,6 +423,10 @@ public final class Main {
                     // clear old state
                     m.results.terminate();
 
+                    // log session start!
+                    if (historyLogger != null)
+                        historyLogger.historyLogSearchSessionStart(model);
+
                     // start
                     m.results.start(m.search, new ActivePredicateSet(m,
                                     model.getSelectedPredicates(), factory),
@@ -429,6 +446,10 @@ public final class Main {
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // log session end!
+                if (historyLogger != null)
+                    historyLogger.historyLogSearchSessionStop();
+
                 m.stopSearch();
                 proxyBox.setEnabled(true);
                 boolean downloadResults = m.properties.checkDownload();
@@ -437,7 +458,7 @@ public final class Main {
                     Map<String, FeedbackObject> map = m.results.getFeedBackItems();
                     try {
                         String downloadDir = m.properties.getDownloadDirectory();
-                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir) 
+                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir)
                                                                 : null;
                         for (Map.Entry<String, FeedbackObject> item : map.entrySet()) {
                             FeedbackObject object = item.getValue();
@@ -453,7 +474,7 @@ public final class Main {
                             filename = filename.substring(0,filename.length()-4)+".png";
                             File f = new File(dirPaths.get(object.label), "hyperfind_export_"+ filename);
                             //Block end
-                            //UNCOMMENT for RANDOM file name 
+                            //UNCOMMENT for RANDOM file name
                             //f = File.createTempFile("hyperfind-export-",
                             //        ".png", new File(dirPaths.get(object.label)));
                             if(f.createNewFile()) {
@@ -514,12 +535,6 @@ public final class Main {
 
 
         // Export and import predicates
-
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
-                .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
-                .create();
         final String savedSearchExtension = "hyperfindsearch";
         final JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(
@@ -530,29 +545,14 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 List<HyperFindPredicate> selectedPredicates = model.getSelectedPredicates();
                 // Serialization
-                try {
-
-                    int retVal = chooser.showSaveDialog(m.frame);
-                    if (JFileChooser.APPROVE_OPTION == retVal) {
-                        String filename = chooser.getSelectedFile().getAbsolutePath();
-                        if (!filename.endsWith("." + savedSearchExtension)) {
-                            filename += "." + savedSearchExtension;
-                        }
-                        Writer writer = new FileWriter(filename);
-                        System.out.println("Saving predicates to " + filename);
-
-                        ArrayList<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
-                        for (HyperFindPredicate pred : selectedPredicates) {
-                            states.add(pred.export());
-                        }
-
-                        writer.write(gson.toJson(states));
-                        writer.close();
+                int retVal = chooser.showSaveDialog(m.frame);
+                if (JFileChooser.APPROVE_OPTION == retVal) {
+                    String filename = chooser.getSelectedFile().getAbsolutePath();
+                    if (!filename.endsWith("." + savedSearchExtension)) {
+                        filename += "." + savedSearchExtension;
                     }
-
-
-                } catch (IOException ex) {
-                    ex.printStackTrace();
+                    // use history logger's static method for exporting
+                    HistoryLogger.exportPredicatesToFile(model, filename);
                 }
             }
         });
@@ -623,7 +623,7 @@ public final class Main {
 
         // filters
         c1.add(predicateList);
-      
+
         // progress display
         c1.add(statsArea);
 
@@ -845,7 +845,7 @@ public final class Main {
 
     private static void printUsage() {
         System.out.println("usage: " + Main.class.getName()
-                + " bundle-directories filter-directories");
+                + " bundle-directories filter-directories [session name (for hyperboard)]");
     }
 
     private static List<File> splitDirs(String paths) {
@@ -860,13 +860,29 @@ public final class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
+        if (args.length != 2 && args.length != 3) {
             printUsage();
             System.exit(1);
         }
 
         final List<File> bundleDirectories = splitDirs(args[0]);
         final List<File> filterDirectories = splitDirs(args[1]);
+        if (args.length >= 3) {
+            historyFolder = (new File(args[2])).getAbsolutePath();
+            File file = new File(historyFolder);
+            if (file.exists()) {
+                System.out.println("Input file " + historyFolder +
+                        " already exists! Please input path that doesn't exist");
+                System.exit(1);
+            }
+            if (file.getAbsoluteFile().getParent() == null) {
+                System.out.println("Hyperboard File " + historyFolder +
+                        " doesn't have a parent! Please input path with a parent folder");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Hyperboard disabled!");
+        }
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override

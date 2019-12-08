@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
 
 import java.awt.*;
@@ -52,6 +53,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
+
+import java.util.concurrent.Semaphore;
 
 final class StatisticsArea extends JPanel{
 
@@ -64,6 +67,10 @@ final class StatisticsArea extends JPanel{
     private final JTextArea display = new JTextArea();
 
     private static String currentString;
+
+    private Semaphore statisticsMapSem = new Semaphore(1);
+    private Map<String, Long> statisticsMap = new HashMap<String, Long>();
+
 
     public StatisticsArea() {
         super();
@@ -84,7 +91,6 @@ final class StatisticsArea extends JPanel{
         jsp.getVerticalScrollBar().setUnitIncrement(20);
 
         add(jsp);
-
     }
 
     public void clear() {
@@ -114,10 +120,44 @@ final class StatisticsArea extends JPanel{
         }
         display.setText(str_display.toString());
         currentString = str_display.toString();
+
+        try {
+            statisticsMapSem.acquire();
+            try {
+                statisticsMap.put("Total", total);
+                statisticsMap.put("Searched", searched);
+                statisticsMap.put("Dropped", dropped);
+                statisticsMap.put("Passed", passed);
+                statisticsMap.put("TruePositive", true_positives);
+                statisticsMap.put("FalseNegative", false_negatives);
+                statisticsMap.put("FalseDisplay", false_display);
+            } finally {
+                statisticsMapSem.release();
+            }
+        } catch (InterruptedException ex) {
+            // ignore this datapoint
+            ex.printStackTrace();
+        }
+    }
+
+    public Map<String, Long> getStatisticsMap() {
+        Map<String, Long> shallowCopy = new HashMap<String, Long>();
+        try {
+            statisticsMapSem.acquire();
+            try {
+                shallowCopy = new HashMap<String, Long>(statisticsMap);
+            } finally {
+                statisticsMapSem.release();
+            }
+        } catch (InterruptedException ex) {
+            // ignore this datapoint, return empty stats
+            ex.printStackTrace();
+        }
+        return shallowCopy;
     }
 
 
-    public void update(Map<String, ServerStatistics> serverStats, 
+    public void update(Map<String, ServerStatistics> serverStats,
         long displayed, long sampled_positive, long sampled_negative) {
         long t = 0;
         long s = 0;
@@ -133,7 +173,7 @@ final class StatisticsArea extends JPanel{
             n += map.get(ss.FN_OBJECTS);
         }
         setNumbers(t, s, d, displayed, sampled_positive, n, sampled_negative);
-        //System.out.println(String.format("Server \n Total %d\n Processed %d \n Dropped %d \n Passed %d\n Sampled Neg %d ", 
+        //System.out.println(String.format("Server \n Total %d\n Processed %d \n Dropped %d \n Passed %d\n Sampled Neg %d ",
         //    t, s, d, displayed, sampled_negative));
     }
 

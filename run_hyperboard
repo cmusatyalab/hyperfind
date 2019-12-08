@@ -1,0 +1,6 @@
+#!/bin/sh
+
+CWD=$(pwd);
+cd hyperboard;
+echo "starting hyperboard!";
+./hyperboard $1 $CWD;

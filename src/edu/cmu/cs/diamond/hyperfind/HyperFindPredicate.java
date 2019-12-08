@@ -46,6 +46,10 @@ import java.util.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import java.io.FileInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import edu.cmu.cs.diamond.opendiamond.Bundle;
 import edu.cmu.cs.diamond.opendiamond.BundleType;
 import edu.cmu.cs.diamond.opendiamond.Filter;
@@ -180,6 +184,31 @@ public class HyperFindPredicate {
         return false;
     }
 
+    public static class DataZipState {
+        public Map<String, Integer> folderCount;
+        public DataZipState(String filename) throws IOException {
+            folderCount = new HashMap<String, Integer>();
+
+            // traverse the zip file
+            FileInputStream fis = new FileInputStream(filename);
+            ZipInputStream zip = new ZipInputStream(fis);
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                String entryName = entry.getName();
+                // ignore folders or other extraneous non-folder files
+                if (!entryName.endsWith("/") && entryName.indexOf("/") > 0) {
+                    int idx = entryName.indexOf("/");
+                    String folderName = entryName.substring(0, idx);
+                    if (folderCount.containsKey(folderName)) {
+                        folderCount.replace(folderName, folderCount.get(folderName) + 1);
+                    } else {
+                        folderCount.put(folderName, 1);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Objects to serialized/deserialized to/from JSON
      */
@@ -188,6 +217,8 @@ public class HyperFindPredicate {
         final public HashMap<String, String> optionMap;
         final public String instanceName;
         final public ArrayList<BufferedImage> examples;
+        final public String predicateName;
+        final public DataZipState dataZipState;
 
         public HyperFindPredicateState(HyperFindPredicate predicate) throws IOException {
             this.bundleState = predicate.bundle.export();
@@ -198,6 +229,15 @@ public class HyperFindPredicate {
             }
             else {
                 this.examples = null;
+            }
+            // load display name
+            this.predicateName = predicate.getPredicateName();
+            // for predicates that require zip folders (like DNN + JIT SVM)
+            String zipKey = "data_zip";
+            if (this.optionMap.containsKey(zipKey)) {
+                this.dataZipState = new DataZipState(this.optionMap.get(zipKey));
+            } else {
+                this.dataZipState = null;
             }
         }
     }

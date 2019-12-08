@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -83,7 +83,7 @@ public class ThumbnailBox extends JPanel {
     private static final long NANOSEC_PER_MILLI = (long) 1e6;
 
     private static final int PREFERRED_WIDTH = 275;
-    
+
     private static long sampledTPCount = 0;
 
     private static long sampledFNCount = 0;
@@ -140,6 +140,8 @@ public class ThumbnailBox extends JPanel {
 
     private HashMap<String, FeedbackObject> feedbackItems;
 
+    private HistoryLogger historyLogger = null;
+
     /**
      * @param stopButton
      * @param startButton
@@ -148,8 +150,9 @@ public class ThumbnailBox extends JPanel {
      * @param statsArea Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
-    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton, 
-            StatisticsBar stats, StatisticsArea statsArea, final int resultsPerScreen) {
+    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton,
+            StatisticsBar stats, StatisticsArea statsArea, final int resultsPerScreen,
+            HistoryLogger historyLogger) {
         super();
 
         this.stopButton = stopButton;
@@ -159,6 +162,7 @@ public class ThumbnailBox extends JPanel {
         this.statsArea = statsArea;
         this.resultLists = new ArrayList<JList>();
         this.resultsPerScreen = resultsPerScreen;
+        this.historyLogger = historyLogger;
 
         this.popupMenu = new JPopupMenu();
 
@@ -182,7 +186,7 @@ public class ThumbnailBox extends JPanel {
          * Creating three panels for result display
          * ----------------------------------------
          * highPanel : Results of High Confidence displayed
-         * midPanel  : Results of Moderate Confidence 
+         * midPanel  : Results of Moderate Confidence
                         requiring user annotaion / AL displayed
          * lowPanel  : Results of Low Confidence or False Negatives displayed
          */
@@ -259,7 +263,7 @@ public class ThumbnailBox extends JPanel {
     	        verticalBar.addAdjustmentListener(downScroller);
         }
 	}
-    
+
 
     // Setting Up result List this Listeners
     private void setUpResultLists() {
@@ -269,7 +273,7 @@ public class ThumbnailBox extends JPanel {
             public void valueChanged(ListSelectionEvent e) {
                 List<HyperFindResult> results = new
                         ArrayList<HyperFindResult>();
-                JList list = (JList) e.getSource();  
+                JList list = (JList) e.getSource();
                 for (Object o : list.getSelectedValuesList()) {
                     ResultIcon icon = (ResultIcon) o;
                     results.add(icon.getResult());
@@ -301,7 +305,7 @@ public class ThumbnailBox extends JPanel {
         //Add listener for right-click to display popUpMenu
         MouseAdapter popClick = new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                JList list = (JList) e.getSource();  
+                JList list = (JList) e.getSource();
                 if (SwingUtilities.isRightMouseButton(e)    // if right mouse button clicked
                       && !list.isSelectionEmpty()) {      // and list selection is not empty
                    popupMenu.show(list, e.getX(), e.getY());
@@ -333,7 +337,7 @@ public class ThumbnailBox extends JPanel {
         ActionListener popUpListener = new ActionListener () {
             public void actionPerformed(ActionEvent e)
             {
-                ResultType cmd = ResultType.valueOf(e.getActionCommand()); 
+                ResultType cmd = ResultType.valueOf(e.getActionCommand());
                 List<Object> valuesSelected = new ArrayList<Object>();
                 for (int i=0; i < NUM_PANELS; i++) {
                     JList list = (JList) resultLists.get(i);
@@ -343,19 +347,21 @@ public class ThumbnailBox extends JPanel {
                     ResultIcon icon = (ResultIcon) o;
                     icon.drawOverlay(cmd);
                     Result r = icon.getResult().getResult();
-                    byte [] fv = r.getValue("feature_vector.json"); 
+                    byte [] fv = r.getValue("feature_vector.json");
                     if (cmd == ResultType.Ignore) {
                         // If item present in the Map then delete entry
                         feedbackItems.remove(icon.getName());
                     }
                     else {
                         if ((fv != null && fv.length != 0) || downloadResults) {
-                            feedbackItems.put(icon.getName(), 
+                            feedbackItems.put(icon.getName(),
                                 new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
                         }
                     }
-                    
 
+                    // log feedback data
+                    if (historyLogger != null)
+                        historyLogger.historyLogFeedback(r, cmd);
                 }
                 repaint();
             }
@@ -365,9 +371,9 @@ public class ThumbnailBox extends JPanel {
         JMenuItem negative = new JMenuItem("Negative");
         JMenuItem ignore = new JMenuItem("Ignore");
 
-        positive.addActionListener(popUpListener);       
-        negative.addActionListener(popUpListener);       
-        ignore.addActionListener(popUpListener);       
+        positive.addActionListener(popUpListener);
+        negative.addActionListener(popUpListener);
+        ignore.addActionListener(popUpListener);
 
         popupMenu.add(positive);
         popupMenu.add(negative);
@@ -382,11 +388,11 @@ public class ThumbnailBox extends JPanel {
             {
                 long nowTime = System.nanoTime();
                 long timeElapsed = (nowTime - startTime)/NANOSEC_PER_MILLI;
-				String timeDisplay = String.format("%02d:%02d:%02d", 
+				String timeDisplay = String.format("%02d:%02d:%02d",
 				    TimeUnit.MILLISECONDS.toHours(timeElapsed),
-				    TimeUnit.MILLISECONDS.toMinutes(timeElapsed) - 
+				    TimeUnit.MILLISECONDS.toMinutes(timeElapsed) -
 				    TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeElapsed)),
-				    TimeUnit.MILLISECONDS.toSeconds(timeElapsed) - 
+				    TimeUnit.MILLISECONDS.toSeconds(timeElapsed) -
 				    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
 
                 timeLabel.setText(timeDisplay);
@@ -453,7 +459,7 @@ public class ThumbnailBox extends JPanel {
     public void clearFeedBackItems() {
         feedbackItems.clear();
     }
-    
+
     public void retrainSearch() {
         retrainWorker = new SwingWorker<Object, Void>() {
             @Override
@@ -510,7 +516,7 @@ public class ThumbnailBox extends JPanel {
         sampledFNCount = 0;
 
 		startTime = System.nanoTime();
-		timer.start(); 
+		timer.start();
         startStatsTimer();
 
         for (int l=0; l < resultLists.size(); l++) {
@@ -550,13 +556,15 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             Result r = search.getNextResult();
+                            if (historyLogger != null)
+                                historyLogger.historyLogResult(r);
 
                             if (r == null) {
                                 System.out.println("RESULT NULL");
                                 break;
                             }
 
-                            int score = (r.getKeys().contains("_score.string")) ? 
+                            int score = (r.getKeys().contains("_score.string")) ?
                                              Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 2;
 
                             if (score != 0) {
@@ -656,7 +664,7 @@ public class ThumbnailBox extends JPanel {
                             if (score ==1) {
                                 byte[]  fv = r.getValue("feature_vector.json");
                                 if (fv != null && fv.length != 0) {
-                                    feedbackItems.put(r.getName(), 
+                                    feedbackItems.put(r.getName(),
                                     new FeedbackObject(fv, score, r.getObjectIdentifier()));
                                 }
                             }

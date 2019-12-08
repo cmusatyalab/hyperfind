@@ -1,0 +1,2 @@
+#!/bin/sh
+FLASK_APP=hyperboard.py FLASK_DEBUG=1 HYPERBOARD_LOGDIR=$1 HYPERBOARD_PWD=$2 python3 -m flask run
