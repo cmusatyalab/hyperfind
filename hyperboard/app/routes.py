@@ -77,7 +77,6 @@ def refresh_plot():
     """Periodically, makes AJAX request to get new updated plot data"""
     stat_series = {}
     if app.config["LOG_FOLDER"] is None or not os.path.isdir(app.config["LOG_FOLDER"]):
-        print("invalid log folder:", app.config["LOG_FOLDER"])
         return jsonify({})
     rows = process_data(app.config["LOG_FOLDER"])
     if rows is None:

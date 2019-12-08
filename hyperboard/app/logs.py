@@ -60,7 +60,6 @@ def get_valid_search_paths(root_folder, depth=2):
         return
 
     get_valid_search_paths_(root_folder, depth)
-    print("result is ", candidate_searches);
     return candidate_searches
 
 def load_feedbacks_csv(csv_path):
@@ -251,15 +250,19 @@ def process_data(root_dir):
                 row["per_img"] = per_img
 
             end_info_path = os.path.join(sess_dir, "end_info.json")
+            end_stats_path = os.path.join(sess_dir, "end_stats.json")
             assert cur_feedback_idx <= len(time2feedback)
             # session doesn't have to be ended
-            if os.path.isfile(end_info_path):
+            if os.path.isfile(end_info_path) and os.path.isfile(end_stats_path):
                 with open(end_info_path, "r") as f:
                     row["end_info"] = OrderedDict(json.load(f))
                 sess_end_time = int(row["end_info"]["end_time(ms)"])
                 row["derived_info"]["end_time"] = time.strftime(
                     "%Y-%m-%d %H:%M:%S", time.localtime(sess_end_time / 1000)
                 )
+
+                with open(end_stats_path, "r") as f:
+                    row["end_stats"] = OrderedDict(json.load(f))
 
                 # there may be feedbacks in this session despite having seen the last image
                 # the last data point is using info from info.json
@@ -268,7 +271,7 @@ def process_data(root_dir):
                 # emulate the last arrival
                 last_elem["attributes"]["arrival_time(ms)"] = sess_end_time
                 last_elem["derived_stats"] = calc_derived_stats(
-                    row["end_info"], sess_end_time
+                    row["end_stats"], sess_end_time
                 )
                 row["end_stats"] = last_elem
                 assert cur_feedback_idx == len(time2feedback)
