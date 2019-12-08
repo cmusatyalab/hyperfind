@@ -23,11 +23,12 @@ def invalid_root():
     return False
 
 def reset_states():
+    """Reset LOG_FOLDER and CURRENT_SESSION_NAME"""
     app.config["LOG_FOLDER"] = None
     app.config["CURRENT_SESSION_NAME"] = None
 
-
 def inconsistent_state():
+    """Check LOG_FOLDER and CURRENT_SESSION_NAME are valid"""
     if app.config["LOG_FOLDER"] is None:
         print("log folder is none!")
         return True
@@ -39,11 +40,15 @@ def inconsistent_state():
         return True
     return False
 
-@app.route("/update_log_folder/<path:session_name>")
-def update_log_folder(session_name):
+def update_log_folder_(session_name):
+    """Internal non-request version"""
     app.config["CURRENT_SESSION_NAME"] = session_name
     app.config["LOG_FOLDER"] = os.path.join(app.config["ROOT_FOLDER"], session_name)
     print("Updated with ", session_name, " log folder", app.config["LOG_FOLDER"])
+
+@app.route("/update_log_folder/<path:session_name>")
+def update_log_folder(session_name):
+    update_log_folder_(session_name)
     return homepage()
 
 
@@ -100,6 +105,8 @@ def refresh_plot():
 def download_predicate(sess_num):
     """Serves download predicate request"""
     path = "%d/pred.hyperfindsearch" % sess_num
+    assert(app.config["LOG_FOLDER"])
+    print("predicate from: ", app.config["LOG_FOLDER"], path)
     return send_from_directory(app.config["LOG_FOLDER"], path)
 
 
@@ -119,7 +126,7 @@ def homepage():
 
     # make current state consistent (can become inconsistent after this, but let's assume not)
     if inconsistent_state() or app.config["CURRENT_SESSION_NAME"] not in candidates:
-        update_log_folder(candidates[0])
+        update_log_folder_(candidates[0])
 
     rows = process_data(app.config["LOG_FOLDER"])
     # state is consistent, but folder is malformed :(
@@ -189,4 +196,16 @@ def replay_homepage(sess_num):
 def replay_img(filename):
     """Serves GET request in replay, sending actual thumbnail contents"""
     return send_from_directory(app.config["LOG_FOLDER"], filename)
+
+
+from datetime import datetime
+@app.after_request
+def nocache(r):
+    """Disable caching"""
+    r.headers['Last-Modified'] = datetime.now()
+    r.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    r.headers['Pragma'] = 'no-cache'
+    r.headers['Expires'] = '-1'
+    return r
+
 

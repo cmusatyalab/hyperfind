@@ -42,7 +42,7 @@
         {% for img in per_img %}
           <div class="container">
             <!--Put img id as parameter to prevent caching-->
-          <img src="{{ url_for('replay_img', filename=img['img_path']) }}?img_id={{ img['attributes']['_ObjectID'] }}" alt="thumbnail">
+          <img src="{{ url_for('replay_img', filename=img['img_path']) }}" alt="thumbnail">
           {% if img['attributes']['_ObjectID'] in pos_ids %}
           <i class="fas fa-check fa-lg"></i>
           {% elif img['attributes']['_ObjectID'] in neg_ids %}

@@ -50,12 +50,9 @@ def get_valid_search_paths(root_folder, depth=2):
             for i in range(len(sorted_subfolders)):
                 if sorted_subfolders[i] != i:
                     good = False
-                    print(i, "not in", sorted_subfolders)
                     break
             if good:
-                print(sorted_subfolders, "good", search_from_path)
                 candidate_searches.append(search_from_path)
-                print(candidate_searches)
 
         if depth > 0:
             for child in os.listdir(search_from_path):

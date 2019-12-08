@@ -15,5 +15,8 @@ def get_predicate_desc(pred):
     elif pred['predicateName'] == "DOG Texture":
         if ('examples' in pred):
             return "num examples: %d" % len(pred['examples'])
+    elif pred['predicateName'] == "DNN ImageNet Classify":
+        if ('optionMap' in pred and 'targets' in pred['optionMap']):
+            return "targets: %s" % pred['optionMap']['targets']
     return "no available description"
 
