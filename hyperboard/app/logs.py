@@ -274,7 +274,8 @@ def process_data(root_dir):
                     row["end_stats"], sess_end_time
                 )
                 row["end_stats"] = last_elem
-                assert cur_feedback_idx == len(time2feedback)
+                if (cur_feedback_idx < len(time2feedback)):
+                    print("Ignoring the feedback after session stopped")
 
             row["positive_ids"] = pos_feedback_set
             row["negative_ids"] = neg_feedback_set
