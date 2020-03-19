@@ -1,4 +1,13 @@
+/doc
+/src/edu/cmu/cs/diamond/opendiamond/bundle
 /bin
-*~
-*.jar
+/opendiamond.jar
+.gradle
 .idea
+*.iml
+*.ipr
+*.iws
+*.swp
+.DS_Store
+build
+out
