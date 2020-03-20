@@ -42,144 +42,131 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Paths;
 import java.util.Properties;
-
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-
-import java.net.URL;
 
 public class HyperFindProperty extends JFrame {
 
-	private File configFile = new File(System.getProperty("user.dir")+"/src/resources/config.properties");
-	private Properties configProps;
-	private JLabel labelProxy = new JLabel("Proxy IP: ");
-	private JLabel labelDownload = new JLabel("Download Results: ");
-	private JLabel labelDirectory = new JLabel("Download directory: ");
-	private JTextField textProxy = new JTextField();
-	private JTextField textDownload = new JTextField(); //TODO: Boolean Option
-	private JTextField textDirectory = new JTextField();
-	private JButton buttonSave = new JButton("Save");
+    private File configFile = Paths.get(System.getProperty("user.home")).resolve(".diamond/hyperfind.properties").toFile();
+    private Properties configProps;
+    private JLabel labelProxy = new JLabel("Proxy IP: ");
+    private JLabel labelDownload = new JLabel("Download Results: ");
+    private JLabel labelDirectory = new JLabel("Download directory: ");
+    private JTextField textProxy = new JTextField();
+    private JTextField textDownload = new JTextField(); //TODO: Boolean Option
+    private JTextField textDirectory = new JTextField();
+    private JButton buttonSave = new JButton("Save");
 
-	public HyperFindProperty() {
+    public HyperFindProperty() {
 
-		setLayout(new GridBagLayout());
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-		constraints.weightx = 0;
-		constraints.insets = new Insets(10, 10, 5, 10);
-		constraints.anchor = GridBagConstraints.WEST;
-		add(labelProxy, constraints);
+        setLayout(new GridBagLayout());
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 0;
+        constraints.insets = new Insets(10, 10, 5, 10);
+        constraints.anchor = GridBagConstraints.WEST;
+        add(labelProxy, constraints);
 
-		constraints.gridx += 1;
-		constraints.weightx = 1;
+        constraints.gridx += 1;
+        constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-		add(textProxy, constraints);
+        add(textProxy, constraints);
 
-		constraints.gridy += 1;
-		constraints.gridx = 0;
-		constraints.weightx = 0;
-		add(labelDownload, constraints);
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(labelDownload, constraints);
 
-		constraints.gridx = 1;
-		constraints.weightx = 1;
+        constraints.gridx = 1;
+        constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-		add(textDownload, constraints);
+        add(textDownload, constraints);
 
-		constraints.gridy += 1;
-		constraints.gridx = 0;
-		constraints.weightx = 0;
-		add(labelDirectory, constraints);
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(labelDirectory, constraints);
 
-		constraints.gridx = 1;
-		constraints.weightx = 1;
+        constraints.gridx = 1;
+        constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-		add(textDirectory, constraints);
+        add(textDirectory, constraints);
 
-		constraints.gridy += 1;
-		constraints.gridx = 0;
-		constraints.weightx = 0;
-		constraints.gridwidth = 2;
-		constraints.anchor = GridBagConstraints.CENTER;
-		add(buttonSave, constraints);
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        constraints.gridwidth = 2;
+        constraints.anchor = GridBagConstraints.CENTER;
+        add(buttonSave, constraints);
 
-		buttonSave.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				try {
-					saveProperties();
+        buttonSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                try {
+                    saveProperties();
                     dispose();
-				} catch (IOException ex) {
-					JOptionPane.showMessageDialog(HyperFindProperty.this, 
-							"Error saving properties file: " + ex.getMessage());
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(HyperFindProperty.this,
+                            "Error saving properties file: " + ex.getMessage());
                     dispose();
-				}
-			}
+                }
+            }
 
-		});
+        });
 
-		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		pack();
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        pack();
         setSize(500, 200);
-		setLocationRelativeTo(null);
-		setVisible(true);
+        setLocationRelativeTo(null);
+        setVisible(true);
 
-		try {
-			loadProperties();
-		} catch (IOException ex) {
+        try {
+            loadProperties();
+        } catch (IOException ex) {
             ex.printStackTrace();
-		}
-		textProxy.setText(configProps.getProperty("proxyIP"));
-		textDownload.setText(configProps.getProperty("downloadResults"));
-		textDirectory.setText(configProps.getProperty("downloadDirectory"));
-	}
+        }
+        textProxy.setText(configProps.getProperty("proxyIP"));
+        textDownload.setText(configProps.getProperty("downloadResults"));
+        textDirectory.setText(configProps.getProperty("downloadDirectory"));
+    }
 
-	private void loadProperties() throws IOException {
-		Properties defaultProps = new Properties();
-		// sets default properties
-		defaultProps.setProperty("proxyIP", "");
-		defaultProps.setProperty("downloadResults", "false");
-		defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
-		configProps = new Properties(defaultProps);
+    private void loadProperties() throws IOException {
+        Properties defaultProps = new Properties();
+        // sets default properties
+        defaultProps.setProperty("proxyIP", "");
+        defaultProps.setProperty("downloadResults", "false");
+        defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
+        configProps = new Properties(defaultProps);
 
-		// loads properties from file
-		InputStream inputStream = new FileInputStream(configFile);
-		configProps.load(inputStream);
-		inputStream.close();
-	}
+        if (configFile.exists()) {
+            // loads properties from file
+            try (InputStream inputStream = new FileInputStream(configFile)) {
+                configProps.load(inputStream);
+            }
+        }
+    }
 
-	private void saveProperties() throws IOException {
-		configProps.setProperty("proxyIP", textProxy.getText());
-		configProps.setProperty("downloadResults", textDownload.getText());
-		configProps.setProperty("downloadDirectory", textDirectory.getText());
-		OutputStream outputStream = new FileOutputStream(configFile);
-		configProps.store(outputStream, "hyperfind settings");
-		outputStream.close();
-	}
+    private void saveProperties() throws IOException {
+        configProps.setProperty("proxyIP", textProxy.getText());
+        configProps.setProperty("downloadResults", textDownload.getText());
+        configProps.setProperty("downloadDirectory", textDirectory.getText());
+        try (OutputStream outputStream = new FileOutputStream(configFile)) {
+            configProps.store(outputStream, "hyperfind settings");
+        }
+    }
 
     public String getProxyIP() {
         return textProxy.getText();
     }
 
     public Boolean checkDownload() {
-       return Boolean.parseBoolean(textDownload.getText().toLowerCase());
+        return Boolean.parseBoolean(textDownload.getText().toLowerCase());
     }
 
     public String getDownloadDirectory() {
