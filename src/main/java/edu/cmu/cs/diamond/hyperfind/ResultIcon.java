@@ -80,10 +80,10 @@ class ResultIcon {
         try {
             check =
             ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
-                        "resources/check.png")); 
+                        "check.png"));
             cross =
             ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
-                        "resources/cross.png"));
+                        "cross.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }

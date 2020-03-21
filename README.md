@@ -2,50 +2,16 @@
 
 HyperFind is a GUI client application for performing search on non-indexed data in [OpenDiamond](http://diamond.cs.cmu.edu/) system. It is primarily designed to search images but can also be used for other data types.
 
-## Install with Apt
-
-Add the GPG key
-```bash
-wget -qO- http://diamond.cs.cmu.edu/packages/zf.key | sudo apt-key add -
-```
-
-Add the following line to file `/etc/apt/sources.list.d/opendiamond.list`:
-```
-deb http://diamond.cs.cmu.edu/packages <xenial|bionic> main
-```
-Choose your distribution accordingly. We currently support Ubuntu 16.04 (xenial) and 18.04 (bionic).
-
-Finally,
-```bash
-sudo apt-get update
-sudo apt-get install hyperfind
-# Create directory used by hyperfind
-mkdir -p $HOME/.diamond
-# Start the GUI
-hyperfind
-```
-
-HyperFind depends on `openjdk-8-jre`.
-
-
 ## Compile from Source
-
-Install `openjdk-8-jdk` and `ant`.
-
-Install `opendiamond.jar` following steps at [cmusatyalab/opendiamond-java](https://github.com/cmusatyalab/opendiamond-java)
 
 Clone and compile:
 ```bash
-git clone https://github.com/cmusatyalab/hyperfind.git
-cd hyperfind
-ant
 # Create directory used by hyperfind
 mkdir -p $HOME/.diamond
-```
 
-Start the GUI:
-```bash
-./hyperfind
+git clone https://github.com/cmusatyalab/hyperfind.git
+cd hyperfind
+./gradlew run
 ```
 
 ## Other Artifacts for Running HyperFind
@@ -98,8 +64,13 @@ To do so, you should enable X11 forwarding in your SSH connection and install a 
 (e.g., Xming on Windows, Xquartz on MacOS).
 
 ### Hyperfind Configuration Settings
-Hyperfind configuration file can be found in [config.properties](src/resources/config.properties)\
+Hyperfind reads configuration from $HOME/.diamond/hyperfind.properties
 proxyIP=172.xx.xx.xxx :arrow_right: IP Address of Proxy Server  
 downloadResults=true :arrow_right: Will enable download of user-marked images to directory `downloadDirectory` 
 downloadDirectory=/\<download-path\> :arrow_right: Path to download images. If empty images are stores in `$HOME`   
+
+### Depending a local build of OpenDiamond-Java
+- Publish your local copy to by running `./gradlew publishToMavenLocal` in the opendiamond-java repo
+- Uncomment the `mavenLocal()` line in build.gradle in this repository
+- Update the version of `edu.cmu.cs.diamond.opendiamond:opendiamond-java` dependency in the build.gradle file in this repository to that of your local copy
 
