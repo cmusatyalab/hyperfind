@@ -52,17 +52,15 @@ import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -109,6 +107,10 @@ public class ThumbnailBox extends JPanel {
     final private StatisticsArea statsArea;
 
     private ScheduledExecutorService timerExecutor;
+
+    private ExecutorService labelExecutor;
+    private final AtomicInteger runningJobs = new AtomicInteger(0);
+    private final ConcurrentMap<ObjectIdentifier, ResultType> labelsToSend = new ConcurrentHashMap<>();
 
     private ScheduledFuture<?> statsTimerFuture;
 
@@ -354,9 +356,30 @@ public class ThumbnailBox extends JPanel {
                                 new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
                         }
                     }
-                    
-
+                    labelsToSend.put(r.getObjectIdentifier(), cmd);
                 }
+
+                if (runningJobs.getAndUpdate(i -> Math.min(2, i + 1)) < 2) {
+                    labelExecutor.execute(() -> {
+                        try {
+                            Map<ObjectIdentifier, ResultType> toSend = new HashMap<>(labelsToSend);
+                            Set<LabeledExample> examples = toSend.entrySet().stream()
+                                    .map(ex -> {
+                                        int value = ex.getValue().equals(ResultType.Ignore) ? -1 : ex.getValue().getValue();
+                                        return new LabeledExample(ex.getKey(), value);
+                                    })
+                                    .collect(Collectors.toSet());
+
+                            search.labelExamples(examples);
+                            toSend.forEach(labelsToSend::remove);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            runningJobs.decrementAndGet();
+                        }
+                    });
+                }
+
                 repaint();
             }
         };
@@ -512,6 +535,7 @@ public class ThumbnailBox extends JPanel {
 		startTime = System.nanoTime();
 		timer.start(); 
         startStatsTimer();
+        labelExecutor = Executors.newSingleThreadExecutor();
 
         for (int l=0; l < resultLists.size(); l++) {
             DefaultListModel model = new DefaultListModel();
@@ -693,6 +717,11 @@ public class ThumbnailBox extends JPanel {
 
                                 if (timerExecutor != null) {
                                     timerExecutor.shutdownNow();
+                                }
+
+                                if (labelExecutor != null) {
+                                    labelExecutor.shutdownNow();
+                                    labelsToSend.clear();
                                 }
 
                                 if (statsTimerFuture != null) {
