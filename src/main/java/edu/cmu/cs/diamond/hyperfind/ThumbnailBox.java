@@ -707,12 +707,7 @@ public class ThumbnailBox extends JPanel {
                             @Override
                             public void run() {
                                 if (search != null) {
-                                    try {
-                                        search.close();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                        Thread.currentThread().interrupt();
-                                    }
+                                    search.close();
                                 }
 
                                 if (timerExecutor != null) {
