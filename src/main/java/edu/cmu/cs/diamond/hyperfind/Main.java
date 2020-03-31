@@ -40,32 +40,25 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Toolkit;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
+import edu.cmu.cs.diamond.opendiamond.*;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.Base64;
+import java.util.List;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-
-import edu.cmu.cs.diamond.opendiamond.*;
-
-import java.io.FileWriter;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * The Main class.
@@ -426,6 +419,7 @@ public final class Main {
             }
         });
 
+        ExecutorService downloadExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -439,29 +433,37 @@ public final class Main {
                         String downloadDir = m.properties.getDownloadDirectory();
                         List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir) 
                                                                 : null;
-                        for (Map.Entry<String, FeedbackObject> item : map.entrySet()) {
-                            FeedbackObject object = item.getValue();
-                            System.out.println("Downloaded item: "+item.getKey());
-                            ObjectIdentifier identifier = object.getObjectIdentifier();
-                            BufferedImage img = Util
-                                    .extractImageFromResultIdentifier(identifier, m.codecFactory);
 
-                            //Download Image with the same filename as ObjectID
-                            //Block start
-                            String[] name_splits = (identifier.getObjectID()).split("/");
-                            String filename = name_splits[name_splits.length -1];
-                            filename = filename.substring(0,filename.length()-4)+".png";
-                            File f = new File(dirPaths.get(object.label), "hyperfind_export_"+ filename);
-                            //Block end
-                            //UNCOMMENT for RANDOM file name 
-                            //f = File.createTempFile("hyperfind-export-",
-                            //        ".png", new File(dirPaths.get(object.label)));
-                            if(f.createNewFile()) {
-                                ImageIO.write(img, "png", f);
-                            }
+                        List<? extends Future<?>> imageFutures = map.entrySet().stream()
+                                .map(item -> downloadExecutor.submit(() -> {
+                                    FeedbackObject object = item.getValue();
+                                    System.out.println("Downloaded item: " + item.getKey());
+                                    ObjectIdentifier identifier = object.getObjectIdentifier();
+                                    try {
+                                        BufferedImage img = Util
+                                                .extractImageFromResultIdentifier(identifier, m.codecFactory);
+
+                                        //Download Image with the same filename as ObjectID
+                                        //Block start
+                                        String[] name_splits = (identifier.getObjectID()).split("/");
+                                        String filename = name_splits[name_splits.length - 1];
+                                        filename = filename.substring(0, filename.length() - 4) + ".png";
+                                        File f = new File(dirPaths.get(object.label), "hyperfind_export_" + filename);
+                                        //Block end
+                                        //UNCOMMENT for RANDOM file name
+                                        //f = File.createTempFile("hyperfind-export-",
+                                        //        ".png", new File(dirPaths.get(object.label)));
+                                        if (f.createNewFile()) {
+                                            ImageIO.write(img, "png", f);
+                                        }
+                                    } catch (IOException ex) {
+                                        throw new RuntimeException("Failed to download image ", ex);
+                                    }
+                                })).collect(Collectors.toList());
+                        for (Future<?> f : imageFutures) {
+                            f.get();
                         }
-                    }
-                    catch (IOException e1) {
+                    } catch (InterruptedException | ExecutionException | IOException e1) {
                         e1.printStackTrace();
                     }
                 }
