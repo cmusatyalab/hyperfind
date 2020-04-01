@@ -70,7 +70,14 @@ downloadResults=true :arrow_right: Will enable download of user-marked images to
 downloadDirectory=/\<download-path\> :arrow_right: Path to download images. If empty images are stores in `$HOME`   
 
 ### Depending a local build of OpenDiamond-Java
+
+Option 1: Use Local Maven
+
 - Publish your local copy to by running `./gradlew publishToMavenLocal` in the opendiamond-java repo
 - Uncomment the `mavenLocal()` line in build.gradle in this repository
 - Update the version of `edu.cmu.cs.diamond.opendiamond:opendiamond-java` dependency in the build.gradle file in this repository to that of your local copy
 
+Option 2: Directly use build directory
+
+- Build your local copy to by running `./gradlew build` in the opendiamond-java repo
+- Uncomment the last two lines in the dependency block in hyperfind's build.gradle

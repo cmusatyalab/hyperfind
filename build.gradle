@@ -7,7 +7,6 @@ repositories {
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
-    // mavenLocal()
 }
 
 sourceCompatibility = '11'
@@ -19,7 +18,12 @@ dependencies {
     implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
     implementation 'com.sun.xml.bind:jaxb-impl:2.3.1'
     implementation 'org.swinglabs:swingx:1.6.1'
+
     implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java:v8.1.1-2-g34a8fba-SNAPSHOT'
+
+    // Uncomment to use local opendiamond-java placed in the same parent directory
+    // implementation fileTree(dir: '../opendiamond-java/build/libs', include: '*.jar')
+    // implementation 'javax.xml.bind:jaxb-api:2.3.1'
 }
 
 run {
