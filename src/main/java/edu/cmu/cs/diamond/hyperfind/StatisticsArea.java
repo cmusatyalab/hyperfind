@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,20 +40,15 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
 import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
 
-import java.awt.*;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
+import java.awt.*;
+import java.util.Map;
+import java.util.Optional;
 
-final class StatisticsArea extends JPanel{
+final class StatisticsArea extends JPanel {
 
     private static final int PREFERRED_WIDTH = 300;
 
@@ -73,8 +68,8 @@ final class StatisticsArea extends JPanel{
         setLayout(new BorderLayout());
 
         display.setEditable(false);
-        display.setFont(display.getFont().deriveFont(Font.BOLD,16f));
-	    clear();
+        display.setFont(display.getFont().deriveFont(Font.BOLD, 16f));
+        clear();
 
         JScrollPane jsp = new JScrollPane(display,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
@@ -88,51 +83,61 @@ final class StatisticsArea extends JPanel{
     }
 
     public void clear() {
-        setNumbers(0, 0, 0, 0, 0, 0, 0);
+        setNumbers(0, 0, 0, 0, 0, 0, 0, Optional.empty());
     }
 
-    public String getStatistics(){
+    public String getStatistics() {
         return currentString;
     }
 
-    private void setNumbers(long total, long searched, long dropped, long displayed, long true_positives, long false_negatives, long false_display) {
+    private void setNumbers(long total, long searched, long dropped, long displayed, long true_positives, long false_negatives, long false_display, Optional<DelphiModelStatistics> modelStatistics) {
         long passed = searched - dropped;
         StringBuilder str_display = new StringBuilder();
         str_display.append(String.format("\n %0$-17s %d\n", "Total", total));
         str_display.append(String.format("\n %0$-14s %d\n", "Searched", searched));
-        str_display.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f*dropped/searched));
-        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", passed, 100f*passed/searched));
-        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed, 100f*displayed/searched));
-        if (true_positives>0 || false_negatives>0 || false_display>0) {
+        str_display.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f * dropped / searched));
+        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", passed, 100f * passed / searched));
+        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed, 100f * displayed / searched));
+
+        if (true_positives > 0 || false_negatives > 0 || false_display > 0) {
             str_display.append(String.format("\n x------- AUGMENTED --------x \n"));
             long labeled_total = true_positives + false_negatives + false_display;
             str_display.append(String.format("\n %0$-18s %d \n", "True Positives", true_positives));
             str_display.append(String.format("\n %0$-18s %d \n", "FN Displayed", false_display));
             str_display.append(String.format("\n %0$-17s %d \n", "FN Dropped", false_negatives));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f*true_positives/displayed));
-            str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Curr. Recall", true_positives, labeled_total, 100f*true_positives/labeled_total));
+            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f * true_positives / displayed));
+            str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Curr. Recall", true_positives, labeled_total, 100f * true_positives / labeled_total));
         }
+
+        if (modelStatistics.isPresent()) {
+            str_display.append(String.format("\n x------- MODEL STATISTICS --------x \n"));
+            str_display.append(String.format("\n %0$-18s %d \n", "Model Version", modelStatistics.get().getLastModelVersion()));
+            str_display.append(String.format("\n %0$-18s %d \n", "Test Set Size", modelStatistics.get().getTestExamples()));
+            str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", modelStatistics.get().getPrecision() * 100));
+            str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", modelStatistics.get().getRecall() * 100));
+            str_display.append(String.format("\n %0$-17s %.1f \n", "Test Set F1 Score", modelStatistics.get().getF1Score() * 100));
+        }
+
         display.setText(str_display.toString());
         currentString = str_display.toString();
     }
 
 
-    public void update(Map<String, ServerStatistics> serverStats, 
-        long displayed, long sampled_positive, long sampled_negative) {
+    public void update(Map<String, ServerStatistics> serverStats, long displayed, long sampledPositive, long sampledNegative, long discardedPositives, Optional<DelphiModelStatistics> modelStatistics) {
         long t = 0;
         long s = 0;
         long d = 0;
-	    long p = 0;
+        long p = 0;
         long n = 0;
         for (ServerStatistics ss : serverStats.values()) {
             Map<String, Long> map = ss.getServerStats();
             t += map.get(ss.TOTAL_OBJECTS);
             s += map.get(ss.PROCESSED_OBJECTS);
-            d += map.get(ss.DROPPED_OBJECTS);
+            d += (map.get(ss.DROPPED_OBJECTS)  + discardedPositives);
             p += map.get(ss.TP_OBJECTS);
             n += map.get(ss.FN_OBJECTS);
         }
-        setNumbers(t, s, d, displayed, sampled_positive, n, sampled_negative);
+        setNumbers(t, s, d, displayed, sampledPositive, n, sampledNegative, modelStatistics);
         //System.out.println(String.format("Server \n Total %d\n Processed %d \n Dropped %d \n Passed %d\n Sampled Neg %d ", 
         //    t, s, d, displayed, sampled_negative));
     }

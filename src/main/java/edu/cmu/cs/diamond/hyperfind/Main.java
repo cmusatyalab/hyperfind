@@ -385,6 +385,13 @@ public final class Main {
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
                     attributes.add("hyperfind.external-link");
+                    attributes.add("_delphi.system_examples");
+                    attributes.add("_delphi.should_discard.int");
+                    attributes.add("_delphi.model_version.int");
+                    attributes.add("_delphi.test_examples.int");
+                    attributes.add("_delphi.precision.double");
+                    attributes.add("_delphi.recall.double");
+                    attributes.add("_delphi.f1_score.double");
 
                     for (HyperFindSearchMonitor m : monitors) {
                         attributes.addAll(m.getPushAttributes());
