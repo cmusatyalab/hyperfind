@@ -350,7 +350,7 @@ public final class Main {
                 try {
                     // start search
                     proxyBox.setEnabled(false);
-                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload());
+                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<Filter>(
@@ -512,7 +512,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 PROXY_FLAG = proxyBox.isSelected() ? true : false;
                 try {
-                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload());
+                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     m.cookies = CookieMap.createDefaultCookieMap(
                                     PROXY_FLAG ? m.properties.getProxyIP() : null);
                 } catch (IOException e1) {

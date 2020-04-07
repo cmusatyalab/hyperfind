@@ -60,6 +60,8 @@ public class HyperFindProperty extends JFrame {
     private JTextField textProxy = new JTextField();
     private JTextField textDownload = new JTextField(); //TODO: Boolean Option
     private JTextField textDirectory = new JTextField();
+    private JCheckBox checkModelVersion = new JCheckBox("Color by Model Version");
+
     private JButton buttonSave = new JButton("Save");
 
     public HyperFindProperty() {
@@ -101,6 +103,11 @@ public class HyperFindProperty extends JFrame {
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
+        add(checkModelVersion, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
         constraints.gridwidth = 2;
         constraints.anchor = GridBagConstraints.CENTER;
         add(buttonSave, constraints);
@@ -134,6 +141,7 @@ public class HyperFindProperty extends JFrame {
         textProxy.setText(configProps.getProperty("proxyIP"));
         textDownload.setText(configProps.getProperty("downloadResults"));
         textDirectory.setText(configProps.getProperty("downloadDirectory"));
+        checkModelVersion.setSelected(Boolean.parseBoolean(configProps.getProperty("colorByModelVersion")));
     }
 
     private void loadProperties() throws IOException {
@@ -142,6 +150,7 @@ public class HyperFindProperty extends JFrame {
         defaultProps.setProperty("proxyIP", "");
         defaultProps.setProperty("downloadResults", "false");
         defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
+        defaultProps.setProperty("colorByModelVersion", "false");
         configProps = new Properties(defaultProps);
 
         if (configFile.exists()) {
@@ -156,6 +165,7 @@ public class HyperFindProperty extends JFrame {
         configProps.setProperty("proxyIP", textProxy.getText());
         configProps.setProperty("downloadResults", textDownload.getText());
         configProps.setProperty("downloadDirectory", textDirectory.getText());
+        configProps.setProperty("colorByModelVersion", Boolean.toString(checkModelVersion.isSelected()));
         try (OutputStream outputStream = new FileOutputStream(configFile)) {
             configProps.store(outputStream, "hyperfind settings");
         }
@@ -171,5 +181,9 @@ public class HyperFindProperty extends JFrame {
 
     public String getDownloadDirectory() {
         return textDirectory.getText();
+    }
+
+    public boolean colorByModelVersion() {
+        return checkModelVersion.isSelected();
     }
 }

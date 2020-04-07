@@ -131,6 +131,8 @@ public class ThumbnailBox extends JPanel {
 
     private final JPopupMenu popupMenu;
 
+    private boolean colorByModelVersion;
+
     private long startTime;
 
     private Timer timer;
@@ -164,6 +166,7 @@ public class ThumbnailBox extends JPanel {
         this.statsArea = statsArea;
         this.resultLists = new ArrayList<JList>();
         this.resultsPerScreen = resultsPerScreen;
+        this.colorByModelVersion = colorByModelVersion;
 
         this.popupMenu = new JPopupMenu();
 
@@ -241,9 +244,10 @@ public class ThumbnailBox extends JPanel {
         setPopUpMenu();
     }
 
-    public void setConfig(Boolean flag, Boolean downloadResults) {
+    public void setConfig(Boolean flag, boolean downloadResults, boolean colorByModelVersion) {
         this.PROXY_FLAG = flag;
         this.downloadResults = downloadResults;
+        this.colorByModelVersion = colorByModelVersion;
     }
 
     //Scroll the resultPane to bottom if no item selected
@@ -587,7 +591,7 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             if (r.getKeys().contains("_delphi.system_examples")) {
-                                Map<String, ImageIcon> images = new HashMap<>();
+                                Map<String, BufferedImage> images = new HashMap<>();
                                 Map<String, Map<String, ?>> metadata = new HashMap<>();
 
                                 try (ZipInputStream zi = new ZipInputStream(new ByteArrayInputStream(r.getValue("_delphi.system_examples")))) {
@@ -596,7 +600,7 @@ public class ThumbnailBox extends JPanel {
                                         String[] splits = zipEntry.getName().split("/");
                                         String filename = splits[splits.length - 1];
                                         if (filename.endsWith(".jpg")) {
-                                            images.put(filename.substring(0, filename.length() - 4), new ImageIcon(ImageIO.read(zi)));
+                                            images.put(filename.substring(0, filename.length() - 4), ImageIO.read(zi));
                                         } else {
                                             metadata.put(filename, new Gson().fromJson(new InputStreamReader(zi, StandardCharsets.UTF_8), Map.class));
                                         }
@@ -610,10 +614,16 @@ public class ThumbnailBox extends JPanel {
                                             double confidence = ((Number) imageMetadata.get("confidence")).doubleValue();
                                             Result result = new Result(new ObjectIdentifier(objectId, r.getObjectIdentifier().getDeviceName(), r.getObjectIdentifier().getHostname()));
 
+                                            BufferedImage image = images.get(e.getKey());
+                                            if (colorByModelVersion) {
+                                                int modelVersion = ((Number) imageMetadata.get("model_version")).intValue();
+                                                drawBorder(image.createGraphics(), Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), image.getWidth(), image.getHeight(), 10);
+                                            }
+
                                             return new ResultIcon(
                                                     new HyperFindResult(activePredicateSet, result),
                                                     objectId,
-                                                    images.get(e.getKey()),
+                                                    new ImageIcon(image),
                                                     ResultIconSetting.ICON_ONLY,
                                                     confidence > 0.5 ? 1 : 0
                                             );
@@ -708,13 +718,16 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             if (r.getKeys().contains("_gt_label")) {
-                                drawBorder(g, Color.RED, origW, origH);
+                                drawBorder(g, Color.RED, origW, origH, 80);
 
                                 if (score == 0) {
                                     sampledFNCount += 1;
                                 } else {
                                     sampledTPCount += 1;
                                 }
+                            } else if (colorByModelVersion && r.getKeys().contains("_delphi.model_version.int")) {
+                                int modelVersion = Util.extractInt(r.getValue("_delphi.model_version.int"));
+                                drawBorder(g, Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), origW, origH, 80);
                             }
 
                             g.dispose();
@@ -849,10 +862,9 @@ public class ThumbnailBox extends JPanel {
         g.draw(r);
     }
 
-    private void drawBorder(Graphics2D g, Color c, int width, int height) {
+    private void drawBorder(Graphics2D g, Color c, int width, int height, int thickness) {
         Stroke currentStroke = g.getStroke();
         g.setColor(c);
-        int thickness = 80;
         g.setStroke(new BasicStroke(thickness));
         Rectangle r = new Rectangle(0, 0, width, height);
         g.draw(r);
