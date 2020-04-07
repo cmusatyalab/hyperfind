@@ -78,74 +78,47 @@ public class ThumbnailBox extends JPanel {
     public static final int NUM_PANELS = 2;
 
     private static final long NANOSEC_PER_MILLI = (long) 1e6;
-
     private static final int PREFERRED_WIDTH = 750;
+    private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null, null, null);
+    private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP = new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
-    private static long sampledTPCount = 0;
+    public final List<JList<ResultIcon>> resultLists;
 
-    private static long sampledFNCount = 0;
-
-    private static long discardedPositivesCount = 0;
-
-    private static final AtomicReference<DelphiModelStatistics> modelStats = new AtomicReference<>();
-
-    private static volatile boolean pauseState = false;
-
+    private final StatisticsBar stats;
+    private final StatisticsArea statsArea;
+    private final JButton stopButton;
+    private final JButton startButton;
+    private final JButton retrainButton;
+    private final JButton moreResultsButton;
+    private final JLabel timeLabel;
+    private final JPopupMenu popupMenu;
+    private final ConcurrentMap<ObjectIdentifier, ResultType> labelsToSend = new ConcurrentHashMap<>();
+    private final Map<Integer, JScrollPane> resultPanes = new HashMap<>();
+    private final Map<String, FeedbackObject> feedbackItems = new HashMap<>();
+    private final AtomicReference<DelphiModelStatistics> modelStats = new AtomicReference<>();
+    private final AtomicInteger runningJobs = new AtomicInteger(0);
     private final int resultsPerScreen;
 
-    private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null,
-            null, null);
-
-    private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP =
-            new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
-
-    private static Boolean PROXY_FLAG;
-
-    private static Boolean downloadResults = false;
+    private volatile boolean pauseState = false;
 
     private Search search;
-
-    final private StatisticsBar stats;
-
-    final private StatisticsArea statsArea;
-
     private ScheduledExecutorService timerExecutor;
-
     private ExecutorService labelExecutor;
-    private final AtomicInteger runningJobs = new AtomicInteger(0);
-    private final ConcurrentMap<ObjectIdentifier, ResultType> labelsToSend = new ConcurrentHashMap<>();
-
     private ScheduledFuture<?> statsTimerFuture;
 
-    private final JButton stopButton;
-
-    private final JButton startButton;
-
-    private final JButton retrainButton;
-
-    private final JButton moreResultsButton;
-
-    public final List<JList> resultLists;
-
-    private final JLabel timeLabel;
-
-    private final JPopupMenu popupMenu;
-
+    private long sampledTPCount = 0;
+    private long sampledFNCount = 0;
+    private long discardedPositivesCount = 0;
+    private boolean proxyFlag;
+    private boolean downloadResults;
     private boolean colorByModelVersion;
 
     private long startTime;
-
     private Timer timer;
-
     private SwingWorker<?, ?> workerFuture;
-
     private SwingWorker<?, ?> retrainWorker;
-
     private List<HyperFindSearchMonitor> searchMonitors;
 
-    private HashMap<Integer, JScrollPane> resultPanes;
-
-    private HashMap<String, FeedbackObject> feedbackItems;
 
     /**
      * @param stopButton
@@ -155,24 +128,16 @@ public class ThumbnailBox extends JPanel {
      * @param statsArea        Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
-    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton,
-                        StatisticsBar stats, StatisticsArea statsArea, final int resultsPerScreen) {
-        super();
-
+    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton, StatisticsBar stats,
+                        StatisticsArea statsArea, int resultsPerScreen) {
         this.stopButton = stopButton;
         this.startButton = startButton;
         this.retrainButton = retrainButton;
         this.stats = stats;
         this.statsArea = statsArea;
-        this.resultLists = new ArrayList<JList>();
+        this.resultLists = new ArrayList<>();
         this.resultsPerScreen = resultsPerScreen;
-        this.colorByModelVersion = colorByModelVersion;
-
         this.popupMenu = new JPopupMenu();
-
-        this.resultPanes = new HashMap<>();
-        this.feedbackItems = new HashMap<String, FeedbackObject>();
-        this.PROXY_FLAG = false;
 
         setUpResultLists();
 
@@ -185,49 +150,6 @@ public class ThumbnailBox extends JPanel {
         // Scrolling panel for results
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-
-        /*
-         * Creating three panels for result display
-         * ----------------------------------------
-         * highPanel : Results of High Confidence displayed
-         * midPanel  : Results of Moderate Confidence 
-                        requiring user annotaion / AL displayed
-         * lowPanel  : Results of Low Confidence or False Negatives displayed
-         */
-
-
-        /*
-            Box b = Box.createHorizontalBox();
-            JScrollPane lowPanel = new JScrollPane(resultLists.get(0));
-            JScrollPane highPanel = new JScrollPane(resultLists.get(1));
-            JScrollPane midPanel = new JScrollPane(resultLists.get(2));
-
-            resultPanes.put(ResultType.Negative.getValue(), lowPanel);
-            resultPanes.put(ResultType.Positive.getValue(), highPanel);
-            resultPanes.put(ResultType.Ignore.getValue(), midPanel);
-
-            //highPanel Configurations
-            highPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-            highPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-            highPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            highPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-            //midPanel Configurations
-            midPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-            midPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-            //lowPanel Configurations
-            lowPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-            lowPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-            lowPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            lowPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-            b.add(highPanel);
-            b.add(midPanel);
-            b.add(lowPanel);
-            panel.add(b);
-
-        */
         
         /*
          * Creating two panels for result display
@@ -259,8 +181,7 @@ public class ThumbnailBox extends JPanel {
         panel.add(b);
 
         // "Get Next xxx result" button
-        moreResultsButton = new JButton("Get next " + resultsPerScreen
-                + " results");
+        moreResultsButton = new JButton(String.format("Get next  %d results", resultsPerScreen));
         moreResultsButton.setVisible(false);
 
         panel.add(moreResultsButton, BorderLayout.SOUTH);
@@ -277,7 +198,7 @@ public class ThumbnailBox extends JPanel {
     }
 
     public void setConfig(Boolean flag, boolean downloadResults, boolean colorByModelVersion) {
-        this.PROXY_FLAG = flag;
+        this.proxyFlag = flag;
         this.downloadResults = downloadResults;
         this.colorByModelVersion = colorByModelVersion;
     }
@@ -358,8 +279,8 @@ public class ThumbnailBox extends JPanel {
         };
 
         for (int l = 0; l < NUM_PANELS; l++) {
-            JList list = new JList();
-            list.setModel(new DefaultListModel());
+            JList<ResultIcon> list = new JList<>();
+            list.setModel(new DefaultListModel<>());
             list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
             list.setDragEnabled(true);
             list.setCellRenderer(new SearchPanelCellRenderer());
@@ -368,7 +289,7 @@ public class ThumbnailBox extends JPanel {
             list.addListSelectionListener(selectListener);
             list.addMouseListener(popClick);
             list.addKeyListener(clearSelected);
-            this.resultLists.add(list);
+            resultLists.add(list);
         }
     }
 
@@ -376,13 +297,12 @@ public class ThumbnailBox extends JPanel {
         ActionListener popUpListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 ResultType cmd = ResultType.valueOf(e.getActionCommand());
-                List<Object> valuesSelected = new ArrayList<Object>();
+                List<ResultIcon> valuesSelected = new ArrayList<>();
                 for (int i = 0; i < NUM_PANELS; i++) {
-                    JList list = (JList) resultLists.get(i);
+                    JList<ResultIcon> list = resultLists.get(i);
                     valuesSelected.addAll(list.getSelectedValuesList());
                 }
-                for (Object o : valuesSelected) {
-                    ResultIcon icon = (ResultIcon) o;
+                for (ResultIcon icon : valuesSelected) {
                     icon.drawOverlay(cmd);
                     Result r = icon.getResult().getResult();
                     byte[] fv = r.getValue("feature_vector.json");
@@ -391,8 +311,7 @@ public class ThumbnailBox extends JPanel {
                         feedbackItems.remove(icon.getName());
                     } else {
                         if ((fv != null && fv.length != 0) || downloadResults) {
-                            feedbackItems.put(icon.getName(),
-                                    new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
+                            feedbackItems.put(icon.getName(), new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
                         }
                     }
                     labelsToSend.put(r.getObjectIdentifier(), cmd);
@@ -459,12 +378,6 @@ public class ThumbnailBox extends JPanel {
         this.timer.setInitialDelay(0);
     }
 
-    private double getTimeNow() {
-        long nowTime = System.nanoTime();
-        long timeElapsed = (nowTime - startTime) / NANOSEC_PER_MILLI;
-        return (timeElapsed / 1000.) / 60.;
-    }
-
     private void startStatsTimer() {
         timerExecutor = Executors.newSingleThreadScheduledExecutor();
         statsTimerFuture = timerExecutor.scheduleWithFixedDelay(new Runnable() {
@@ -529,7 +442,7 @@ public class ThumbnailBox extends JPanel {
                     moreResultsButton.doClick();
                     pauseState = true;
                     for (int l = 0; l < resultLists.size(); l++) {
-                        DefaultListModel model = (DefaultListModel) resultLists.get(l).getModel();
+                        DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultLists.get(l).getModel();
                         model.removeAllElements();
                     }
                     moreResultsButton.setVisible(false);
@@ -541,7 +454,7 @@ public class ThumbnailBox extends JPanel {
                     System.out.println("Retrain finish !");
                     clearFeedBackItems();
                     pauseState = false;
-                } catch (final IOException e) {
+                } catch (IOException e) {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
@@ -557,17 +470,18 @@ public class ThumbnailBox extends JPanel {
     }
 
     // called on AWT thread
-    public void start(Search s, final ActivePredicateSet activePredicateSet,
-                      final List<HyperFindSearchMonitor> monitors) {
+    public void start(Search s, ActivePredicateSet activePredicateSet, List<HyperFindSearchMonitor> monitors) {
         stats.setDone();
         statsArea.setDone();
         search = s;
         searchMonitors = monitors;
         startButton.setEnabled(false);
         stopButton.setEnabled(true);
-        if (PROXY_FLAG) {
+
+        if (proxyFlag) {
             retrainButton.setEnabled(true);
         }
+
         pauseState = false;
         sampledTPCount = 0;
         sampledFNCount = 0;
@@ -580,18 +494,17 @@ public class ThumbnailBox extends JPanel {
         labelExecutor = Executors.newSingleThreadExecutor();
 
         for (int l = 0; l < resultLists.size(); l++) {
-            DefaultListModel model = new DefaultListModel();
-            resultLists.get(l).setModel(model);
+            resultLists.get(l).setModel(new DefaultListModel<>());
         }
 
         // the tricky pausing, try to make it better with local variables
-        final AtomicInteger resultsLeftBeforePause = new AtomicInteger(
-                resultsPerScreen);
+        final AtomicInteger resultsLeftBeforePause = new AtomicInteger(resultsPerScreen);
         final Semaphore pauseSemaphore = new Semaphore(0);
 
         for (ActionListener a : moreResultsButton.getActionListeners()) {
             moreResultsButton.removeActionListener(a);
         }
+
         moreResultsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -627,7 +540,7 @@ public class ThumbnailBox extends JPanel {
                                 Map<String, Map<String, ?>> metadata = new HashMap<>();
 
                                 try (ZipInputStream zi = new ZipInputStream(new ByteArrayInputStream(r.getValue("_delphi.system_examples")))) {
-                                    ZipEntry zipEntry = null;
+                                    ZipEntry zipEntry;
                                     while ((zipEntry = zi.getNextEntry()) != null) {
                                         String[] splits = zipEntry.getName().split("/");
                                         String filename = splits[splits.length - 1];
@@ -684,29 +597,9 @@ public class ThumbnailBox extends JPanel {
                                 }
                             }
 
-                            int score = (r.getKeys().contains("_score.string")) ?
-                                    Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 0;
-                            /*
-
-                                int score = (r.getKeys().contains("_score.string")) ?
-                                        Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 2;
-
-                                if (score != 0) {
-                                    if (resultsLeftBeforePause.getAndDecrement() == 0) {
-                                        publish(PAUSE_RESULT);
-
-                                        pauseSemaphore.acquire();
-                                        continue;
-                                    }
-                                } else {
-                                    DefaultListModel model = (DefaultListModel) resultLists.get(0).getModel();
-                                    if (model.getSize() > 500) {
-                                        model.removeAllElements();
-                                    }
-                                    revalidate();
-                                    repaint();
-                                }
-                            */
+                            int score = (r.getKeys().contains("_score.string"))
+                                    ? Integer.parseInt(Util.extractString(r.getValue("_score.string")))
+                                    : 0;
 
                             if (resultsLeftBeforePause.getAndDecrement() == 0) {
                                 publish(PAUSE_RESULT);
@@ -724,8 +617,7 @@ public class ThumbnailBox extends JPanel {
                             byte[] thumbData = r.getValue("thumbnail.jpeg");
                             BufferedImage thumb = null;
                             if (thumbData != null) {
-                                ByteArrayInputStream in = new ByteArrayInputStream(
-                                        thumbData);
+                                ByteArrayInputStream in = new ByteArrayInputStream(thumbData);
                                 try {
                                     thumb = ImageIO.read(in);
                                 } catch (IOException e) {
@@ -744,14 +636,11 @@ public class ThumbnailBox extends JPanel {
                             g.setRenderingHint(
                                     RenderingHints.KEY_INTERPOLATION,
                                     RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                            int origW = Util
-                                    .extractInt(r.getValue("_cols.int"));
-                            int origH = Util
-                                    .extractInt(r.getValue("_rows.int"));
-                            g.scale((double) thumb.getWidth() /
-                                            (double) origW,
-                                    (double) thumb.getHeight() /
-                                            (double) origH);
+                            int origW = Util.extractInt(r.getValue("_cols.int"));
+                            int origH = Util.extractInt(r.getValue("_rows.int"));
+                            g.scale((double) thumb.getWidth() / (double) origW,
+                                    (double) thumb.getHeight() / (double) origH);
+
                             for (BufferedImage heatmap : regions.getHeatmaps()) {
                                 drawHeatmap(g, heatmap);
                             }
@@ -793,17 +682,7 @@ public class ThumbnailBox extends JPanel {
                                 }
                             }
 
-                            final ResultIcon resultIcon = new ResultIcon(
-                                    hr, r.getName(), new ImageIcon(thumb), d, score);
-                            /*
-                                if (score == 1) {
-                                    byte[] fv = r.getValue("feature_vector.json");
-                                    if (fv != null && fv.length != 0) {
-                                        feedbackItems.put(r.getName(),
-                                                new FeedbackObject(fv, score, r.getObjectIdentifier()));
-                                    }
-                                }
-                            */
+                            ResultIcon resultIcon = new ResultIcon(hr, r.getName(), new ImageIcon(thumb), d, score);
                             publish(resultIcon);
                         }
                     } finally {
@@ -887,8 +766,8 @@ public class ThumbnailBox extends JPanel {
                     } else {
                         /* Add newly fetched search result to result list */
                         int score = resultIcon.getScore(); //score in range 0-2
-                        score = (score==2) ? 0 : score;
-                        DefaultListModel model = (DefaultListModel) resultLists.get(score).getModel();
+                        score = (score == 2) ? 0 : score;
+                        DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultLists.get(score).getModel();
                         model.addElement(resultIcon);
                     }
                 }
@@ -929,7 +808,7 @@ public class ThumbnailBox extends JPanel {
 
             boolean hasStats = false;
             for (ServerStatistics s : serverStats.values()) {
-                if (s.getServerStats().get(s.TOTAL_OBJECTS) != 0) {
+                if (s.getServerStats().get(ServerStatistics.TOTAL_OBJECTS) != 0) {
                     hasStats = true;
                     break;
                 }
@@ -940,7 +819,7 @@ public class ThumbnailBox extends JPanel {
                     public void run() {
                         long passed = 0;
                         for (int l = 1; l < resultLists.size(); l++) {
-                            DefaultListModel model = (DefaultListModel) resultLists.get(l).getModel();
+                            ListModel<ResultIcon> model = resultLists.get(l).getModel();
                             passed += model.getSize();
                         }
                         stats.update(serverStats);
@@ -951,8 +830,7 @@ public class ThumbnailBox extends JPanel {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        stats
-                                .setIndeterminateMessage("Waiting for First Results");
+                        stats.setIndeterminateMessage("Waiting for First Results");
                     }
                 });
             }
