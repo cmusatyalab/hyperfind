@@ -75,11 +75,11 @@ import java.util.zip.ZipInputStream;
  */
 public class ThumbnailBox extends JPanel {
 
-    public static final int NUM_PANELS = 3;
+    public static final int NUM_PANELS = 2;
 
     private static final long NANOSEC_PER_MILLI = (long) 1e6;
 
-    private static final int PREFERRED_WIDTH = 275;
+    private static final int PREFERRED_WIDTH = 750;
 
     private static long sampledTPCount = 0;
 
@@ -195,35 +195,67 @@ public class ThumbnailBox extends JPanel {
          * lowPanel  : Results of Low Confidence or False Negatives displayed
          */
 
+
+        /*
+            Box b = Box.createHorizontalBox();
+            JScrollPane lowPanel = new JScrollPane(resultLists.get(0));
+            JScrollPane highPanel = new JScrollPane(resultLists.get(1));
+            JScrollPane midPanel = new JScrollPane(resultLists.get(2));
+
+            resultPanes.put(ResultType.Negative.getValue(), lowPanel);
+            resultPanes.put(ResultType.Positive.getValue(), highPanel);
+            resultPanes.put(ResultType.Ignore.getValue(), midPanel);
+
+            //highPanel Configurations
+            highPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+            highPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+            highPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            highPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            //midPanel Configurations
+            midPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            midPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            //lowPanel Configurations
+            lowPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+            lowPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+            lowPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            lowPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+
+            b.add(highPanel);
+            b.add(midPanel);
+            b.add(lowPanel);
+            panel.add(b);
+
+        */
+        
+        /*
+         * Creating two panels for result display
+         * ----------------------------------------
+         * leftPanel : Results for user labeling
+         * rightPanel: Results for user validation
+                        requiring user annotaion / AL displayed
+        */
+
         Box b = Box.createHorizontalBox();
+        JScrollPane leftPanel = new JScrollPane(resultLists.get(0));
+        JScrollPane rightPanel = new JScrollPane(resultLists.get(1));
 
-        JScrollPane lowPanel = new JScrollPane(resultLists.get(0));
-        JScrollPane highPanel = new JScrollPane(resultLists.get(1));
-        JScrollPane midPanel = new JScrollPane(resultLists.get(2));
+        resultPanes.put(0, leftPanel);
+        resultPanes.put(1, rightPanel);
 
-        resultPanes.put(ResultType.Negative.getValue(), lowPanel);
-        resultPanes.put(ResultType.Positive.getValue(), highPanel);
-        resultPanes.put(ResultType.Ignore.getValue(), midPanel);
+        //rightPanel Configurations
+        rightPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+        rightPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
+        rightPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        rightPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        //highPanel Configurations
-        highPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        highPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        highPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        highPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        //leftPanel Configurations
+        leftPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        leftPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        //midPanel Configurations
-        midPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        midPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-        //lowPanel Configurations
-        lowPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        lowPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        lowPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        lowPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-        b.add(highPanel);
-        b.add(midPanel);
-        b.add(lowPanel);
+        b.add(leftPanel);
+        b.add(rightPanel);
         panel.add(b);
 
         // "Get Next xxx result" button
@@ -625,6 +657,7 @@ public class ThumbnailBox extends JPanel {
                                                     objectId,
                                                     new ImageIcon(image),
                                                     ResultIconSetting.ICON_ONLY,
+                                                    1,
                                                     confidence > 0.5 ? 1 : 0
                                             );
                                         })
@@ -652,22 +685,34 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             int score = (r.getKeys().contains("_score.string")) ?
-                                    Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 2;
+                                    Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 0;
+                            /*
 
-                            if (score != 0) {
-                                if (resultsLeftBeforePause.getAndDecrement() == 0) {
-                                    publish(PAUSE_RESULT);
+                                int score = (r.getKeys().contains("_score.string")) ?
+                                        Integer.parseInt(Util.extractString(r.getValue("_score.string"))) : 2;
 
-                                    pauseSemaphore.acquire();
-                                    continue;
+                                if (score != 0) {
+                                    if (resultsLeftBeforePause.getAndDecrement() == 0) {
+                                        publish(PAUSE_RESULT);
+
+                                        pauseSemaphore.acquire();
+                                        continue;
+                                    }
+                                } else {
+                                    DefaultListModel model = (DefaultListModel) resultLists.get(0).getModel();
+                                    if (model.getSize() > 500) {
+                                        model.removeAllElements();
+                                    }
+                                    revalidate();
+                                    repaint();
                                 }
-                            } else {
-                                DefaultListModel model = (DefaultListModel) resultLists.get(0).getModel();
-                                if (model.getSize() > 500) {
-                                    model.removeAllElements();
-                                }
-                                revalidate();
-                                repaint();
+                            */
+
+                            if (resultsLeftBeforePause.getAndDecrement() == 0) {
+                                publish(PAUSE_RESULT);
+
+                                pauseSemaphore.acquire();
+                                continue;
                             }
 
                             HyperFindResult hr = new HyperFindResult(activePredicateSet, r);
@@ -719,12 +764,13 @@ public class ThumbnailBox extends JPanel {
 
                             if (r.getKeys().contains("_gt_label")) {
                                 drawBorder(g, Color.RED, origW, origH, 80);
-
-                                if (score == 0) {
-                                    sampledFNCount += 1;
-                                } else {
-                                    sampledTPCount += 1;
-                                }
+                                /*
+                                    if (score == 0) {
+                                        sampledFNCount += 1;
+                                    } else {
+                                        sampledTPCount += 1;
+                                    }
+                                */
                             } else if (colorByModelVersion && r.getKeys().contains("_delphi.model_version.int")) {
                                 int modelVersion = Util.extractInt(r.getValue("_delphi.model_version.int"));
                                 drawBorder(g, Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), origW, origH, 80);
@@ -749,14 +795,15 @@ public class ThumbnailBox extends JPanel {
 
                             final ResultIcon resultIcon = new ResultIcon(
                                     hr, r.getName(), new ImageIcon(thumb), d, score);
-
-                            if (score == 1) {
-                                byte[] fv = r.getValue("feature_vector.json");
-                                if (fv != null && fv.length != 0) {
-                                    feedbackItems.put(r.getName(),
-                                            new FeedbackObject(fv, score, r.getObjectIdentifier()));
+                            /*
+                                if (score == 1) {
+                                    byte[] fv = r.getValue("feature_vector.json");
+                                    if (fv != null && fv.length != 0) {
+                                        feedbackItems.put(r.getName(),
+                                                new FeedbackObject(fv, score, r.getObjectIdentifier()));
+                                    }
                                 }
-                            }
+                            */
                             publish(resultIcon);
                         }
                     } finally {
@@ -840,6 +887,7 @@ public class ThumbnailBox extends JPanel {
                     } else {
                         /* Add newly fetched search result to result list */
                         int score = resultIcon.getScore(); //score in range 0-2
+                        score = (score==2) ? 0 : score;
                         DefaultListModel model = (DefaultListModel) resultLists.get(score).getModel();
                         model.addElement(resultIcon);
                     }
