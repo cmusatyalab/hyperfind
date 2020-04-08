@@ -51,4 +51,8 @@ public interface OptionGroup {
 
     @Value.Parameter
     List<Option> options();
+
+    static OptionGroup of(String displayName, List<Option> options) {
+        return ImmutableOptionGroup.of(displayName, options);
+    }
 }

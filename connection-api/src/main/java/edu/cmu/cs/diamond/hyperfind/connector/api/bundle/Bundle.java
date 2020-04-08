@@ -61,4 +61,12 @@ public interface Bundle {
     @Value.Parameter
     FilterBuilder filterBuilder();
 
+    static Bundle of(String displayName,
+            BundleType type,
+            List<OptionGroup> options,
+            BundleState state,
+            FilterBuilder filterBuilder) {
+        return ImmutableBundle.of(displayName, type, options, state, filterBuilder);
+    }
+
 }

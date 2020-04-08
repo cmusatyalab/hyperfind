@@ -40,17 +40,20 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ExampleOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
-import java.util.*;
-
-import edu.cmu.cs.diamond.opendiamond.Bundle;
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
-import edu.cmu.cs.diamond.opendiamond.BundleType;
-import edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup;
-import edu.cmu.cs.diamond.opendiamond.bundle.Option;
-import edu.cmu.cs.diamond.opendiamond.bundle.ExampleOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class HyperFindPredicateFactory {
 
@@ -58,11 +61,11 @@ public class HyperFindPredicateFactory {
 
     private final boolean needsExamples;
 
-    private HyperFindPredicateFactory(Bundle bundle) throws IOException {
+    private HyperFindPredicateFactory(Bundle bundle) {
         this.bundle = bundle;
         boolean needsExamples = false;
-        for (OptionGroup group : bundle.getOptions()) {
-            for (Option option : group.getOptions()) {
+        for (OptionGroup group : bundle.options()) {
+            for (Option option : group.options()) {
                 if (option instanceof ExampleOption) {
                     needsExamples = true;
                 }
@@ -72,11 +75,11 @@ public class HyperFindPredicateFactory {
     }
 
     public String getDisplayName() {
-        return bundle.getDisplayName();
+        return bundle.displayName();
     }
 
     public BundleType getType() {
-        return bundle.getType();
+        return bundle.type();
     }
 
     public boolean needsExamples() {
@@ -87,43 +90,43 @@ public class HyperFindPredicateFactory {
         return new HyperFindPredicate(bundle);
     }
 
-    public HyperFindPredicate createHyperFindPredicate(
-            List<BufferedImage> examples) throws IOException {
+    public HyperFindPredicate createHyperFindPredicate(List<BufferedImage> examples) throws IOException {
         HyperFindPredicate predicate = createHyperFindPredicate();
         predicate.addExamples(examples);
         return predicate;
     }
 
-    public static HyperFindPredicate createHyperFindPredicate(
-            BundleFactory bundleFactory, URI uri) throws IOException {
-        // System.out.println("trying " + uri);
+    public static HyperFindPredicate createHyperFindPredicate(Connection connection, URI uri) throws IOException {
         InputStream in = uri.toURL().openStream();
-        Bundle bundle = bundleFactory.getBundle(in);
-        if (bundle.getType() != BundleType.PREDICATE) {
-            throw new IOException("Codecs cannot be imported at runtime.");
+        Bundle bundle = connection.getBundle(in);
+
+        if (bundle.type() != BundleType.PREDICATE) {
+            throw new IllegalArgumentException("Codecs cannot be imported at runtime.");
         }
+
         return new HyperFindPredicate(bundle);
     }
 
-    public static List<HyperFindPredicateFactory>
-            createHyperFindPredicateFactories(BundleFactory bundleFactory)
-            throws IOException {
+    public static List<HyperFindPredicateFactory> createHyperFindPredicateFactories(List<Bundle> bundles) {
         List<HyperFindPredicateFactory> factories =
                 new ArrayList<HyperFindPredicateFactory>();
 
-        for (Bundle b : bundleFactory.getBundles()) {
+        for (Bundle b : bundles) {
             factories.add(new HyperFindPredicateFactory(b));
         }
 
-        Collections.sort(factories,
-            new Comparator<HyperFindPredicateFactory>() {
-                @Override
-                public int compare(HyperFindPredicateFactory o1,
-                        HyperFindPredicateFactory o2) {
-                    return o1.getDisplayName().compareTo(o2.getDisplayName());
+        Collections.sort(
+                factories,
+                new Comparator<HyperFindPredicateFactory>() {
+                    @Override
+                    public int compare(
+                            HyperFindPredicateFactory o1,
+                            HyperFindPredicateFactory o2) {
+                        return o1.getDisplayName().compareTo(o2.getDisplayName());
+                    }
                 }
-            }
         );
+
         return factories;
     }
 }

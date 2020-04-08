@@ -38,16 +38,17 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.filter;
+package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
-import org.immutables.value.Value;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 
-@Value.Immutable
-public interface FilterCode {
+public final class ToDiamond {
 
-    @Value.Parameter
-    byte[] code();
+    private ToDiamond() {
+    }
 
-    @Value.Parameter
-    byte[] sig();
+    public static ObjectIdentifier convert(ObjectId objectId) {
+        return new ObjectIdentifier(objectId.objectId(), objectId.deviceName(), objectId.hostname());
+    }
 }

@@ -50,6 +50,8 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -166,9 +168,7 @@ public final class Main {
         });
     }
 
-    public static Main createMain(
-            List<File> bundleDirectories,
-            List<File> filterDirectories) throws IOException {
+    public static Main createMain(Connection connection) throws IOException {
         // ugly hack to set application name for GNOME Shell
         // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
         try {
@@ -180,10 +180,8 @@ public final class Main {
             e.printStackTrace();
         }
 
-        // BundleFactory bundleFactory = new BundleFactory(bundleDirectories, filterDirectories);
-
         List<HyperFindPredicateFactory> factories =
-                HyperFindPredicateFactory.createHyperFindPredicateFactories(bundleFactory);
+                HyperFindPredicateFactory.createHyperFindPredicateFactories(connection.getBundles());
 
         JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
@@ -221,13 +219,6 @@ public final class Main {
             }
         });
 
-        CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
-        try {
-            defaultCookieMap = CookieMap.createDefaultCookieMap(null);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         List<HyperFindPredicateFactory> examplePredicateFactories =
                 new ArrayList<HyperFindPredicateFactory>();
         final List<HyperFindPredicate> codecList =
@@ -237,11 +228,9 @@ public final class Main {
 
         final JComboBox codecs = new JComboBox(codecList.toArray());
 
-        final Main m = new Main(frame, results, model, defaultCookieMap,
-                examplePredicateFactories, codecs);
+        final Main m = new Main(frame, results, model, defaultCookieMap, examplePredicateFactories, codecs);
 
-        predicateList.setTransferHandler(new PredicateImportTransferHandler(m,
-                model, bundleFactory));
+        predicateList.setTransferHandler(new PredicateImportTransferHandler(m, model, connection));
 
         // add paste
         predicates.add(new JSeparator());
@@ -274,9 +263,7 @@ public final class Main {
                 JFileChooser chooser = new JFileChooser();
                 // predicate filter
                 FileNameExtensionFilter predicateFilter =
-                        new FileNameExtensionFilter(
-                                "Predicate Files",
-                                BundleType.PREDICATE.getExtension());
+                        new FileNameExtensionFilter("Predicate Files", BundleType.PREDICATE.getExtension());
                 // image filter
                 String[] suffixes = ImageIO.getReaderFileSuffixes();
                 List<String> filteredSuffixes = new ArrayList<String>();
@@ -305,10 +292,8 @@ public final class Main {
                     // XXX near-duplicate of code in PredicateImportTransferHandler
                     // first try to load it as a predicate bundle
                     try {
-                        HyperFindPredicate p = HyperFindPredicateFactory
-                                .createHyperFindPredicate(
-                                        bundleFactory,
-                                        chooser.getSelectedFile().toURI());
+                        HyperFindPredicate p = HyperFindPredicateFactory.createHyperFindPredicate(
+                                connection, chooser.getSelectedFile().toURI());
                         model.addPredicate(p);
                         p.edit();
                     } catch (IOException e1) {

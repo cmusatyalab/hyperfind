@@ -46,7 +46,6 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
 import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -203,7 +202,7 @@ public class HyperFindPredicate {
         }
     }
 
-    public HyperFindPredicateState export() throws IOException {
+    public HyperFindPredicateState export() {
         return new HyperFindPredicateState(this);
     }
 

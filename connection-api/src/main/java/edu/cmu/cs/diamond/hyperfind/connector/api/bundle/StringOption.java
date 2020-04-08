@@ -72,6 +72,7 @@ public abstract class StringOption implements Option {
     @Value.Parameter
     public abstract Optional<Boolean> initiallyEnabled();
 
+    @Override
     public final <T> T accept(OptionVisitor<T> visitor) {
         return visitor.accept(this);
     }

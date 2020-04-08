@@ -41,5 +41,17 @@
 package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
 public enum BundleType {
-    CODEC, PREDICATE;
+    CODEC("codec"),
+    PREDICATE("pred");
+
+    // bundle file extension without the dot
+    private final String extension;
+
+    private BundleType(String extension) {
+        this.extension = extension;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
 }

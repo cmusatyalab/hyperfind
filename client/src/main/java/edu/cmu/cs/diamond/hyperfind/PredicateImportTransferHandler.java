@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,29 +40,26 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-
 import javax.imageio.ImageIO;
-
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 
 public class PredicateImportTransferHandler extends URIImportTransferHandler {
     private final Main main;
 
     private final PredicateListModel model;
 
-    private final BundleFactory bundleFactory;
+    private final Connection connection;
 
-    public PredicateImportTransferHandler(Main main, PredicateListModel model,
-            BundleFactory bundleFactory) {
+    public PredicateImportTransferHandler(Main main, PredicateListModel model, Connection connection) {
         this.main = main;
         this.model = model;
-        this.bundleFactory = bundleFactory;
+        this.connection = connection;
     }
 
     @Override
@@ -76,27 +73,22 @@ public class PredicateImportTransferHandler extends URIImportTransferHandler {
             for (URI u : uris) {
                 try {
                     // first try to load it as a predicate bundle
-                    HyperFindPredicate p = HyperFindPredicateFactory
-                            .createHyperFindPredicate(bundleFactory, u);
+                    HyperFindPredicate p = HyperFindPredicateFactory.createHyperFindPredicate(connection, u);
                     model.addPredicate(p);
                     p.edit();
                 } catch (IOException e) {
                     /* XXX If more than one image is contained in the list
                      * only the last one will shown in popup,
-                      * because there is only one popup window and previous images will be overwritten.*/
+                     * because there is only one popup window and previous images will be overwritten.*/
                     // now try to read it as an example image
                     System.out.println("Image " + u.toURL() + " is dropped in predicate list. Opening in pop up.");
                     BufferedImage img = ImageIO.read(u.toURL());
                     main.popup(u.toString(), img);
                 }
-
             }
         } catch (UnsupportedFlavorException e) {
             return false;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        } catch (URISyntaxException e) {
+        } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
             return false;
         }

@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@FunctionalInterface
 public interface FilterBuilder {
 
     List<Filter> getFilters(Map<String, String> optionMap, Optional<List<BufferedImage>> examples);

@@ -56,6 +56,7 @@ public abstract class BooleanOption implements Option {
     @Value.Parameter
     public abstract boolean defaultValue();
 
+    @Override
     public final <T> T accept(OptionVisitor<T> visitor) {
         return visitor.accept(this);
     }

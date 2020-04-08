@@ -53,4 +53,8 @@ public interface BundleState {
     @Value.Parameter
     List<String> memberDirs();
 
+    static BundleState of(Map<String, byte[]> bundleContents, List<String> memberDirs) {
+        return ImmutableBundleState.of(bundleContents, memberDirs);
+    }
+
 }

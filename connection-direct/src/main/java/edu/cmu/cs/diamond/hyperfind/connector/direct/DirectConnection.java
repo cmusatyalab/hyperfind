@@ -42,11 +42,16 @@ package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import edu.cmu.cs.diamond.opendiamond.SearchFactory;
 import edu.cmu.cs.diamond.opendiamond.Util;
 import java.awt.Image;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,14 +68,22 @@ public final class DirectConnection implements Connection {
 
     private static final Logger log = LoggerFactory.getLogger(DirectConnection.class);
 
-    private SearchFactory codecFactory;
+    private final BundleFactory bundleFactory;
+    private final SearchFactory codecFactory;
     private final ExecutorService downloadExecutor;
 
     public DirectConnection(List<File> bundleDirectories, List<File> filterDirectories) {
-        this.downloadExecutor = Executors.newCachedThreadPool();
+        this.bundleFactory = new BundleFactory(bundleDirectories, filterDirectories);
 
-        BundleFactory bundleFactory = new BundleFactory(bundleDirectories, filterDirectories);
-        List<HyperFindPredicateFactory> factories = HyperFindPredicateFactory.createHyperFindPredicateFactories(bundleFactory);
+
+        CookieMap defaultCookieMap = CookieMap.emptyCookieMap();
+        try {
+            defaultCookieMap = CookieMap.createDefaultCookieMap(null);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create cookie map", e);
+        }
+
+        this.downloadExecutor = Executors.newCachedThreadPool();
 
         this.codecFactory = codecFactory;
     }
@@ -80,7 +93,7 @@ public final class DirectConnection implements Connection {
         Map<ObjectId, Future<Image>> downloadFutures =
                 items.stream().collect(Collectors.toMap(i -> i, i -> downloadExecutor.submit(() -> {
                     log.info("Downloading item: {}", i.objectId());
-                    return Util.extractImageFromResultIdentifier(DiamondConversions.toDiamond(i), codecFactory);
+                    return Util.extractImageFromResultIdentifier(ToDiamond.convert(i), codecFactory);
                 })));
 
         return EntryStream.of(downloadFutures).mapValues(f -> {
@@ -90,5 +103,31 @@ public final class DirectConnection implements Connection {
                 throw new RuntimeException("Failed to download image", e);
             }
         }).toMap();
+    }
+
+    @Override
+    public List<Bundle> getBundles() {
+        return bundleFactory.getBundles().stream().map(FromDiamond::convert).collect(Collectors.toList());
+    }
+
+    @Override
+    public Bundle getBundle(InputStream inputStream) {
+        try {
+            return FromDiamond.convert(bundleFactory.getBundle(inputStream));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to get bundle", e);
+        }
+    }
+
+    @Override
+    public Bundle restoreBundle(BundleState state) {
+        try {
+            return FromDiamond.convert(new edu.cmu.cs.diamond.opendiamond.Bundle(
+                    new edu.cmu.cs.diamond.opendiamond.Bundle.PreparedFileLoader(
+                            state.bundleContents(),
+                            state.memberDirs().stream().map(File::new).collect(Collectors.toList()))));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to restore bundle", e);
+        }
     }
 }

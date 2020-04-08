@@ -43,12 +43,18 @@ package edu.cmu.cs.diamond.hyperfind.connector.api;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import java.awt.Image;
+import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public interface Connection {
 
     Map<ObjectId, Image> downloadItems(Set<ObjectId> items);
+
+    List<Bundle> getBundles();
+
+    Bundle getBundle(InputStream inputStream);
 
     Bundle restoreBundle(BundleState state);
 

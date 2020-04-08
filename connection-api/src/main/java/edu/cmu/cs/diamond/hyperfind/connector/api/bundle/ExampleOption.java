@@ -53,7 +53,7 @@ public abstract class ExampleOption implements Option {
     @Value.Parameter
     public abstract String name();
 
-
+    @Override
     public final <T> T accept(OptionVisitor<T> visitor) {
         return visitor.accept(this);
     }

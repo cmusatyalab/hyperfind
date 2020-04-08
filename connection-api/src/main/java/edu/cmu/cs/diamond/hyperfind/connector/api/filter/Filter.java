@@ -46,20 +46,36 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface Filter {
 
-    FilterCode code();
+    @Value.Parameter
+    byte[] code();
 
+    @Value.Parameter
     List<String> dependencies();
 
+    @Value.Parameter
     List<String> arguments();
 
+    @Value.Parameter
     String name();
 
+    @Value.Parameter
     double minScore();
 
+    @Value.Parameter
     double maxScore();
 
+    @Value.Parameter
     byte[] blob();
 
-    byte[] blobSig();
+    static Filter of(
+            byte[] code,
+            Iterable<String> dependencies,
+            Iterable<String> arguments,
+            String name,
+            double minScore,
+            double maxScore,
+            byte[] blob) {
+        return ImmutableFilter.of(code, dependencies, arguments, name, minScore, maxScore, blob);
+    }
     
 }

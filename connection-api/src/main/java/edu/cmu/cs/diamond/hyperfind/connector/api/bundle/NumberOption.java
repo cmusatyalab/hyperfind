@@ -73,6 +73,7 @@ public abstract class NumberOption implements Option {
     @Value.Parameter
     public abstract Optional<Boolean> initiallyEnabled();
 
+    @Override
     public final <T> T accept(OptionVisitor<T> visitor) {
         return visitor.accept(this);
     }
@@ -84,7 +85,7 @@ public abstract class NumberOption implements Option {
             OptionalDouble min,
             OptionalDouble max,
             double step,
-            String disabledValue,
+            double disabledValue,
             Optional<Boolean> initiallyEnabled) {
         return ImmutableNumberOption.of(displayName, name, defaultValue, min, max, step, disabledValue,
                 initiallyEnabled);

@@ -34,6 +34,7 @@ allprojects {
         maven {
             url 'http://palantir.bintray.com/releases'
         }
+        mavenLocal()
     }
 
     apply plugin: 'java'
