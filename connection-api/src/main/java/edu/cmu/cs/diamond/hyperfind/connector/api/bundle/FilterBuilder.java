@@ -38,28 +38,16 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.filter;
+package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
+import java.awt.image.BufferedImage;
 import java.util.List;
-import org.immutables.value.Value;
+import java.util.Map;
+import java.util.Optional;
 
-@Value.Immutable
-public interface Filter {
+public interface FilterBuilder {
 
-    FilterCode code();
+    List<Filter> getFilters(Map<String, String> optionMap, Optional<List<BufferedImage>> examples);
 
-    List<String> dependencies();
-
-    List<String> arguments();
-
-    String name();
-
-    double minScore();
-
-    double maxScore();
-
-    byte[] blob();
-
-    byte[] blobSig();
-    
 }

@@ -1,0 +1,11 @@
+dependencies {
+    implementation project(':connection-api')
+    implementation 'one.util:streamex'
+    implementation 'org.slf4j:slf4j-api'
+
+    implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java'
+
+    // Uncomment to use local opendiamond-java placed in the same parent directory
+    // implementation fileTree(dir: '../../opendiamond-java/build/libs', include: '*.jar')
+    // implementation 'javax.xml.bind:jaxb-api:2.3.1'
+}

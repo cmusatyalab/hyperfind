@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
+package edu.cmu.cs.diamond.hyperfind.connector.api.filter;
 
 import org.immutables.value.Value;
 

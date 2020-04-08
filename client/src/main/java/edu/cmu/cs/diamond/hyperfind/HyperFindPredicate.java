@@ -40,15 +40,18 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -106,13 +109,10 @@ public class HyperFindPredicate {
 
     public List<String> getFilterNames() {
         List<String> names = new ArrayList<String>();
-        try {
-            for (Filter f : createFilters()) {
-                names.add(f.name());
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (Filter f : createFilters()) {
+            names.add(f.name());
         }
+
         return names;
     }
 
@@ -126,18 +126,20 @@ public class HyperFindPredicate {
         frame.addExamples(examples);
     }
 
-    public List<Filter> createFilters() throws IOException {
+    public List<Filter> createFilters() {
         if (cachedFilters == null) {
             List<Filter> list;
             if (frame.needsExamples()) {
-                list = bundle.getFilters(
+                list = bundle.filterBuilder().getFilters(
                         frame.getOptionMap(),
-                        frame.getExamples());
+                        Optional.of(frame.getExamples()));
             } else {
-                list = bundle.getFilters(frame.getOptionMap());
+                list = bundle.filterBuilder().getFilters(frame.getOptionMap(), Optional.empty());
             }
+
             cachedFilters = Collections.unmodifiableList(list);
         }
+
         return cachedFilters;
     }
 
@@ -184,17 +186,17 @@ public class HyperFindPredicate {
      * Objects to serialized/deserialized to/from JSON
      */
     public static class HyperFindPredicateState {
-        final public Bundle.BundleState bundleState;
+        final public BundleState bundleState;
         final public HashMap<String, String> optionMap;
         final public String instanceName;
         final public ArrayList<BufferedImage> examples;
 
-        public HyperFindPredicateState(HyperFindPredicate predicate) throws IOException {
-            this.bundleState = predicate.bundle.export();
-            this.optionMap = new HashMap<String, String>(predicate.frame.getOptionMap());
+        public HyperFindPredicateState(HyperFindPredicate predicate) {
+            this.bundleState = predicate.bundle.state();
+            this.optionMap = new HashMap<>(predicate.frame.getOptionMap());
             this.instanceName = predicate.getInstanceName();
             if (predicate.frame.needsExamples()) {
-                this.examples = new ArrayList<BufferedImage>(predicate.frame.getExamples());
+                this.examples = new ArrayList<>(predicate.frame.getExamples());
             } else {
                 this.examples = null;
             }
@@ -205,19 +207,17 @@ public class HyperFindPredicate {
         return new HyperFindPredicateState(this);
     }
 
-    public static HyperFindPredicate restore(HyperFindPredicateState state) {
+    public static HyperFindPredicate restore(HyperFindPredicateState state, Connection connection) {
         HyperFindPredicate predicate = null;
-        try {
-            Bundle bundle = Bundle.restore(state.bundleState);
-            predicate = new HyperFindPredicate(bundle);
-            predicate.frame.setOptionMap(state.optionMap);
-            predicate.frame.setInstanceName(state.instanceName);
-            if (null != state.examples) {
-                predicate.frame.setExamples(state.examples);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        Bundle bundle = connection.restoreBundle(state.bundleState);
+        predicate = new HyperFindPredicate(bundle);
+        predicate.frame.setOptionMap(state.optionMap);
+        predicate.frame.setInstanceName(state.instanceName);
+
+        if (null != state.examples) {
+            predicate.frame.setExamples(state.examples);
         }
+
         return predicate;
     }
 }

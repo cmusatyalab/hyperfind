@@ -38,28 +38,19 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.filter;
+package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface Filter {
+public interface BundleState {
 
-    FilterCode code();
+    @Value.Parameter
+    Map<String, byte[]> bundleContents();
 
-    List<String> dependencies();
+    @Value.Parameter
+    List<String> memberDirs();
 
-    List<String> arguments();
-
-    String name();
-
-    double minScore();
-
-    double maxScore();
-
-    byte[] blob();
-
-    byte[] blobSig();
-    
 }

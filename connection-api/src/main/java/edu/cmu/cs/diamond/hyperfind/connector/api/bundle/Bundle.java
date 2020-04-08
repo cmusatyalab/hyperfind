@@ -55,4 +55,10 @@ public interface Bundle {
     @Value.Parameter
     List<OptionGroup> options();
 
+    @Value.Parameter
+    BundleState state();
+
+    @Value.Parameter
+    FilterBuilder filterBuilder();
+
 }
