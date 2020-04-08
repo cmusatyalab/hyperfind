@@ -40,25 +40,80 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.*;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BooleanOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Choice;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ChoiceOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ExampleOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.FileOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.NumberOption;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionVisitor;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.StringOption;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.event.*;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.text.JTextComponent;
-
-import edu.cmu.cs.diamond.opendiamond.Bundle;
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
-import edu.cmu.cs.diamond.opendiamond.bundle.*;
-import edu.cmu.cs.diamond.opendiamond.bundle.Choice;
 
 public class BundleOptionsFrame extends JFrame {
 
@@ -80,14 +135,12 @@ public class BundleOptionsFrame extends JFrame {
 
     private int currentRow;
 
-
     // Constructor for use by codecs, which don't have an instance name
     public BundleOptionsFrame(String displayName, List<OptionGroup> options) {
         this(displayName, null, options);
     }
 
-    public BundleOptionsFrame(String displayName, String instanceName,
-            List<OptionGroup> options) {
+    public BundleOptionsFrame(String displayName, String instanceName, List<OptionGroup> options) {
         setResizable(false);
         this.displayName = displayName;
         content = (JComponent) getContentPane();
@@ -120,9 +173,8 @@ public class BundleOptionsFrame extends JFrame {
 
         if (instanceName != null) {
             // Predicate name
-            StringOption opt = new StringOption();
-            opt.setDisplayName("Predicate name");
-            opt.setDefault(instanceName);
+            StringOption opt = StringOption.of("Predicate name", UUID.randomUUID().toString(), instanceName, 4, 20,
+                    false, "", Optional.empty());
             instanceNameField = new StringField(opt);
             instanceNameField.addChangeListener(new ChangeListener() {
                 @Override
@@ -141,44 +193,61 @@ public class BundleOptionsFrame extends JFrame {
         updateTitle();
 
         // Options
-        ExampleField example = null;
+        AtomicReference<ExampleField> example = new AtomicReference<>();
+
         for (OptionGroup group : options) {
-            addSeparator(group.getDisplayName());
-            for (Option option : group.getOptions()) {
-                OptionField field;
-                if (option instanceof BooleanOption) {
-                    field = new BooleanField((BooleanOption) option);
-                } else if (option instanceof StringOption) {
-                    field = new StringField((StringOption) option);
-                } else if (option instanceof NumberOption) {
-                    field = new NumberField((NumberOption) option);
-                } else if (option instanceof ChoiceOption) {
-                    field = new ChoiceField((ChoiceOption) option);
-                } else if (option instanceof FileOption) {
-                    field = new FileField((FileOption) option);
-                } else if (option instanceof ExampleOption) {
-                    if (example != null) {
-                        throw new IllegalArgumentException(
-                                "Cannot display more than one ExampleOption");
+            addSeparator(group.displayName());
+            for (Option option : group.options()) {
+                OptionField field = option.accept(new OptionVisitor<OptionField>() {
+                    @Override
+                    public OptionField accept(StringOption option) {
+                        return new StringField(option);
                     }
-                    example = new ExampleField((ExampleOption) option);
-                    field = example;
-                } else {
-                    throw new IllegalArgumentException("Unknown option type");
-                }
+
+                    @Override
+                    public OptionField accept(BooleanOption option) {
+                        return new BooleanField(option);
+                    }
+
+                    @Override
+                    public OptionField accept(NumberOption option) {
+                        return new NumberField(option);
+                    }
+
+                    @Override
+                    public OptionField accept(ChoiceOption option) {
+                        return new ChoiceField(option);
+                    }
+
+                    @Override
+                    public OptionField accept(ExampleOption option) {
+                        if (example.get() != null) {
+                            throw new IllegalArgumentException("Cannot display more than one ExampleOption");
+                        }
+
+                        ExampleField value = new ExampleField(option);
+                        example.set(value);
+                        return value;
+                    }
+
+                    @Override
+                    public OptionField accept(FileOption option) {
+                        return new FileField(option);
+                    }
+                });
+
                 addField(field);
                 optionFields.add(field);
             }
         }
-        this.exampleField = example;
+
+        this.exampleField = example.get();
 
         // Extra dependencies given by user that were not specified in predicate files
         if (instanceNameField != null) {
             addSeparator("More");
-            StringOption extraDepsOpt = new StringOption();
-            extraDepsOpt.setDisplayName("Extra dependencies");
-            extraDepsOpt.setDefault("");
-            extraDepsOpt.setMultiLine(true);
+            StringOption extraDepsOpt = StringOption.of("Extra dependencies", UUID.randomUUID().toString(), "", 4, 20
+                    , true, "", Optional.empty());
             extraDepsField = new StringField(extraDepsOpt);
             addField(extraDepsField);
         } else {
@@ -300,11 +369,13 @@ public class BundleOptionsFrame extends JFrame {
             this.option = option;
         }
 
-        protected void configureEnableToggle(Boolean initiallyEnabled,
-                String valueIfDisabled, final List<JComponent> components) {
-            if (initiallyEnabled != null) {
+        protected void configureEnableToggle(
+                Optional<Boolean> initiallyEnabled,
+                String valueIfDisabled,
+                List<JComponent> components) {
+            if (initiallyEnabled.isPresent()) {
                 enable = new JCheckBox();
-                boolean enabled = initiallyEnabled.booleanValue();
+                boolean enabled = initiallyEnabled.get();
                 this.enable.setSelected(enabled);
                 for (JComponent c : components) {
                     c.setEnabled(enabled);
@@ -348,11 +419,11 @@ public class BundleOptionsFrame extends JFrame {
         }
 
         public String getDisplayName() {
-            return option.getDisplayName();
+            return option.displayName();
         }
 
         public String getName() {
-            return option.getName();
+            return option.name();
         }
 
         public String getValue() {
@@ -368,7 +439,6 @@ public class BundleOptionsFrame extends JFrame {
         public abstract JComponent getComponent();
 
         protected abstract String getEnabledValue();
-
     }
 
     private static class BooleanField extends OptionField {
@@ -379,7 +449,7 @@ public class BundleOptionsFrame extends JFrame {
             super(option);
 
             checkbox = new JCheckBox();
-            checkbox.setSelected(option.isDefault());
+            checkbox.setSelected(option.defaultValue());
             checkbox.addItemListener(new ItemListener() {
                 @Override
                 public void itemStateChanged(ItemEvent e) {
@@ -415,13 +485,11 @@ public class BundleOptionsFrame extends JFrame {
         public StringField(StringOption option) {
             super(option);
 
-            if (option.isMultiLine()) {
-                field = new JTextArea(option.getDefault(), option.getHeight(),
-                        option.getWidth());
+            if (option.multiLine()) {
+                field = new JTextArea(option.defaultValue(), option.height(), option.width());
                 component = new JScrollPane(field);
             } else {
-                field = new JTextField(option.getDefault(),
-                        SINGLE_FIELD_WIDTH);
+                field = new JTextField(option.defaultValue(), SINGLE_FIELD_WIDTH);
                 component = field;
             }
 
@@ -442,8 +510,9 @@ public class BundleOptionsFrame extends JFrame {
                 }
             });
 
-            configureEnableToggle(option.isInitiallyEnabled(),
-                    option.getDisabledValue(),
+            configureEnableToggle(
+                    option.initiallyEnabled(),
+                    option.disabledValue(),
                     Arrays.asList((JComponent) field));
         }
 
@@ -487,31 +556,36 @@ public class BundleOptionsFrame extends JFrame {
             super(option);
 
             panel = new JPanel(new GridBagLayout());
-            this.step = option.getStep();
-            Double min = option.getMin();
-            Double max = option.getMax();
-            Double defl = new Double(option.getDefault());
+            this.step = option.step();
+            OptionalDouble min = option.min();
+            OptionalDouble max = option.max();
+            double defl = option.defaultValue();
 
             // Normalize parameters
-            if (min != null && defl.compareTo(min) < 0) {
-                defl = min;
-            } else if (max != null && defl.compareTo(max) > 0) {
-                defl = max;
+            if (min.isPresent() && defl < min.getAsDouble()) {
+                defl = min.getAsDouble();
+            } else if (max.isPresent() && defl > max.getAsDouble()) {
+                defl = max.getAsDouble();
             }
-            if (min != null) {
-                sliderMin = (int) (min.doubleValue() / step);
+
+            if (min.isPresent()) {
+                sliderMin = (int) (min.getAsDouble() / step);
             } else {
                 sliderMin = SLIDER_DEFAULT_MIN;
             }
-            if (max != null) {
-                sliderMax = (int) (max.doubleValue() / step);
+            if (max.isPresent()) {
+                sliderMax = (int) (max.getAsDouble() / step);
             } else {
                 sliderMax = SLIDER_DEFAULT_MAX;
             }
 
             // Create spinner
-            SpinnerNumberModel spinnerModel = new SpinnerNumberModel(defl,
-                    min, max, new Double(step));
+            SpinnerNumberModel spinnerModel = new SpinnerNumberModel(
+                    Double.valueOf(defl),
+                    min.isPresent() ? min.getAsDouble() : null,
+                    max.isPresent() ? max.getAsDouble() : null,
+                    Double.valueOf(step));
+
             spinner = new JSpinner(spinnerModel);
             ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField().
                     setColumns(FIELD_WIDTH);
@@ -539,15 +613,16 @@ public class BundleOptionsFrame extends JFrame {
                 public void stateChanged(ChangeEvent e) {
                     int newIndex = slider.getValue();
                     if (newIndex != sliderIndex((Double) spinner.getValue())) {
-                        spinner.setValue(new Double(newIndex * step));
+                        spinner.setValue(newIndex * step);
                     }
                 }
             });
 
             // Create enable checkbox
-            configureEnableToggle(option.isInitiallyEnabled(),
-                    string(option.getDisabledValue()),
-                    Arrays.asList((JComponent) spinner, slider));
+            configureEnableToggle(
+                    option.initiallyEnabled(),
+                    string(option.disabledValue()),
+                    Arrays.asList(spinner, slider));
 
             // Add to the panel
             panel.add(spinner);
@@ -652,17 +727,17 @@ public class BundleOptionsFrame extends JFrame {
 
     private static class ChoiceField extends OptionField {
 
-        private final JComboBox comboBox;
+        private final JComboBox<Object> comboBox;
 
         private final Choice[] choices;
 
         public ChoiceField(ChoiceOption option) {
             super(option);
-            this.choices = option.getChoices().toArray(new Choice[0]);
+            this.choices = option.choices().toArray(new Choice[0]);
 
-            comboBox = new JComboBox();
+            comboBox = new JComboBox<>();
             for (int i = 0; i < choices.length; i++) {
-                comboBox.addItem(makeEntry(choices[i].getDisplayName()));
+                comboBox.addItem(makeEntry(choices[i].displayName()));
                 if (i == 0 || choices[i].isDefault()) {
                     comboBox.setSelectedIndex(i);
                 }
@@ -674,9 +749,10 @@ public class BundleOptionsFrame extends JFrame {
                 }
             });
 
-            configureEnableToggle(option.isInitiallyEnabled(),
-                    option.getDisabledValue(),
-                    Arrays.asList((JComponent) comboBox));
+            configureEnableToggle(
+                    option.initiallyEnabled(),
+                    option.disabledValue(),
+                    Collections.singletonList(comboBox));
         }
 
         // avoid adding the same value to the JComboBox twice
@@ -691,8 +767,8 @@ public class BundleOptionsFrame extends JFrame {
 
         @Override
         public void setValue(String val) {
-            for (int i=0; i < choices.length; i++){
-                if (choices[i].getValue().equals(val)) {
+            for (int i = 0; i < choices.length; i++) {
+                if (choices[i].value().equals(val)) {
                     comboBox.setSelectedIndex(i);
                     return;
                 }
@@ -706,7 +782,7 @@ public class BundleOptionsFrame extends JFrame {
 
         @Override
         protected String getEnabledValue() {
-            return choices[comboBox.getSelectedIndex()].getValue();
+            return choices[comboBox.getSelectedIndex()].value();
         }
     }
 
@@ -734,7 +810,8 @@ public class BundleOptionsFrame extends JFrame {
 
                 // create icon
                 if (Math.max(width, height) > ICON_SIZE) {
-                    double scale = Math.min((double) ICON_SIZE / width,
+                    double scale = Math.min(
+                            (double) ICON_SIZE / width,
                             (double) ICON_SIZE / height);
                     width *= scale;
                     height *= scale;
@@ -742,7 +819,8 @@ public class BundleOptionsFrame extends JFrame {
                 BufferedImage buf = new BufferedImage(width, height,
                         BufferedImage.TYPE_INT_RGB);
                 g2 = buf.createGraphics();
-                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                g2.setRenderingHint(
+                        RenderingHints.KEY_INTERPOLATION,
                         RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                 g2.drawImage(image, 0, 0, width, height, null);
                 g2.dispose();
@@ -824,7 +902,8 @@ public class BundleOptionsFrame extends JFrame {
             });
             list.setCellRenderer(new DefaultListCellRenderer() {
                 @Override
-                public Component getListCellRendererComponent(JList list,
+                public Component getListCellRendererComponent(
+                        JList list,
                         Object value, int index, boolean isSelected,
                         boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index,
@@ -887,7 +966,7 @@ public class BundleOptionsFrame extends JFrame {
 
         public void setExamples(List<BufferedImage> examples) {
             model.clear();
-            for (int i=0; i < examples.size(); i++) {
+            for (int i = 0; i < examples.size(); i++) {
                 model.addElement(new Example(examples.get(i)));
             }
         }
@@ -917,7 +996,6 @@ public class BundleOptionsFrame extends JFrame {
             return list;
         }
     }
-
 
     public Map<String, String> getOptionMap() {
         Map<String, String> ret = new HashMap<String, String>();
@@ -994,49 +1072,5 @@ public class BundleOptionsFrame extends JFrame {
         for (ChangeListener l : listeners) {
             l.stateChanged(ev);
         }
-    }
-
-    public static void main(final String args[]) throws FileNotFoundException,
-            UnsupportedEncodingException, IOException {
-        if (args.length != 1) {
-            System.out.println("Usage: " +
-                    BundleOptionsFrame.class.getName() + " bundle");
-            System.exit(1);
-        }
-
-        List<File> noFiles = Collections.emptyList();
-        final Bundle bundle = new BundleFactory(noFiles, noFiles).getBundle(
-                new File(args[0]));
-
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                BundleOptionsFrame fr = null;
-                try {
-                    fr = new BundleOptionsFrame(bundle.getDisplayName(),
-                            "untitled", bundle.getOptions());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-                fr.addComponentListener(new ComponentAdapter() {
-                    @Override
-                    public void componentHidden(ComponentEvent e) {
-                        BundleOptionsFrame fr = (BundleOptionsFrame)
-                                e.getSource();
-                        System.out.println("Instance: " +
-                                fr.getInstanceName());
-                        System.out.println("Option map:");
-                        Map<String, String> optionMap = fr.getOptionMap();
-                        for (String name : optionMap.keySet()) {
-                            System.out.println(name + "\t" +
-                                    optionMap.get(name));
-                        }
-                        System.exit(0);
-                    }
-                });
-                fr.setVisible(true);
-            }
-        });
     }
 }

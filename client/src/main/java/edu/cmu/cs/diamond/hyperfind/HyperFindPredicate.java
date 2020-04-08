@@ -40,19 +40,20 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Filter;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import edu.cmu.cs.diamond.opendiamond.Bundle;
-import edu.cmu.cs.diamond.opendiamond.BundleType;
-import edu.cmu.cs.diamond.opendiamond.Filter;
-
 public class HyperFindPredicate {
-    private final List<ChangeListener> listeners =
-            new ArrayList<ChangeListener>();
+    private final List<ChangeListener> listeners = new ArrayList<>();
 
     private final Bundle bundle;
 
@@ -60,14 +61,12 @@ public class HyperFindPredicate {
 
     private List<Filter> cachedFilters;
 
-    HyperFindPredicate(Bundle bundle) throws IOException {
+    HyperFindPredicate(Bundle bundle) {
         this.bundle = bundle;
-        if (bundle.getType() == BundleType.CODEC) {
-            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
-                    bundle.getOptions());
+        if (bundle.type() == BundleType.CODEC) {
+            this.frame = new BundleOptionsFrame(bundle.displayName(), bundle.options());
         } else {
-            this.frame = new BundleOptionsFrame(bundle.getDisplayName(),
-                    "untitled", bundle.getOptions());
+            this.frame = new BundleOptionsFrame(bundle.displayName(), "untitled", bundle.options());
         }
 
         frame.addChangeListener(new ChangeListener() {
@@ -94,7 +93,7 @@ public class HyperFindPredicate {
     }
 
     public String getPredicateName() {
-        return bundle.getDisplayName();
+        return bundle.displayName();
     }
 
     public String getInstanceName() {
@@ -109,7 +108,7 @@ public class HyperFindPredicate {
         List<String> names = new ArrayList<String>();
         try {
             for (Filter f : createFilters()) {
-                names.add(f.getName());
+                names.add(f.name());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -131,7 +130,8 @@ public class HyperFindPredicate {
         if (cachedFilters == null) {
             List<Filter> list;
             if (frame.needsExamples()) {
-                list = bundle.getFilters(frame.getOptionMap(),
+                list = bundle.getFilters(
+                        frame.getOptionMap(),
                         frame.getExamples());
             } else {
                 list = bundle.getFilters(frame.getOptionMap());
@@ -195,8 +195,7 @@ public class HyperFindPredicate {
             this.instanceName = predicate.getInstanceName();
             if (predicate.frame.needsExamples()) {
                 this.examples = new ArrayList<BufferedImage>(predicate.frame.getExamples());
-            }
-            else {
+            } else {
                 this.examples = null;
             }
         }
@@ -213,7 +212,7 @@ public class HyperFindPredicate {
             predicate = new HyperFindPredicate(bundle);
             predicate.frame.setOptionMap(state.optionMap);
             predicate.frame.setInstanceName(state.instanceName);
-            if(null != state.examples) {
+            if (null != state.examples) {
                 predicate.frame.setExamples(state.examples);
             }
         } catch (IOException e) {
