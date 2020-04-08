@@ -37,6 +37,7 @@ allprojects {
     }
 
     apply plugin: 'java'
+    apply plugin: 'com.palantir.baseline-idea'
 
     sourceCompatibility = '11'
     targetCompatibility = '11'
@@ -48,7 +49,6 @@ allprojects {
 
 configure(subprojects.findAll { it.name != 'client' }) {
     apply plugin: 'org.inferred.processors'  // installs the 'processor' configuration needed for baseline-error-prone
-    apply plugin: 'com.palantir.baseline-idea'
     apply plugin: 'com.palantir.baseline-error-prone'
     apply plugin: 'com.palantir.baseline-checkstyle'
     apply plugin: 'com.palantir.baseline-format'

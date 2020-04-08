@@ -40,25 +40,77 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
-import edu.cmu.cs.diamond.opendiamond.*;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Formatter;
+import java.util.HashSet;
 import java.util.List;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * The Main class.
@@ -86,10 +138,11 @@ public final class Main {
 
     private final JComboBox codecs;
 
-    private Main(JFrame frame, ThumbnailBox results, PredicateListModel model,
-                 CookieMap initialCookieMap,
-                 List<HyperFindPredicateFactory> examplePredicateFactories,
-                 JComboBox codecs) {
+    private Main(
+            JFrame frame, ThumbnailBox results, PredicateListModel model,
+            CookieMap initialCookieMap,
+            List<HyperFindPredicateFactory> examplePredicateFactories,
+            JComboBox codecs) {
         this.frame = frame;
         this.results = results;
         this.model = model;
@@ -111,11 +164,11 @@ public final class Main {
                 popupFrame.dispose();
             }
         });
-
     }
 
-    public static Main createMain(List<File> bundleDirectories,
-                                  List<File> filterDirectories) throws IOException {
+    public static Main createMain(
+            List<File> bundleDirectories,
+            List<File> filterDirectories) throws IOException {
         // ugly hack to set application name for GNOME Shell
         // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
         try {
@@ -127,14 +180,12 @@ public final class Main {
             e.printStackTrace();
         }
 
-        final BundleFactory bundleFactory =
-                new BundleFactory(bundleDirectories, filterDirectories);
+        // BundleFactory bundleFactory = new BundleFactory(bundleDirectories, filterDirectories);
 
-        final List<HyperFindPredicateFactory> factories =
-                HyperFindPredicateFactory
-                        .createHyperFindPredicateFactories(bundleFactory);
+        List<HyperFindPredicateFactory> factories =
+                HyperFindPredicateFactory.createHyperFindPredicateFactories(bundleFactory);
 
-        final JFrame frame = new JFrame("HyperFind");
+        JFrame frame = new JFrame("HyperFind");
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton retrainButton = new JButton("Retrain");
@@ -143,26 +194,24 @@ public final class Main {
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
         JCheckBox proxyBox = new JCheckBox("Proxy Enable");
-        final StatisticsBar stats = new StatisticsBar();
-        final StatisticsArea statsArea = new StatisticsArea();
+        StatisticsBar stats = new StatisticsBar();
+        StatisticsArea statsArea = new StatisticsArea();
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         threadPoolExecutor.allowCoreThreadTimeOut(true);
-        final ExecutorService executor = threadPoolExecutor;
-
+        ExecutorService executor = threadPoolExecutor;
 
         ThumbnailBox results = new ThumbnailBox(stopButton, startButton, retrainButton,
                 stats, statsArea, 500);
 
         // predicate list
-        final PredicateListModel model = new PredicateListModel();
-        final PredicateList predicateList = new PredicateList(model);
-
+        PredicateListModel model = new PredicateListModel();
+        PredicateList predicateList = new PredicateList(model);
 
         // codecs / menu
         JButton addPredicateButton = new JButton("+");
-        final JPopupMenu predicates = new JPopupMenu();
+        JPopupMenu predicates = new JPopupMenu();
 
         addPredicateButton.addActionListener(new ActionListener() {
             @Override
@@ -202,7 +251,8 @@ public final class Main {
                 Clipboard clip = Toolkit.getDefaultToolkit().
                         getSystemClipboard();
                 TransferHandler.TransferSupport ts =
-                        new TransferHandler.TransferSupport(predicateList,
+                        new TransferHandler.TransferSupport(
+                                predicateList,
                                 clip.getContents(predicateList));
                 predicateList.getTransferHandler().importData(ts);
             }
@@ -224,7 +274,8 @@ public final class Main {
                 JFileChooser chooser = new JFileChooser();
                 // predicate filter
                 FileNameExtensionFilter predicateFilter =
-                        new FileNameExtensionFilter("Predicate Files",
+                        new FileNameExtensionFilter(
+                                "Predicate Files",
                                 BundleType.PREDICATE.getExtension());
                 // image filter
                 String[] suffixes = ImageIO.getReaderFileSuffixes();
@@ -235,12 +286,14 @@ public final class Main {
                     }
                 }
                 FileNameExtensionFilter imageFilter =
-                        new FileNameExtensionFilter("Images",
+                        new FileNameExtensionFilter(
+                                "Images",
                                 filteredSuffixes.toArray(new String[0]));
                 // combined filter
                 filteredSuffixes.add(BundleType.PREDICATE.getExtension());
                 FileNameExtensionFilter combinedFilter =
-                        new FileNameExtensionFilter("Predicate Files, Images",
+                        new FileNameExtensionFilter(
+                                "Predicate Files, Images",
                                 filteredSuffixes.toArray(new String[0]));
                 // enable filters
                 chooser.setFileFilter(combinedFilter);
@@ -253,7 +306,8 @@ public final class Main {
                     // first try to load it as a predicate bundle
                     try {
                         HyperFindPredicate p = HyperFindPredicateFactory
-                                .createHyperFindPredicate(bundleFactory,
+                                .createHyperFindPredicate(
+                                        bundleFactory,
                                         chooser.getSelectedFile().toURI());
                         model.addPredicate(p);
                         p.edit();
@@ -286,7 +340,8 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     // safely create a unique filename
-                    File baseDir = new File(System.getProperty("user.home"),
+                    File baseDir = new File(
+                            System.getProperty("user.home"),
                             "hyperfind-screenshots");
                     baseDir.mkdir();
                     File snapFile;
@@ -298,7 +353,8 @@ public final class Main {
 
                     // save screenshot into it for future use
                     try {
-                        Process p = new ProcessBuilder("import",
+                        Process p = new ProcessBuilder(
+                                "import",
                                 snapFile.getAbsolutePath()).start();
                         if (p.waitFor() != 0) {
                             throw new IOException();
@@ -360,7 +416,7 @@ public final class Main {
                     // give the ResultExportTransferHandler a different
                     // factory with just the codec, since it only needs the
                     // decoded image and not the filter output attributes
-                    for (int i=0; i < m.results.NUM_PANELS; i++) {
+                    for (int i = 0; i < m.results.NUM_PANELS; i++) {
                         m.results.resultLists.get(i).setTransferHandler(
                                 new ResultExportTransferHandler(
                                         m.codecFactory, executor));
@@ -368,7 +424,6 @@ public final class Main {
 
                     filters.addAll(model.createFilters());
                     SearchFactory factory = m.createFactory(filters);
-
 
                     List<HyperFindSearchMonitor> monitors =
                             HyperFindSearchMonitorFactory
@@ -438,8 +493,8 @@ public final class Main {
                     Map<String, FeedbackObject> map = m.results.getFeedBackItems();
                     try {
                         String downloadDir = m.properties.getDownloadDirectory();
-                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir) 
-                                                                : null;
+                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir)
+                                : null;
 
                         List<? extends Future<?>> imageFutures = map.entrySet().stream()
                                 .map(item -> downloadExecutor.submit(() -> {
@@ -486,7 +541,6 @@ public final class Main {
             }
         });
 
-
         configButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -499,7 +553,7 @@ public final class Main {
             public void actionPerformed(ActionEvent e) {
                 try {
                     m.cookies = CookieMap.createDefaultCookieMap(
-                                    PROXY_FLAG ? m.properties.getProxyIP() : null);
+                            PROXY_FLAG ? m.properties.getProxyIP() : null);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -514,13 +568,12 @@ public final class Main {
                 try {
                     m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     m.cookies = CookieMap.createDefaultCookieMap(
-                                    PROXY_FLAG ? m.properties.getProxyIP() : null);
+                            PROXY_FLAG ? m.properties.getProxyIP() : null);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
             }
         });
-
 
         // Export and import predicates
 
@@ -550,7 +603,8 @@ public final class Main {
                         Writer writer = new FileWriter(filename);
                         System.out.println("Saving predicates to " + filename);
 
-                        ArrayList<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
+                        ArrayList<HyperFindPredicate.HyperFindPredicateState> states =
+                                new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
                         for (HyperFindPredicate pred : selectedPredicates) {
                             states.add(pred.export());
                         }
@@ -558,8 +612,6 @@ public final class Main {
                         writer.write(gson.toJson(states));
                         writer.close();
                     }
-
-
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -595,7 +647,7 @@ public final class Main {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    JList list = (JList)e.getSource();
+                    JList list = (JList) e.getSource();
                     int index = list.locationToIndex(e.getPoint());
                     if (index == -1) {
                         return;
@@ -608,10 +660,9 @@ public final class Main {
                     }
                 }
             }
-
         };
 
-        for (int i=0; i < m.results.NUM_PANELS; i++) {
+        for (int i = 0; i < m.results.NUM_PANELS; i++) {
             m.results.resultLists.get(i).addMouseListener(displayClick);
         }
 
@@ -632,7 +683,7 @@ public final class Main {
 
         // filters
         c1.add(predicateList);
-      
+
         // progress display
         c1.add(statsArea);
 
@@ -734,7 +785,6 @@ public final class Main {
                             e1.printStackTrace();
                         }
                     }
-
                 });
                 if (f.needsExamples()) {
                     examplePredicateFactories.add(f);
@@ -788,7 +838,8 @@ public final class Main {
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
-            popup(new HyperFindResult(ps, factory.generateResult(id,
+            popup(new HyperFindResult(ps, factory.generateResult(
+                    id,
                     attributes)), prevResult);
         } catch (IOException e1) {
             e1.printStackTrace();
@@ -798,8 +849,9 @@ public final class Main {
     }
 
     // returns null if object was dropped
-    private ResultRegions getRegions(HyperFindPredicate predicate,
-                                     ObjectIdentifier objectID, byte[] data) throws IOException {
+    private ResultRegions getRegions(
+            HyperFindPredicate predicate,
+            ObjectIdentifier objectID, byte[] data) throws IOException {
         // Create factory
         HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
         List<Filter> filters = new ArrayList<Filter>(p.createFilters());
@@ -829,8 +881,9 @@ public final class Main {
         return new ResultRegions(filterNames, r);
     }
 
-    ResultRegions getRegions(HyperFindPredicate predicate,
-                             ObjectIdentifier objectID) throws IOException {
+    ResultRegions getRegions(
+            HyperFindPredicate predicate,
+            ObjectIdentifier objectID) throws IOException {
         return getRegions(predicate, objectID, null);
     }
 
@@ -892,7 +945,8 @@ public final class Main {
 
 // https://gist.github.com/orip/3635246
 class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
-    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
         return Base64.getDecoder().decode(json.getAsString());
     }
 
@@ -904,7 +958,10 @@ class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeseri
 class BufferedImageToByteArrayTypeAdaptor implements JsonSerializer<BufferedImage>, JsonDeserializer<BufferedImage> {
 
     @Override
-    public BufferedImage deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+    public BufferedImage deserialize(
+            JsonElement jsonElement,
+            Type type,
+            JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
         byte[] bytes = jsonDeserializationContext.deserialize(jsonElement, byte[].class);
         BufferedImage bufferedImage = null;
         try {
@@ -916,7 +973,10 @@ class BufferedImageToByteArrayTypeAdaptor implements JsonSerializer<BufferedImag
     }
 
     @Override
-    public JsonElement serialize(BufferedImage bufferedImage, Type type, JsonSerializationContext jsonSerializationContext) {
+    public JsonElement serialize(
+            BufferedImage bufferedImage,
+            Type type,
+            JsonSerializationContext jsonSerializationContext) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             ImageIO.write(bufferedImage, "jpg", baos);

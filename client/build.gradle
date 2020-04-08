@@ -1,13 +1,15 @@
 apply plugin: 'application'
 
 dependencies {
+    implementation project(':connection-api')
+
     implementation 'com.google.code.gson:gson'
     implementation 'commons-io:commons-io'
     implementation 'com.sun.xml.bind:jaxb-core'
     implementation 'com.sun.xml.bind:jaxb-impl'
     implementation 'org.swinglabs:swingx'
 
-    implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java'
+    // implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java'
 
     // Uncomment to use local opendiamond-java placed in the same parent directory
     // implementation fileTree(dir: '../../opendiamond-java/build/libs', include: '*.jar')
