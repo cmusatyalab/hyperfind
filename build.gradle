@@ -1,35 +1,76 @@
-apply plugin: 'application'
-apply plugin: 'idea'
-apply plugin: 'java'
+buildscript {
+    repositories {
+        jcenter()
+        gradlePluginPortal()
+        maven { url 'http://palantir.bintray.com/releases' }
+    }
 
-repositories {
-    mavenCentral()
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.12'
+        classpath 'com.palantir.baseline:gradle-baseline-java:3.8.0'
+        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:1.17.3'
+        classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.12.2'
+        classpath 'com.palantir.sls-packaging:gradle-sls-packaging:4.7.0'
+        classpath 'gradle.plugin.org.inferred:gradle-processors:3.3.0'
     }
 }
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
+apply plugin: 'com.palantir.baseline-circleci'
+apply plugin: 'com.palantir.baseline-config'
 
-dependencies {
-    implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'commons-io:commons-io:2.6'
-    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
-    implementation 'com.sun.xml.bind:jaxb-impl:2.3.1'
-    implementation 'org.swinglabs:swingx:1.6.1'
+apply plugin: 'com.palantir.consistent-versions'
+apply plugin: 'com.palantir.git-version'
 
-    implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java:v8.1.1-3-g7468f2d-SNAPSHOT'
+allprojects {
+    group 'edu.cmu.cs.diamond.hyperfind'
+    version gitVersion()
 
-    // Uncomment to use local opendiamond-java placed in the same parent directory
-    // implementation fileTree(dir: '../opendiamond-java/build/libs', include: '*.jar')
-    // implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots'
+        }
+        maven {
+            url 'http://palantir.bintray.com/releases'
+        }
+    }
+
+    apply plugin: 'java'
+
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+
+    test {
+        useJUnitPlatform()
+    }
 }
 
-run {
-    mainClassName = 'edu.cmu.cs.diamond.hyperfind.Main'
-    args = [
-            "$System.env.HOME/.diamond/codecs:$System.env.HOME/.diamond/predicates:/usr/local/share/diamond/codecs:/usr/local/share/diamond/predicates:/usr/share/diamond/codecs:/usr/share/diamond/predicates",
-            "$System.env.HOME/.diamond/filters:/usr/local/share/diamond/filters:/usr/share/diamond/filters"
-    ]
+configure(subprojects.findAll { it.name != 'client' }) {
+    apply plugin: 'org.inferred.processors'  // installs the 'processor' configuration needed for baseline-error-prone
+    apply plugin: 'com.palantir.baseline-idea'
+    apply plugin: 'com.palantir.baseline-error-prone'
+    apply plugin: 'com.palantir.baseline-checkstyle'
+    apply plugin: 'com.palantir.baseline-format'
+    apply plugin: 'com.palantir.baseline-class-uniqueness'
+    apply plugin: 'com.palantir.baseline-reproducibility'
+    apply plugin: 'com.palantir.baseline-exact-dependencies'
+    apply plugin: 'com.palantir.baseline-release-compatibility'
+    apply plugin: 'com.palantir.baseline-testing'
+
+    apply plugin: 'org.inferred.processors'  // installs the 'processor' configuration needed for baseline-error-prone
+
+    tasks.withType(JavaCompile).configureEach {
+        options.errorprone.errorproneArgs += [
+                '-Xep:PreferSafeLoggableExceptions:OFF',
+                '-Xep:PreferSafeLoggingPreconditions:OFF',
+                '-Xep:Slf4jLogsafeArgs:OFF'
+        ]
+
+        options.compilerArgs += [
+                '-Werror',
+                '-Xlint:deprecation',
+                '-Xlint:unchecked',
+        ]
+    }
 }
