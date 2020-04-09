@@ -47,6 +47,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 
 final class StatisticsArea extends JPanel {
 
@@ -59,6 +61,24 @@ final class StatisticsArea extends JPanel {
     private final JTextArea display = new JTextArea();
 
     private static String currentString;
+
+    private long prev_displayed = 0;
+
+    private long prev_tp = 0;
+
+    private float prev_precision = 0;
+
+    private long curr_displayed = 0;
+
+    private long curr_tp = 0;
+
+    private float avg_precision = 0;
+
+    private long diff_displayed = 0;
+
+    private long diff_tp = 0;
+
+    private boolean timerStart = false;
 
     public StatisticsArea() {
         super();
@@ -80,6 +100,38 @@ final class StatisticsArea extends JPanel {
 
         add(jsp);
 
+        long period = 3 * 60 * 1000; // 3 min
+
+        //Periodically update the average precision
+		Timer t = new java.util.Timer();
+        t.schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+
+                        timerStart = true;
+
+                        diff_displayed = curr_displayed - prev_displayed;
+                        diff_tp = curr_tp - prev_tp;
+                        if(diff_displayed == 0) {
+                            avg_precision = prev_precision;
+                            diff_tp = prev_tp;
+                            diff_displayed = prev_displayed;
+                        }
+                        else {
+                            avg_precision = 100f * diff_tp / diff_displayed;
+                        }
+
+                        prev_displayed = curr_displayed;
+                        prev_tp = curr_tp;
+                        prev_precision = avg_precision;
+                        // t.cancel();
+                    }
+                },
+                period,
+                period
+        );
+
     }
 
     public void clear() {
@@ -92,6 +144,8 @@ final class StatisticsArea extends JPanel {
 
     private void setNumbers(long total, long searched, long dropped, long displayed, long true_positives, long false_negatives, long false_display, Optional<DelphiModelStatistics> modelStatistics) {
         long passed = searched - dropped;
+        curr_displayed = displayed;
+        curr_tp = true_positives;
         StringBuilder str_display = new StringBuilder();
         str_display.append(String.format("\n %0$-17s %d\n", "Total", total));
         str_display.append(String.format("\n %0$-14s %d\n", "Searched", searched));
@@ -102,10 +156,17 @@ final class StatisticsArea extends JPanel {
         if (true_positives > 0 || false_negatives > 0 || false_display > 0) {
             str_display.append(String.format("\n x------- AUGMENTED --------x \n"));
             long labeled_total = true_positives + false_negatives + false_display;
+            float precision = 100f * true_positives / displayed;
+            if(!timerStart) {
+                diff_tp = true_positives;
+                diff_displayed = displayed;
+                avg_precision = precision;
+            }
             str_display.append(String.format("\n %0$-18s %d \n", "True Positives", true_positives));
             str_display.append(String.format("\n %0$-18s %d \n", "FN Displayed", false_display));
             str_display.append(String.format("\n %0$-17s %d \n", "FN Dropped", false_negatives));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f * true_positives / displayed));
+            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, precision));
+            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Avg. Precision ", diff_tp, diff_displayed, avg_precision));
             str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Curr. Recall", true_positives, labeled_total, 100f * true_positives / labeled_total));
         }
 
@@ -127,19 +188,15 @@ final class StatisticsArea extends JPanel {
         long t = 0;
         long s = 0;
         long d = 0;
-        long p = 0;
         long n = 0;
         for (ServerStatistics ss : serverStats.values()) {
             Map<String, Long> map = ss.getServerStats();
             t += map.get(ss.TOTAL_OBJECTS);
             s += map.get(ss.PROCESSED_OBJECTS);
             d += (map.get(ss.DROPPED_OBJECTS)  + discardedPositives);
-            p += map.get(ss.TP_OBJECTS);
             n += map.get(ss.FN_OBJECTS);
         }
         setNumbers(t, s, d, displayed, sampledPositive, n, sampledNegative, modelStatistics);
-        //System.out.println(String.format("Server \n Total %d\n Processed %d \n Dropped %d \n Passed %d\n Sampled Neg %d ", 
-        //    t, s, d, displayed, sampled_negative));
     }
 
     public void setDone() {

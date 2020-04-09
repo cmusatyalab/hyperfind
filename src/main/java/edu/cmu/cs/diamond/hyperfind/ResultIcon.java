@@ -70,6 +70,8 @@ class ResultIcon {
 
     private static final BufferedImage crossMarkImage;
 
+    private static final BufferedImage questionMarkImage;
+
     private ImageIcon icon;
 
     private int score;
@@ -79,6 +81,7 @@ class ResultIcon {
     static {
         BufferedImage check = null;
         BufferedImage cross = null;
+        BufferedImage query = null;
         try {
             check =
             ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
@@ -86,11 +89,15 @@ class ResultIcon {
             cross =
             ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
                         "cross.png"));
+            query =
+            ImageIO.read(ResultIcon.class.getClassLoader().getResourceAsStream(
+                        "query.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
         checkMarkImage = check;
         crossMarkImage = cross;
+        questionMarkImage = query;
     }
 
     public enum ResultIconSetting {
@@ -100,7 +107,8 @@ class ResultIcon {
     public enum ResultType {
         Negative (0),
         Positive (1),
-        Ignore   (2);
+        Ignore   (2),
+        Query   (-1);
 
         private static class TypeHolder {
             static Map<Integer, ResultType> typeMap = new HashMap<>();
@@ -128,7 +136,7 @@ class ResultIcon {
         this.name = name;
         this.icon = icon;
         this.displaySelection = displaySelection;
-        this.score = (score ==2) ? 0 : score;
+        this.score = (score == 2) ? 0 : score;
         this.originalImage = (icon == null) ? null : setOriginal();
         //resize before displaying 
         if (icon != null) {
@@ -175,6 +183,9 @@ class ResultIcon {
                 break;
             case Negative:
                 drawOverlay(crossMarkImage);
+                break;
+            case Query:
+                drawOverlay(questionMarkImage);
                 break;
             default:
                 getOriginal();

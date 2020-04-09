@@ -571,7 +571,7 @@ public class ThumbnailBox extends JPanel {
                                                     new ImageIcon(image),
                                                     ResultIconSetting.ICON_ONLY,
                                                     1,
-                                                    confidence > 0.5 ? 1 : 0
+                                                    -1
                                             );
                                         })
                                         .toArray(ResultIcon[]::new));
@@ -653,13 +653,11 @@ public class ThumbnailBox extends JPanel {
 
                             if (r.getKeys().contains("_gt_label")) {
                                 drawBorder(g, Color.RED, origW, origH, 80);
-                                /*
-                                    if (score == 0) {
-                                        sampledFNCount += 1;
-                                    } else {
-                                        sampledTPCount += 1;
-                                    }
-                                */
+                                if (score == 1) {
+                                    sampledFNCount += 1;
+                                } else {
+                                    sampledTPCount += 1;
+                                }
                             } else if (colorByModelVersion && r.getKeys().contains("_delphi.model_version.int")) {
                                 int modelVersion = Util.extractInt(r.getValue("_delphi.model_version.int"));
                                 drawBorder(g, Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), origW, origH, 80);
@@ -817,11 +815,7 @@ public class ThumbnailBox extends JPanel {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        long passed = 0;
-                        for (int l = 1; l < resultLists.size(); l++) {
-                            ListModel<ResultIcon> model = resultLists.get(l).getModel();
-                            passed += model.getSize();
-                        }
+                        long passed = resultLists.get(0).getModel().getSize();
                         stats.update(serverStats);
                         statsArea.update(serverStats, passed, sampledTPCount, sampledFNCount, discardedPositivesCount, Optional.ofNullable(modelStats.get()));
                     }
