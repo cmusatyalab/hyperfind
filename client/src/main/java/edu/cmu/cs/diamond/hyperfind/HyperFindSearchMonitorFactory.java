@@ -40,12 +40,10 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-
-import edu.cmu.cs.diamond.opendiamond.CookieMap;
-import edu.cmu.cs.diamond.opendiamond.Filter;
 
 /*
  * Factory for HyperFindSearchMonitors.  This class implements a SearchMonitor
@@ -58,24 +56,21 @@ public abstract class HyperFindSearchMonitorFactory {
      * If the SearchMonitor is interested in this particular search, this method
      * should return an initialized copy of the monitor.
      */
-    protected abstract HyperFindSearchMonitor createSearchMonitor(
-            List<Filter> filters);
+    protected abstract HyperFindSearchMonitor createSearchMonitor(List<Filter> filters);
 
-    public static List<HyperFindSearchMonitor> getInterestedSearchMonitors(
-            CookieMap cookies, List<Filter> filters) {
-        List<HyperFindSearchMonitor> interestedFactories = new
-                ArrayList<HyperFindSearchMonitor>();
+    public static List<HyperFindSearchMonitor> getInterestedSearchMonitors(List<Filter> filters) {
+        List<HyperFindSearchMonitor> interestedFactories = new ArrayList<>();
         for (HyperFindSearchMonitorFactory f : factories) {
             HyperFindSearchMonitor sm = f.createSearchMonitor(filters);
-            if (sm != null)
+            if (sm != null) {
                 interestedFactories.add(sm);
+            }
         }
         return interestedFactories;
     }
 
     private static List<HyperFindSearchMonitorFactory> generateFactories() {
-        List<HyperFindSearchMonitorFactory> factories = new
-                ArrayList<HyperFindSearchMonitorFactory>();
+        List<HyperFindSearchMonitorFactory> factories = new ArrayList<>();
         ServiceLoader<HyperFindSearchMonitorFactory> factoryLoader =
                 ServiceLoader.load(HyperFindSearchMonitorFactory.class);
         for (HyperFindSearchMonitorFactory f : factoryLoader) {

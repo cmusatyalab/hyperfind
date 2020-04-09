@@ -38,20 +38,44 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
+package edu.cmu.cs.diamond.hyperfind.connector.api;
 
-public enum BundleType {
-    CODEC("codec"),
-    PREDICATE("pred");
+import java.util.List;
+import org.immutables.value.Value;
 
-    // bundle file extension without the dot
-    private final String extension;
+@Value.Immutable
+public interface Filter {
 
-    BundleType(String extension) {
-        this.extension = extension;
+    @Value.Parameter
+    byte[] code();
+
+    @Value.Parameter
+    List<String> dependencies();
+
+    @Value.Parameter
+    List<String> arguments();
+
+    @Value.Parameter
+    String name();
+
+    @Value.Parameter
+    double minScore();
+
+    @Value.Parameter
+    double maxScore();
+
+    @Value.Parameter
+    byte[] blob();
+
+    static Filter of(
+            byte[] code,
+            Iterable<String> dependencies,
+            Iterable<String> arguments,
+            String name,
+            double minScore,
+            double maxScore,
+            byte[] blob) {
+        return ImmutableFilter.of(code, dependencies, arguments, name, minScore, maxScore, blob);
     }
-
-    public String getExtension() {
-        return extension;
-    }
+    
 }

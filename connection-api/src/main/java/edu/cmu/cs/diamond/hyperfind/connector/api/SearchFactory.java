@@ -38,44 +38,15 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.filter;
+package edu.cmu.cs.diamond.hyperfind.connector.api;
 
 import java.util.List;
-import org.immutables.value.Value;
+import java.util.Map;
 
-@Value.Immutable
-public interface Filter {
+public interface SearchFactory {
 
-    @Value.Parameter
-    byte[] code();
+    Search createSearch(List<String> attributes);
 
-    @Value.Parameter
-    List<String> dependencies();
+    Map<ObjectId, byte[]> downloadItems(Iterable<ObjectId> items);
 
-    @Value.Parameter
-    List<String> arguments();
-
-    @Value.Parameter
-    String name();
-
-    @Value.Parameter
-    double minScore();
-
-    @Value.Parameter
-    double maxScore();
-
-    @Value.Parameter
-    byte[] blob();
-
-    static Filter of(
-            byte[] code,
-            Iterable<String> dependencies,
-            Iterable<String> arguments,
-            String name,
-            double minScore,
-            double maxScore,
-            byte[] blob) {
-        return ImmutableFilter.of(code, dependencies, arguments, name, minScore, maxScore, blob);
-    }
-    
 }

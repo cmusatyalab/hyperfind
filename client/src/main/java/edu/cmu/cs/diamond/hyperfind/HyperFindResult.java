@@ -40,23 +40,21 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import javax.swing.SwingUtilities;
-
-import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class HyperFindResult {
 
     private final ActivePredicateSet predicateSet;
 
-    private final Result result;
+    private final SearchResult result;
 
     private final ResultRegions regions;
 
-    public HyperFindResult(ActivePredicateSet predicateSet, Result result) {
+    public HyperFindResult(ActivePredicateSet predicateSet, SearchResult result) {
         this.predicateSet = predicateSet;
         this.result = result;
-        this.regions = new ResultRegions(predicateSet.getFilterNames(),
-                result);
+        this.regions = new ResultRegions(predicateSet.getFilterNames(), result);
     }
 
     public void popup() {
@@ -73,7 +71,7 @@ public class HyperFindResult {
         return predicateSet;
     }
 
-    public Result getResult() {
+    public SearchResult getResult() {
         return result;
     }
 

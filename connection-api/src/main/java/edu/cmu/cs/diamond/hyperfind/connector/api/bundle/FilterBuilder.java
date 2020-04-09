@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Map;

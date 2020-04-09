@@ -422,7 +422,7 @@ public class ThumbnailBox extends JPanel {
         }
     }
 
-    public Map<String, FeedbackObject> getFeedBackItems() {
+    public Map<String, FeedbackObject> getFeedbackItems() {
         return feedbackItems;
     }
 

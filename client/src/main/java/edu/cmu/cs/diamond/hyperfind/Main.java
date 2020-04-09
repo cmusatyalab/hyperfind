@@ -51,7 +51,11 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -122,11 +126,7 @@ public final class Main {
 
     private final ThumbnailBox results;
 
-    private CookieMap cookies;
-
     private Search search;
-
-    private SearchFactory codecFactory;
 
     private static HyperFindProperty properties;
 
@@ -141,14 +141,14 @@ public final class Main {
     private final JComboBox codecs;
 
     private Main(
-            JFrame frame, ThumbnailBox results, PredicateListModel model,
-            CookieMap initialCookieMap,
+            JFrame frame,
+            ThumbnailBox results,
+            PredicateListModel model,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             JComboBox codecs) {
         this.frame = frame;
         this.results = results;
         this.model = model;
-        this.cookies = initialCookieMap;
         this.examplePredicateFactories = examplePredicateFactories;
         this.codecs = codecs;
         this.properties = new HyperFindProperty();
@@ -219,16 +219,13 @@ public final class Main {
             }
         });
 
-        List<HyperFindPredicateFactory> examplePredicateFactories =
-                new ArrayList<HyperFindPredicateFactory>();
-        final List<HyperFindPredicate> codecList =
-                new ArrayList<HyperFindPredicate>();
+        List<HyperFindPredicateFactory> examplePredicateFactories = new ArrayList<>();
+        List<HyperFindPredicate> codecList = new ArrayList<>();
         initPredicateFactories(factories, model, predicates,
                 examplePredicateFactories, codecList);
 
-        final JComboBox codecs = new JComboBox(codecList.toArray());
-
-        final Main m = new Main(frame, results, model, defaultCookieMap, examplePredicateFactories, codecs);
+        JComboBox<HyperFindPredicate> codecs = new JComboBox<>(codecList.toArray(HyperFindPredicate[]::new));
+        Main m = new Main(frame, results, model, examplePredicateFactories, codecs);
 
         predicateList.setTransferHandler(new PredicateImportTransferHandler(m, model, connection));
 
@@ -394,25 +391,21 @@ public final class Main {
                     m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
-                    List<Filter> filters = new ArrayList<Filter>(
-                            p.createFilters());
+                    List<Filter> filters = new ArrayList<>(p.createFilters());
 
-                    m.codecFactory = m.createFactory(filters);
                     // give the ResultExportTransferHandler a different
                     // factory with just the codec, since it only needs the
                     // decoded image and not the filter output attributes
                     for (int i = 0; i < m.results.NUM_PANELS; i++) {
                         m.results.resultLists.get(i).setTransferHandler(
-                                new ResultExportTransferHandler(
-                                        m.codecFactory, executor));
+                                new ResultExportTransferHandler(connection.getSearchFactory(filters), executor));
                     }
 
                     filters.addAll(model.createFilters());
-                    SearchFactory factory = m.createFactory(filters);
+                    SearchFactory factory = connection.getSearchFactory(filters);
 
                     List<HyperFindSearchMonitor> monitors =
-                            HyperFindSearchMonitorFactory
-                                    .getInterestedSearchMonitors(m.cookies, filters);
+                            HyperFindSearchMonitorFactory.getInterestedSearchMonitors(filters);
 
                     // push attributes
                     Set<String> attributes = new HashSet<String>();
@@ -440,7 +433,7 @@ public final class Main {
                     // patches and heatmaps
                     Set<String> filterNames = new HashSet<String>();
                     for (Filter f : filters) {
-                        filterNames.add(f.getName());
+                        filterNames.add(f.name());
                     }
                     attributes.addAll(ResultRegions.
                             getPushAttributes(filterNames));
@@ -451,9 +444,7 @@ public final class Main {
                     m.results.terminate();
 
                     // start
-                    m.results.start(m.search, new ActivePredicateSet(m,
-                                    model.getSelectedPredicates(), factory),
-                            monitors);
+                    m.results.start(m.search, new ActivePredicateSet(m, model.getSelectedPredicates(), factory), monitors);
                 } catch (IOException e1) {
                     proxyBox.setEnabled(true);
                     Throwable e2 = e1.getCause();
@@ -475,7 +466,7 @@ public final class Main {
                 boolean downloadResults = m.properties.checkDownload();
 
                 if (downloadResults) {
-                    Map<String, FeedbackObject> map = m.results.getFeedBackItems();
+                    Map<String, FeedbackObject> map = m.results.getFeedbackItems();
                     try {
                         String downloadDir = m.properties.getDownloadDirectory();
                         List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir)
@@ -561,7 +552,6 @@ public final class Main {
         });
 
         // Export and import predicates
-
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
@@ -619,7 +609,7 @@ public final class Main {
                         restored_states = gson.fromJson(reader, type);
 
                         for (HyperFindPredicate.HyperFindPredicateState state : restored_states) {
-                            model.addPredicate(HyperFindPredicate.restore(state));
+                            model.addPredicate(HyperFindPredicate.restore(state, connection));
                         }
                     }
                 } catch (IOException ex) {
@@ -789,12 +779,12 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        popup(r.getResult().getName(), PopupPanel.createInstance(this,
+        popup(r.getResult().name(), PopupPanel.createInstance(this,
                 r, examplePredicateFactories, model));
     }
 
-    private void popup(HyperFindResult r, Result oldResult) {
-        popup(r.getResult().getName(), PopupPanel.createInstance(this,
+    private void popup(HyperFindResult r, SearchResult oldResult) {
+        popup(r.getResult().name(), PopupPanel.createInstance(this,
                 r, examplePredicateFactories, model, oldResult));
     }
 
@@ -814,8 +804,8 @@ public final class Main {
     }
 
     void reexecute(HyperFindResult result) {
-        Result prevResult = result.getResult();
-        ObjectIdentifier id = prevResult.getObjectIdentifier();
+        SearchResult prevResult = result.getResult();
+        ObjectId id = prevResult.id();
 
         ActivePredicateSet ps = result.getActivePredicateSet();
         SearchFactory factory = ps.getSearchFactory();
@@ -875,10 +865,6 @@ public final class Main {
     ResultRegions getRegions(HyperFindPredicate predicate, byte[] data)
             throws IOException {
         return getRegions(predicate, null, data);
-    }
-
-    private SearchFactory createFactory(List<Filter> filters) {
-        return new SearchFactory(filters, cookies);
     }
 
     private void stopSearch() {

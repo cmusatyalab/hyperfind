@@ -38,20 +38,8 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
+package edu.cmu.cs.diamond.hyperfind.connector.api;
 
-public enum BundleType {
-    CODEC("codec"),
-    PREDICATE("pred");
+public interface Search {
 
-    // bundle file extension without the dot
-    private final String extension;
-
-    BundleType(String extension) {
-        this.extension = extension;
-    }
-
-    public String getExtension() {
-        return extension;
-    }
 }

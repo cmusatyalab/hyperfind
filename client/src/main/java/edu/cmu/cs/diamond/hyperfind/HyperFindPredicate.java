@@ -44,7 +44,7 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;

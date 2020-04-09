@@ -40,13 +40,19 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.imageio.ImageIO;
-
-import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class ResultRegions {
 
@@ -60,16 +66,16 @@ public class ResultRegions {
         // construct a dummy object with no regions
     }
 
-    ResultRegions(Collection<String> filterNames, Result r) {
+    ResultRegions(Collection<String> filterNames, SearchResult r) {
         for (String name : filterNames) {
             // patches
-            byte[] patch = r.getValue(getPatchAttributeName(name));
+            byte[] patch = r.attributes().get(getPatchAttributeName(name));
             if (patch != null) {
                 patches.put(name, BoundingBox.fromPatchesList(patch));
             }
 
             // heatmap
-            byte[] heatmap = r.getValue(getHeatmapAttributeName(name));
+            byte[] heatmap = r.attributes().get(getHeatmapAttributeName(name));
             if (heatmap != null) {
                 ByteArrayInputStream in = new ByteArrayInputStream(heatmap);
                 try {

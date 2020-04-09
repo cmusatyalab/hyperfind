@@ -52,7 +52,7 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.NumberOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.StringOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.filter.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;

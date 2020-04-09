@@ -38,20 +38,40 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
+package edu.cmu.cs.diamond.hyperfind.connector.api;
 
-public enum BundleType {
-    CODEC("codec"),
-    PREDICATE("pred");
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Optional;
+import org.immutables.value.Value;
 
-    // bundle file extension without the dot
-    private final String extension;
+@Value.Immutable
+public abstract class SearchResult {
 
-    BundleType(String extension) {
-        this.extension = extension;
+    public static final String NAME_ATTR = "Display-Name";
+
+    @Value.Parameter
+    public abstract ObjectId id();
+
+    @Value.Parameter
+    public abstract Map<String, byte[]> attributes();
+
+    public final String name() {
+        return stringValue(NAME_ATTR)
+                .orElseThrow(() -> new IllegalArgumentException(NAME_ATTR + " attribute not defined in earch result"));
     }
 
-    public String getExtension() {
-        return extension;
+    // TODO: deduplicate with opendiamond-java's Utils class
+    public final Optional<String> stringValue(String attrName) {
+        if (attributes().containsKey(attrName)) {
+            return Optional.empty();
+        }
+
+        byte[] value = attributes().get(attrName);
+        if (value.length == 0) {
+            return Optional.of("");
+        }
+
+        return Optional.of(new String(value, 0, value.length - 1, StandardCharsets.UTF_8));
     }
 }

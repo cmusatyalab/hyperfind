@@ -40,173 +40,53 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.io.Files;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.imageio.ImageIO;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.TransferHandler;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
-import edu.cmu.cs.diamond.opendiamond.SearchFactory;
-import edu.cmu.cs.diamond.opendiamond.Result;
-import edu.cmu.cs.diamond.opendiamond.Util;
-
-
 /**
- * Handles content export when drag from ResultList.
- * Images are first downloaded to a temp directory.
- * A URI list is return.
+ * Handles content export when drag from ResultList. Images are first downloaded to a temp directory. A URI list is
+ * return.
  */
 public class ResultExportTransferHandler extends TransferHandler {
-    private static final DataFlavor uriListFlavor = new DataFlavor(
-            "text/uri-list; class=java.lang.String", "URI list");
 
-    private static final DataFlavor textPlainFlavor = new DataFlavor(
+    private static final DataFlavor URI_LIST_FLAVOR =
+            new DataFlavor("text/uri-list; class=java.lang.String", "URI list");
+
+    private static final DataFlavor TEXT_PLAIN_FLAVOR = new DataFlavor(
             "text/plain; class=java.lang.String", "Plain text");
 
-    private static final List<DataFlavor> flavors = new ArrayList<DataFlavor>();
+    private static final List<DataFlavor> FLAVORS = ImmutableList.of(URI_LIST_FLAVOR, TEXT_PLAIN_FLAVOR);
 
-    static {
-        flavors.add(uriListFlavor);
-        flavors.add(textPlainFlavor);
-    }
+    private static final int IMAGE_DOWNLOAD_BATCH_SIZE = 50;
 
     private final SearchFactory factory;
-
     private final ExecutorService executor;
 
-    private class ExportTransferable implements Transferable {
-        private final List<Future<File>> futureFiles;
-
-        private final Future<String> futureURIList;
-
-        public ExportTransferable(final List<ResultIcon> results) {
-            futureFiles = new ArrayList<Future<File>>();
-            for (final ResultIcon r : results) {
-                futureFiles.add(executor.submit(new Callable<File>() {
-                    @Override
-                    public File call() throws Exception {
-                        File f = null;
-
-                        // if the attribute "hyperfind.external-link" is returned, use it as download link
-                        byte[] external_link = r.getResult().getResult().getValue("hyperfind.external-link");
-                        if (null != external_link) {
-                            String dl_link = Util.extractString(external_link);
-                            System.out.println("Downloading from " + dl_link);
-                            URL url = new URL(dl_link);
-                            f = File.createTempFile("hyperfind-export-", "-" + FilenameUtils.getName(url.getFile()));
-                            f.deleteOnExit();
-                            FileUtils.copyURLToFile(url, f);
-                        } else {
-                            System.out.println("Extract image by re-execution.");
-                            Set<String> desiredAttributes = new HashSet<String>();
-                            desiredAttributes.add("");
-
-                            Result result = factory.generateResult(r.getResult().getResult().getObjectIdentifier(), desiredAttributes);
-                            String ext = FilenameUtils.getExtension(r.getResult().getResult().getObjectIdentifier().getObjectID());
-
-                            f = File.createTempFile("hyperfind-export-", "."+ext);
-                            f.deleteOnExit();
-                            System.out.println("writing bytes " + result.getData().length);
-
-                            FileUtils.writeByteArrayToFile(f, result.getData());
-
-                            // BufferedImage img = Util
-                            //         .extractImageFromResultIdentifier(r
-                            //                 .getResult().getResult()
-                            //                 .getObjectIdentifier(), factory);
-
-                            // f = File.createTempFile("hyperfind-export-",
-                            //         ".png");
-                            // f.deleteOnExit();
-
-                            // ImageIO.write(img, "png", f);
-                        }
-
-                        return f;
-                    }
-                }));
-            }
-
-            futureURIList = executor.submit(new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    // System.out.println(f);
-
-                    StringBuilder sb = new StringBuilder();
-
-                    for (Future<File> future : futureFiles) {
-                        File f = future.get();
-                        URI u = f.toURI();
-                        sb.append(u.toASCIIString() + "\r\n");
-                    }
-                    return sb.toString();
-                }
-            });
-        }
-
-        @Override
-        public boolean isDataFlavorSupported(DataFlavor flavor) {
-            // System.out.println(flavor);
-            return flavors.contains(flavor);
-        }
-
-        @Override
-        public DataFlavor[] getTransferDataFlavors() {
-            return flavors.toArray(new DataFlavor[0]);
-        }
-
-        @Override
-        public Object getTransferData(DataFlavor flavor)
-                throws UnsupportedFlavorException, IOException {
-            // System.out.println(flavor);
-
-            try {
-                if (flavor.equals(uriListFlavor)
-                        || flavor.equals(textPlainFlavor)) {
-                    String uriList = futureURIList.get();
-                    // System.out.println(uriList);
-                    return uriList;
-                } else {
-                    throw new UnsupportedFlavorException(flavor);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            } catch (ExecutionException e) {
-                Throwable c = e.getCause();
-                if (c instanceof RuntimeException) {
-                    throw (RuntimeException) c;
-                } else if (c instanceof IOException) {
-                    throw (IOException) c;
-                }
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
-
-    public ResultExportTransferHandler(SearchFactory factory,
-                                       ExecutorService executor) {
+    public ResultExportTransferHandler(SearchFactory factory, ExecutorService executor) {
         this.factory = factory;
         this.executor = executor;
     }
@@ -217,36 +97,111 @@ public class ResultExportTransferHandler extends TransferHandler {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected Transferable createTransferable(JComponent c) {
-        // System.out.println("****create transferable");
-
-        JList list = (JList) c;
-
-        final Object[] values = list.getSelectedValues();
-
-        List<ResultIcon> results = new ArrayList<ResultIcon>();
-
-        for (Object o : values) {
-            ResultIcon r = (ResultIcon) o;
-            results.add(r);
-        }
-
+        JList<ResultIcon> list = (JList<ResultIcon>) c;
+        List<ResultIcon> results = list.getSelectedValuesList();
         ExportTransferable t = new ExportTransferable(results);
 
         // force the computation in the UI thread here to avoid terrible
         // drag and drop race conditions
         try {
-            t.futureURIList.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-            Throwable th = e.getCause();
-            if (th instanceof RuntimeException) {
-                throw (RuntimeException) th;
-            }
-            e.printStackTrace();
+            t.uriFutures.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to get uris", e);
         }
 
         return t;
+    }
+
+    private class ExportTransferable implements Transferable {
+
+        private final Future<String> uriFutures;
+
+        public ExportTransferable(List<ResultIcon> resultIcons) {
+            List<Future<File>> externalDownloadFutures = new ArrayList<>();
+            List<ObjectId> toReexecute = new ArrayList<>();
+
+            for (ResultIcon icon : resultIcons) {
+                // if the attribute "hyperfind.external-link" is returned, use it as download link
+                SearchResult result = icon.getResult().getResult();
+                Optional<String> externalLink = result.stringValue("hyperfind.external-link");
+                if (externalLink.isPresent()) {
+                    externalDownloadFutures.add(executor.submit(() -> {
+                        String downloadLink = externalLink.get();
+                        System.out.println("Downloading from " + downloadLink);
+                        URL url = new URL(downloadLink);
+                        File file =
+                                File.createTempFile("hyperfind-export-", "-" + FilenameUtils.getName(url.getFile()));
+                        file.deleteOnExit();
+                        FileUtils.copyURLToFile(url, file);
+                        return file;
+                    }));
+                } else {
+                    toReexecute.add(result.id());
+                }
+            }
+
+            Future<List<File>> downloadFuture = executor.submit(() -> StreamSupport.stream(
+                    Iterables.partition(toReexecute, IMAGE_DOWNLOAD_BATCH_SIZE).spliterator(),
+                    false)
+                    .flatMap(ids -> factory.downloadItems(ids).entrySet().stream()
+                            .map(entry -> writeToFile(entry.getKey(), entry.getValue())))
+                    .collect(Collectors.toList()));
+
+            uriFutures = executor.submit(() -> {
+                StringBuilder sb = new StringBuilder();
+
+                for (Future<File> future : externalDownloadFutures) {
+                    File f = future.get();
+                    URI u = f.toURI();
+                    sb.append(u.toASCIIString()).append("\r\n");
+                }
+
+                for (File file : downloadFuture.get()) {
+                    URI u = file.toURI();
+                    sb.append(u.toASCIIString()).append("\r\n");
+                }
+
+                return sb.toString();
+            });
+        }
+
+        private File writeToFile(ObjectId id, byte[] data) {
+            try {
+                String ext = FilenameUtils.getExtension(id.objectId());
+                File file = File.createTempFile("hyperfind-export-", "." + ext);
+                file.deleteOnExit();
+                Files.write(data, file);
+
+                return file;
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to write image", e);
+            }
+        }
+
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            return FLAVORS.contains(flavor);
+        }
+
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return FLAVORS.toArray(new DataFlavor[0]);
+        }
+
+        @Override
+        public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+
+            try {
+                if (flavor.equals(URI_LIST_FLAVOR) || flavor.equals(TEXT_PLAIN_FLAVOR)) {
+                    return uriFutures.get();
+                } else {
+                    throw new UnsupportedFlavorException(flavor);
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Failed to get transfer data", e);
+            }
+        }
     }
 }

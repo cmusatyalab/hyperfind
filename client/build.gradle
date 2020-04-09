@@ -4,6 +4,7 @@ dependencies {
     implementation project(':connection-api')
 
     implementation 'com.google.code.gson:gson'
+    implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'com.sun.xml.bind:jaxb-core'
     implementation 'com.sun.xml.bind:jaxb-impl'

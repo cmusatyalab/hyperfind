@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,21 +40,17 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.io.IOException;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.swing.AbstractListModel;
-
-import edu.cmu.cs.diamond.opendiamond.Filter;
 
 class PredicateListModel extends AbstractListModel {
     private static final boolean INITIALLY_SELECTED = true;
 
-    private final List<SelectablePredicate> predicates =
-            new ArrayList<SelectablePredicate>();
+    private final List<SelectablePredicate> predicates = new ArrayList<>();
 
     @Override
     public Object getElementAt(int index) {
@@ -71,10 +67,9 @@ class PredicateListModel extends AbstractListModel {
         if (index > 0) {
             // can move up
             remove(sp);
-            predicates.add(index-1, sp);
+            predicates.add(index - 1, sp);
             fireIntervalAdded(this, index - 1, index - 1);
         }
-
     }
 
     public boolean remove(SelectablePredicate sp) {
@@ -88,9 +83,8 @@ class PredicateListModel extends AbstractListModel {
         return result;
     }
 
-    public void addPredicate(final HyperFindPredicate p) {
-        SelectablePredicate sp = new SelectablePredicate(p,
-                INITIALLY_SELECTED);
+    public void addPredicate(HyperFindPredicate p) {
+        SelectablePredicate sp = new SelectablePredicate(p, INITIALLY_SELECTED);
         predicates.add(sp);
 
         int index = predicates.size() - 1;
@@ -109,15 +103,15 @@ class PredicateListModel extends AbstractListModel {
         return result;
     }
 
-    List<Filter> createFilters() throws IOException {
+    List<Filter> createFilters() {
         // first, eliminate duplicates
-        Set<HyperFindPredicate> set = new HashSet<HyperFindPredicate>();
-        List<Filter> result = new ArrayList<Filter>();
+        Set<HyperFindPredicate> set = new HashSet<>();
+        List<Filter> result = new ArrayList<>();
 
         for (SelectablePredicate sp : predicates) {
             if (sp.isSelected()) {
                 // dedup
-                if (!set.contains(sp)){
+                if (!set.contains(sp)) {
                     System.out.println("Creating filters from " + sp);
                     result.addAll(sp.getPredicate().createFilters());
                     set.add(sp.getPredicate());
