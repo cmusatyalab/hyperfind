@@ -40,15 +40,24 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
-import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.util.Map;
 import java.util.Optional;
+<<<<<<< HEAD
 import java.util.Timer;
 import java.util.TimerTask;
+=======
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
+>>>>>>> fix
 
 final class StatisticsArea extends JPanel {
 
@@ -184,18 +193,20 @@ final class StatisticsArea extends JPanel {
     }
 
 
-    public void update(Map<String, ServerStatistics> serverStats, long displayed, long sampledPositive, long sampledNegative, long discardedPositives, Optional<DelphiModelStatistics> modelStatistics) {
+    public void update(Map<String, SearchStats> serverStats, long displayed, long sampledPositive, long sampledNegative,
+            long discardedPositives, Optional<DelphiModelStatistics> modelStatistics) {
         long t = 0;
         long s = 0;
         long d = 0;
         long n = 0;
-        for (ServerStatistics ss : serverStats.values()) {
-            Map<String, Long> map = ss.getServerStats();
-            t += map.get(ss.TOTAL_OBJECTS);
-            s += map.get(ss.PROCESSED_OBJECTS);
-            d += (map.get(ss.DROPPED_OBJECTS)  + discardedPositives);
-            n += map.get(ss.FN_OBJECTS);
+
+        for (SearchStats ss : serverStats.values()) {
+            t += ss.totalObjects();
+            s += ss.processedObjects();
+            d += (ss.droppedObjects()  + discardedPositives);
+            n += ss.falseNegatives();
         }
+
         setNumbers(t, s, d, displayed, sampledPositive, n, sampledNegative, modelStatistics);
     }
 

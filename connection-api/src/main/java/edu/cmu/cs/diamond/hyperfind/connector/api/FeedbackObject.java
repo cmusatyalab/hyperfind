@@ -40,19 +40,22 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.api;
 
-import java.util.Map;
-import java.util.Optional;
+import org.immutables.value.Value;
 
-public interface Search {
+@Value.Immutable
+public interface FeedbackObject {
 
-    Optional<SearchResult> getNextResult();
+    @Value.Parameter
+    ObjectId id();
 
-    Map<String, SearchStats> getStats();
+    @Value.Parameter
+    int label();
 
-    void labelExamples(Map<ObjectId, Integer> examples);
+    @Value.Parameter
+    byte[] featureVector();
 
-    void retrainFilter(Map<String, FeedbackObject> map);
-
-    void close();
+    static FeedbackObject of(ObjectId id, int label, byte[] featureVector) {
+        return ImmutableFeedbackObject.of(id, label, featureVector);
+    }
 
 }

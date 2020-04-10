@@ -41,6 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
@@ -125,7 +126,7 @@ public class ResultExportTransferHandler extends TransferHandler {
             for (ResultIcon icon : resultIcons) {
                 // if the attribute "hyperfind.external-link" is returned, use it as download link
                 SearchResult result = icon.getResult().getResult();
-                Optional<String> externalLink = result.stringValue("hyperfind.external-link");
+                Optional<String> externalLink = result.getString("hyperfind.external-link");
                 if (externalLink.isPresent()) {
                     externalDownloadFutures.add(executor.submit(() -> {
                         String downloadLink = externalLink.get();
@@ -138,15 +139,15 @@ public class ResultExportTransferHandler extends TransferHandler {
                         return file;
                     }));
                 } else {
-                    toReexecute.add(result.id());
+                    toReexecute.add(result.getId());
                 }
             }
 
             Future<List<File>> downloadFuture = executor.submit(() -> StreamSupport.stream(
                     Iterables.partition(toReexecute, IMAGE_DOWNLOAD_BATCH_SIZE).spliterator(),
                     false)
-                    .flatMap(ids -> factory.downloadItems(ids).entrySet().stream()
-                            .map(entry -> writeToFile(entry.getKey(), entry.getValue())))
+                    .flatMap(ids -> factory.getResults(ids, ImmutableSet.of(SearchResult.DATA_ATTR)).entrySet().stream()
+                            .map(entry -> writeToFile(entry.getKey(), entry.getValue().getData())))
                     .collect(Collectors.toList()));
 
             uriFutures = executor.submit(() -> {

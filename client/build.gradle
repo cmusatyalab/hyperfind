@@ -8,6 +8,7 @@ dependencies {
     implementation 'commons-io:commons-io'
     implementation 'com.sun.xml.bind:jaxb-core'
     implementation 'com.sun.xml.bind:jaxb-impl'
+    implementation 'one.util:streamex'
     implementation 'org.swinglabs:swingx'
 
     // implementation 'edu.cmu.cs.diamond.opendiamond:opendiamond-java'

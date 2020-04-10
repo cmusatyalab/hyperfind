@@ -40,38 +40,74 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.api;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
-import org.immutables.value.Value;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
-@Value.Immutable
-public abstract class SearchResult {
+public final class SearchResult {
 
-    public static final String NAME_ATTR = "Display-Name";
+    public static final String DATA_ATTR = "";
 
-    @Value.Parameter
-    public abstract ObjectId id();
+    private static final String NAME_ATTR = "Display-Name";
 
-    @Value.Parameter
-    public abstract Map<String, byte[]> attributes();
+    private final ObjectId id;
+    private final Map<String, byte[]> attributes;
 
-    public final String name() {
-        return stringValue(NAME_ATTR)
+    public SearchResult(ObjectId id, Map<String, byte[]> attributes) {
+        this.id = id;
+        this.attributes = attributes;
+    }
+
+    public ObjectId getId() {
+        return id;
+    }
+
+    public String getName() {
+        return getString(NAME_ATTR)
                 .orElseThrow(() -> new IllegalArgumentException(NAME_ATTR + " attribute not defined in earch result"));
     }
 
+    public byte[] getData() {
+        return attributes.get(DATA_ATTR);
+    }
+
+    public Optional<byte[]> getBytes(String attrName) {
+        return Optional.ofNullable(attributes.get(attrName));
+    }
+
+    public OptionalInt getInt(String attrName) {
+        Optional<byte[]> bytes = getBytes(attrName);
+
+        if (bytes.isEmpty()) {
+            return OptionalInt.empty();
+        }
+
+        return OptionalInt.of(ByteBuffer.wrap(bytes.get()).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt());
+    }
+
+    public OptionalDouble getDouble(String attrName) {
+        Optional<byte[]> bytes = getBytes(attrName);
+
+        if (bytes.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+
+        return OptionalDouble.of(Double.longBitsToDouble(ByteBuffer.wrap(bytes.get())
+                .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                .getLong()));
+    }
+
     // TODO: deduplicate with opendiamond-java's Utils class
-    public final Optional<String> stringValue(String attrName) {
-        if (attributes().containsKey(attrName)) {
-            return Optional.empty();
-        }
-
-        byte[] value = attributes().get(attrName);
-        if (value.length == 0) {
-            return Optional.of("");
-        }
-
-        return Optional.of(new String(value, 0, value.length - 1, StandardCharsets.UTF_8));
+    public Optional<String> getString(String attrName) {
+        return getBytes(attrName).map(value -> {
+            if (value.length == 0) {
+                return "";
+            } else {
+                return new String(value, 0, value.length - 1, StandardCharsets.UTF_8);
+            }
+        });
     }
 }

@@ -40,38 +40,81 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultType;
+import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
-import edu.cmu.cs.diamond.opendiamond.*;
-
-import javax.imageio.ImageIO;
-import javax.swing.Timer;
-import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Adjustable;
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
+import javax.imageio.ImageIO;
+import javax.swing.Box;
+import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import one.util.streamex.EntryStream;
 
 /**
- * The ThumbnailBox contains a scrolling panel of the thumbnails of search results
- * + a conditional "Get next xxx results" button + statistics bar
- * NOTE: Status for start, stop buttons and stats bar is changed within the class.
+ * The ThumbnailBox contains a scrolling panel of the thumbnails of search results + a conditional "Get next xxx
+ * results" button + statistics bar NOTE: Status for start, stop buttons and stats bar is changed within the class.
  */
 public class ThumbnailBox extends JPanel {
 
@@ -80,7 +123,8 @@ public class ThumbnailBox extends JPanel {
     private static final long NANOSEC_PER_MILLI = (long) 1e6;
     private static final int PREFERRED_WIDTH = 750;
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null, null, null);
-    private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP = new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
+    private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP =
+            new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
     public final List<JList<ResultIcon>> resultLists;
 
@@ -92,7 +136,7 @@ public class ThumbnailBox extends JPanel {
     private final JButton moreResultsButton;
     private final JLabel timeLabel;
     private final JPopupMenu popupMenu;
-    private final ConcurrentMap<ObjectIdentifier, ResultType> labelsToSend = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectId, ResultType> labelsToSend = new ConcurrentHashMap<>();
     private final Map<Integer, JScrollPane> resultPanes = new HashMap<>();
     private final Map<String, FeedbackObject> feedbackItems = new HashMap<>();
     private final AtomicReference<DelphiModelStatistics> modelStats = new AtomicReference<>();
@@ -119,7 +163,6 @@ public class ThumbnailBox extends JPanel {
     private SwingWorker<?, ?> retrainWorker;
     private List<HyperFindSearchMonitor> searchMonitors;
 
-
     /**
      * @param stopButton
      * @param startButton
@@ -128,8 +171,9 @@ public class ThumbnailBox extends JPanel {
      * @param statsArea        Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
-    public ThumbnailBox(JButton stopButton, JButton startButton, JButton retrainButton, StatisticsBar stats,
-                        StatisticsArea statsArea, int resultsPerScreen) {
+    public ThumbnailBox(
+            JButton stopButton, JButton startButton, JButton retrainButton, StatisticsBar stats,
+            StatisticsArea statsArea, int resultsPerScreen) {
         this.stopButton = stopButton;
         this.startButton = startButton;
         this.retrainButton = retrainButton;
@@ -217,11 +261,11 @@ public class ThumbnailBox extends JPanel {
                     verticalBar.removeAdjustmentListener(this);
                 }
             };
-            if (resultLists.get(id).isSelectionEmpty())
+            if (resultLists.get(id).isSelectionEmpty()) {
                 verticalBar.addAdjustmentListener(downScroller);
+            }
         }
     }
-
 
     // Setting Up result List this Listeners
     private void setUpResultLists() {
@@ -231,10 +275,9 @@ public class ThumbnailBox extends JPanel {
             public void valueChanged(ListSelectionEvent e) {
                 List<HyperFindResult> results = new
                         ArrayList<HyperFindResult>();
-                JList list = (JList) e.getSource();
-                for (Object o : list.getSelectedValuesList()) {
-                    ResultIcon icon = (ResultIcon) o;
-                    results.add(icon.getResult());
+                JList<ResultIcon> list = (JList<ResultIcon>) e.getSource();
+                for (ResultIcon o : list.getSelectedValuesList()) {
+                    results.add(o.getResult());
                 }
                 results = Collections.unmodifiableList(results);
                 for (HyperFindSearchMonitor sm : searchMonitors) {
@@ -304,29 +347,29 @@ public class ThumbnailBox extends JPanel {
                 }
                 for (ResultIcon icon : valuesSelected) {
                     icon.drawOverlay(cmd);
-                    Result r = icon.getResult().getResult();
-                    byte[] fv = r.getValue("feature_vector.json");
+                    SearchResult r = icon.getResult().getResult();
+                    Optional<byte[]> fv = r.getBytes("feature_vector.json");
                     if (cmd == ResultType.Ignore) {
                         // If item present in the Map then delete entry
                         feedbackItems.remove(icon.getName());
                     } else {
-                        if ((fv != null && fv.length != 0) || downloadResults) {
-                            feedbackItems.put(icon.getName(), new FeedbackObject(fv, cmd.getValue(), r.getObjectIdentifier()));
+                        if ((fv.isPresent() && fv.get().length != 0) || downloadResults) {
+                            feedbackItems.put(
+                                    icon.getName(),
+                                    FeedbackObject.of(r.getId(), cmd.getValue(), fv.orElse(new byte[0])));
                         }
                     }
-                    labelsToSend.put(r.getObjectIdentifier(), cmd);
+
+                    labelsToSend.put(r.getId(), cmd);
                 }
 
                 if (runningJobs.getAndUpdate(i -> Math.min(2, i + 1)) < 2) {
                     labelExecutor.execute(() -> {
                         try {
-                            Map<ObjectIdentifier, ResultType> toSend = new HashMap<>(labelsToSend);
-                            Set<LabeledExample> examples = toSend.entrySet().stream()
-                                    .map(ex -> {
-                                        int value = ex.getValue().equals(ResultType.Ignore) ? -1 : ex.getValue().getValue();
-                                        return new LabeledExample(ex.getKey(), value);
-                                    })
-                                    .collect(Collectors.toSet());
+                            Map<ObjectId, ResultType> toSend = ImmutableMap.copyOf(labelsToSend);
+                            Map<ObjectId, Integer> examples = EntryStream.of(toSend)
+                                    .mapValues(r -> r.equals(ResultType.Ignore) ? -1 : r.getValue())
+                                    .toMap();
 
                             search.labelExamples(examples);
                             toSend.forEach(labelsToSend::remove);
@@ -353,7 +396,6 @@ public class ThumbnailBox extends JPanel {
         popupMenu.add(positive);
         popupMenu.add(negative);
         popupMenu.add(ignore);
-
     }
 
     private void setTimerListener() {
@@ -362,7 +404,8 @@ public class ThumbnailBox extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 long nowTime = System.nanoTime();
                 long timeElapsed = (nowTime - startTime) / NANOSEC_PER_MILLI;
-                String timeDisplay = String.format("%02d:%02d:%02d",
+                String timeDisplay = String.format(
+                        "%02d:%02d:%02d",
                         TimeUnit.MILLISECONDS.toHours(timeElapsed),
                         TimeUnit.MILLISECONDS.toMinutes(timeElapsed) -
                                 TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeElapsed)),
@@ -380,19 +423,7 @@ public class ThumbnailBox extends JPanel {
 
     private void startStatsTimer() {
         timerExecutor = Executors.newSingleThreadScheduledExecutor();
-        statsTimerFuture = timerExecutor.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    updateStats();
-                } catch (IOException e) {
-                    // This should also be encountered and handled by the
-                    // worker thread, so there's no need to be noisy here
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }, 0, 500, TimeUnit.MILLISECONDS);
+        statsTimerFuture = timerExecutor.scheduleWithFixedDelay(this::updateStats, 0, 500, TimeUnit.MILLISECONDS);
     }
 
     // called on AWT thread
@@ -442,7 +473,8 @@ public class ThumbnailBox extends JPanel {
                     moreResultsButton.doClick();
                     pauseState = true;
                     for (int l = 0; l < resultLists.size(); l++) {
-                        DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultLists.get(l).getModel();
+                        DefaultListModel<ResultIcon> model =
+                                (DefaultListModel<ResultIcon>) resultLists.get(l).getModel();
                         model.removeAllElements();
                     }
                     moreResultsButton.setVisible(false);
@@ -454,7 +486,7 @@ public class ThumbnailBox extends JPanel {
                     System.out.println("Retrain finish !");
                     clearFeedBackItems();
                     pauseState = false;
-                } catch (IOException e) {
+                } catch (RuntimeException e) {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
@@ -528,18 +560,21 @@ public class ThumbnailBox extends JPanel {
                                 continue;
                             }
 
-                            Result r = search.getNextResult();
+                            Optional<SearchResult> resultOpt = search.getNextResult();
 
-                            if (r == null) {
+                            if (resultOpt.isEmpty()) {
                                 System.out.println("RESULT NULL");
                                 break;
                             }
 
-                            if (r.getKeys().contains("_delphi.system_examples")) {
+                            SearchResult result = resultOpt.get();
+
+                            Optional<byte[]> systemExamples = result.getBytes("_delphi.system_examples");
+                            if (systemExamples.isPresent()) {
                                 Map<String, BufferedImage> images = new HashMap<>();
                                 Map<String, Map<String, ?>> metadata = new HashMap<>();
 
-                                try (ZipInputStream zi = new ZipInputStream(new ByteArrayInputStream(r.getValue("_delphi.system_examples")))) {
+                                try (ZipInputStream zi = new ZipInputStream(new ByteArrayInputStream(systemExamples.get()))) {
                                     ZipEntry zipEntry;
                                     while ((zipEntry = zi.getNextEntry()) != null) {
                                         String[] splits = zipEntry.getName().split("/");
@@ -547,7 +582,11 @@ public class ThumbnailBox extends JPanel {
                                         if (filename.endsWith(".jpg")) {
                                             images.put(filename.substring(0, filename.length() - 4), ImageIO.read(zi));
                                         } else {
-                                            metadata.put(filename, new Gson().fromJson(new InputStreamReader(zi, StandardCharsets.UTF_8), Map.class));
+                                            metadata.put(
+                                                    filename,
+                                                    new Gson().fromJson(new InputStreamReader(
+                                                            zi,
+                                                            StandardCharsets.UTF_8), Map.class));
                                         }
                                     }
                                 }
@@ -556,17 +595,28 @@ public class ThumbnailBox extends JPanel {
                                         .map(e -> {
                                             Map<String, ?> imageMetadata = e.getValue();
                                             String objectId = (String) imageMetadata.get("object_id");
-                                            double confidence = ((Number) imageMetadata.get("confidence")).doubleValue();
-                                            Result result = new Result(new ObjectIdentifier(objectId, r.getObjectIdentifier().getDeviceName(), r.getObjectIdentifier().getHostname()));
+                                            double confidence =
+                                                    ((Number) imageMetadata.get("confidence")).doubleValue();
+                                            ObjectId systemId = ObjectId.of(
+                                                    objectId,
+                                                    result.getId().deviceName(),
+                                                    result.getId().hostname());
+                                            SearchResult systemResult = new SearchResult(systemId, ImmutableMap.of());
 
                                             BufferedImage image = images.get(e.getKey());
                                             if (colorByModelVersion) {
-                                                int modelVersion = ((Number) imageMetadata.get("model_version")).intValue();
-                                                drawBorder(image.createGraphics(), Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), image.getWidth(), image.getHeight(), 10);
+                                                int modelVersion =
+                                                        ((Number) imageMetadata.get("model_version")).intValue();
+                                                drawBorder(
+                                                        image.createGraphics(),
+                                                        Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1),
+                                                        image.getWidth(),
+                                                        image.getHeight(),
+                                                        10);
                                             }
 
                                             return new ResultIcon(
-                                                    new HyperFindResult(activePredicateSet, result),
+                                                    new HyperFindResult(activePredicateSet, systemResult),
                                                     objectId,
                                                     new ImageIcon(image),
                                                     ResultIconSetting.ICON_ONLY,
@@ -579,27 +629,27 @@ public class ThumbnailBox extends JPanel {
 
                             // This is a 'positive' that we're only receiving to get the system examples
                             // Don't show the image and adjust statistics to account for this false 'positive'
-                            if (r.getKeys().contains("_delphi.should_discard")) {
+                            if (result.getBytes("_delphi.should_discard").isPresent()) {
                                 discardedPositivesCount++;
                                 continue;
                             }
 
-                            if (r.getKeys().contains("_delphi.test_examples.int")) {
-                                int modelVersion = Util.extractInt(r.getValue("_delphi.model_version.int"));
+                            OptionalInt testExamples = result.getInt("_delphi.test_examples.int");
+                            OptionalInt modelVersion = result.getInt("_delphi.model_version.int");
+                            if (testExamples.isPresent()) {
                                 DelphiModelStatistics latestStats = modelStats.get();
-                                if (latestStats == null || latestStats.getLastModelVersion() < modelVersion) {
+                                if (latestStats == null
+                                        || latestStats.getLastModelVersion() < modelVersion.getAsInt()) {
                                     modelStats.set(new DelphiModelStatistics(
-                                            modelVersion,
-                                            Util.extractInt(r.getValue("_delphi.test_examples.int")),
-                                            Util.extractDouble(r.getValue("_delphi.precision.double")),
-                                            Util.extractDouble(r.getValue("_delphi.recall.double")),
-                                            Util.extractDouble(r.getValue("_delphi.f1_score.double"))));
+                                            modelVersion.getAsInt(),
+                                            testExamples.getAsInt(),
+                                            result.getDouble("_delphi.precision.double").getAsDouble(),
+                                            result.getDouble("_delphi.recall.double").getAsDouble(),
+                                            result.getDouble("_delphi.f1_score.double").getAsDouble()));
                                 }
                             }
 
-                            int score = (r.getKeys().contains("_score.string"))
-                                    ? Integer.parseInt(Util.extractString(r.getValue("_score.string")))
-                                    : 0;
+                            int score = result.getInt("_score.string").orElse(0);
 
                             if (resultsLeftBeforePause.getAndDecrement() == 0) {
                                 publish(PAUSE_RESULT);
@@ -608,26 +658,27 @@ public class ThumbnailBox extends JPanel {
                                 continue;
                             }
 
-                            HyperFindResult hr = new HyperFindResult(activePredicateSet, r);
+                            HyperFindResult hr = new HyperFindResult(activePredicateSet, result);
 
                             for (HyperFindSearchMonitor m : searchMonitors) {
                                 m.notify(hr);
                             }
 
-                            byte[] thumbData = r.getValue("thumbnail.jpeg");
+                            Optional<byte[]> thumbData = result.getBytes("thumbnail.jpeg");
                             BufferedImage thumb = null;
-                            if (thumbData != null) {
-                                ByteArrayInputStream in = new ByteArrayInputStream(thumbData);
+                            if (thumbData.isPresent()) {
+                                ByteArrayInputStream in = new ByteArrayInputStream(thumbData.get());
+
                                 try {
                                     thumb = ImageIO.read(in);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
                             }
+
                             if (thumb == null) {
                                 // cook up blank image
-                                thumb = new BufferedImage(200, 150,
-                                        BufferedImage.TYPE_INT_RGB);
+                                thumb = new BufferedImage(200, 150, BufferedImage.TYPE_INT_RGB);
                             }
 
                             // draw heatmaps and patches
@@ -636,9 +687,11 @@ public class ThumbnailBox extends JPanel {
                             g.setRenderingHint(
                                     RenderingHints.KEY_INTERPOLATION,
                                     RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                            int origW = Util.extractInt(r.getValue("_cols.int"));
-                            int origH = Util.extractInt(r.getValue("_rows.int"));
-                            g.scale((double) thumb.getWidth() / (double) origW,
+                            int origW = result.getInt("_cols.int").getAsInt();
+                            int origH = result.getInt("_rows.int").getAsInt();
+
+                            g.scale(
+                                    (double) thumb.getWidth() / (double) origW,
                                     (double) thumb.getHeight() / (double) origH);
 
                             for (BufferedImage heatmap : regions.getHeatmaps()) {
@@ -651,26 +704,28 @@ public class ThumbnailBox extends JPanel {
                                 drawPatch(g, box);
                             }
 
-                            if (r.getKeys().contains("_gt_label")) {
+                            if (result.getBytes("_gt_label").isPresent()) {
                                 drawBorder(g, Color.RED, origW, origH, 80);
                                 if (score == 1) {
                                     sampledFNCount += 1;
                                 } else {
                                     sampledTPCount += 1;
                                 }
-                            } else if (colorByModelVersion && r.getKeys().contains("_delphi.model_version.int")) {
-                                int modelVersion = Util.extractInt(r.getValue("_delphi.model_version.int"));
-                                drawBorder(g, Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1), origW, origH, 80);
+                            } else if (colorByModelVersion && modelVersion.isPresent()) {
+                                drawBorder(g,
+                                        Color.getHSBColor((float) ((0.1 * modelVersion.getAsInt()) % 1), 1, 1),
+                                        origW,
+                                        origH,
+                                        80);
                             }
 
                             g.dispose();
 
                             // check setting from server
                             ResultIconSetting d = ResultIconSetting.ICON_ONLY;
-                            byte[] tmp = r
-                                    .getValue("hyperfind.thumbnail-display");
-                            if (tmp != null) {
-                                String setting = Util.extractString(tmp);
+                            Optional<String> settingOpt = result.getString("hyperfind.thumbnail-display");
+                            if (settingOpt.isPresent()) {
+                                String setting = settingOpt.get();
                                 if (setting.equals("icon")) {
                                     d = ResultIconSetting.ICON_ONLY;
                                 } else if (setting.equals("label")) {
@@ -680,7 +735,8 @@ public class ThumbnailBox extends JPanel {
                                 }
                             }
 
-                            ResultIcon resultIcon = new ResultIcon(hr, r.getName(), new ImageIcon(thumb), d, score);
+                            ResultIcon resultIcon =
+                                    new ResultIcon(hr, result.getName(), new ImageIcon(thumb), d, score);
                             publish(resultIcon);
                         }
                     } finally {
@@ -688,13 +744,7 @@ public class ThumbnailBox extends JPanel {
 
                         timer.stop();
                         // update stats one more time, if possible
-                        try {
-                            updateStats();
-                        } catch (IOException e1) {
-                            // swallow
-                        } catch (InterruptedException e2) {
-                            Thread.currentThread().interrupt();
-                        }
+                        updateStats();
 
                         for (HyperFindSearchMonitor sm : searchMonitors) {
                             sm.stopped();
@@ -749,14 +799,7 @@ public class ThumbnailBox extends JPanel {
                         break;
                     }
                     if (resultIcon == PAUSE_RESULT) {
-                        try {
-                            updateStats();
-                        } catch (IOException e) {
-                            // This should also be encountered and handled by the
-                            // worker thread, so there's no need to be noisy here
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
+                        updateStats();
                         pauseState = true;
                         moreResultsButton.setVisible(true);
                         revalidate();
@@ -765,7 +808,8 @@ public class ThumbnailBox extends JPanel {
                         /* Add newly fetched search result to result list */
                         int score = resultIcon.getScore(); //score in range 0-2
                         score = (score == 2) ? 0 : score;
-                        DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultLists.get(score).getModel();
+                        DefaultListModel<ResultIcon> model =
+                                (DefaultListModel<ResultIcon>) resultLists.get(score).getModel();
                         model.addElement(resultIcon);
                     }
                 }
@@ -796,29 +840,33 @@ public class ThumbnailBox extends JPanel {
         g.setStroke(currentStroke);
     }
 
-    private void updateStats() throws IOException, InterruptedException {
+    private void updateStats() {
         try {
             if (pauseState) {
                 return;
             }
 
-            final Map<String, ServerStatistics> serverStats = search.getStatistics();
+            Map<String, SearchStats> serverStats = search.getStats();
 
             boolean hasStats = false;
-            for (ServerStatistics s : serverStats.values()) {
-                if (s.getServerStats().get(ServerStatistics.TOTAL_OBJECTS) != 0) {
+            for (SearchStats s : serverStats.values()) {
+                if (s.totalObjects() != 0) {
                     hasStats = true;
                     break;
                 }
             }
+
             if (hasStats) {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        long passed = resultLists.get(0).getModel().getSize();
-                        stats.update(serverStats);
-                        statsArea.update(serverStats, passed, sampledTPCount, sampledFNCount, discardedPositivesCount, Optional.ofNullable(modelStats.get()));
-                    }
+                SwingUtilities.invokeLater(() -> {
+                    long passed = resultLists.get(0).getModel().getSize();
+                    stats.update(serverStats);
+                    statsArea.update(
+                            serverStats,
+                            passed,
+                            sampledTPCount,
+                            sampledFNCount,
+                            discardedPositivesCount,
+                            Optional.ofNullable(modelStats.get()));
                 });
             } else {
                 SwingUtilities.invokeLater(new Runnable() {
@@ -828,7 +876,7 @@ public class ThumbnailBox extends JPanel {
                     }
                 });
             }
-        } catch (SearchClosedException ignore) {
+        } catch (RuntimeException ignore) {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -838,5 +886,4 @@ public class ThumbnailBox extends JPanel {
             });
         }
     }
-
 }

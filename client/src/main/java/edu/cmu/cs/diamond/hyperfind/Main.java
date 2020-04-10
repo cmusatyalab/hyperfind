@@ -40,6 +40,8 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -51,11 +53,13 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -79,6 +83,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -88,10 +94,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -122,9 +126,14 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * The Main class.
  */
 public final class Main {
+
+    private static final int IMAGE_DOWNLOAD_BATCH_SIZE = 50;
+
     public static Boolean PROXY_FLAG = false;
 
     private final ThumbnailBox results;
+
+    private SearchFactory searchFactory;
 
     private Search search;
 
@@ -403,12 +412,13 @@ public final class Main {
 
                     filters.addAll(model.createFilters());
                     SearchFactory factory = connection.getSearchFactory(filters);
+                    m.searchFactory = factory;
 
                     List<HyperFindSearchMonitor> monitors =
                             HyperFindSearchMonitorFactory.getInterestedSearchMonitors(filters);
 
                     // push attributes
-                    Set<String> attributes = new HashSet<String>();
+                    Set<String> attributes = new HashSet<>();
                     attributes.add("thumbnail.jpeg"); // thumbnail
                     attributes.add("_cols.int"); // original width
                     attributes.add("_rows.int"); // original height
@@ -435,8 +445,7 @@ public final class Main {
                     for (Filter f : filters) {
                         filterNames.add(f.name());
                     }
-                    attributes.addAll(ResultRegions.
-                            getPushAttributes(filterNames));
+                    attributes.addAll(ResultRegions.getPushAttributes(filterNames));
 
                     m.search = factory.createSearch(attributes);
 
@@ -444,14 +453,14 @@ public final class Main {
                     m.results.terminate();
 
                     // start
-                    m.results.start(m.search, new ActivePredicateSet(m, model.getSelectedPredicates(), factory), monitors);
-                } catch (IOException e1) {
+                    m.results.start(
+                            m.search,
+                            new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
+                            monitors);
+                } catch (RuntimeException e1) {
                     proxyBox.setEnabled(true);
                     Throwable e2 = e1.getCause();
                     stats.showException(e2 != null ? e2 : e1);
-                    e1.printStackTrace();
-                } catch (InterruptedException e1) {
-                    proxyBox.setEnabled(true);
                     e1.printStackTrace();
                 }
             }
@@ -466,44 +475,31 @@ public final class Main {
                 boolean downloadResults = m.properties.checkDownload();
 
                 if (downloadResults) {
+                    Path downloadDir =
+                            m.properties.getDownloadDirectory().resolve("hyperfind-" + System.currentTimeMillis());
+
                     Map<String, FeedbackObject> map = m.results.getFeedbackItems();
-                    try {
-                        String downloadDir = m.properties.getDownloadDirectory();
-                        List<String> dirPaths = map.size() != 0 ? Util.createDirStructure(downloadDir)
-                                : null;
 
-                        List<? extends Future<?>> imageFutures = map.entrySet().stream()
-                                .map(item -> downloadExecutor.submit(() -> {
-                                    FeedbackObject object = item.getValue();
-                                    System.out.println("Downloaded item: " + item.getKey());
-                                    ObjectIdentifier identifier = object.getObjectIdentifier();
-                                    try {
-                                        BufferedImage img = Util
-                                                .extractImageFromResultIdentifier(identifier, m.codecFactory);
+                    Iterables.partition(map.values(), IMAGE_DOWNLOAD_BATCH_SIZE).forEach(batch -> {
+                        Map<ObjectId, SearchResult> results = m.searchFactory.getResults(
+                                batch.stream().map(FeedbackObject::id).collect(Collectors.toSet()),
+                                ImmutableSet.of(SearchResult.DATA_ATTR));
 
-                                        //Download Image with the same filename as ObjectID
-                                        //Block start
-                                        String[] name_splits = (identifier.getObjectID()).split("/");
-                                        String filename = name_splits[name_splits.length - 1];
-                                        filename = filename.substring(0, filename.length() - 4) + ".png";
-                                        File f = new File(dirPaths.get(object.label), "hyperfind_export_" + filename);
-                                        //Block end
-                                        //UNCOMMENT for RANDOM file name
-                                        //f = File.createTempFile("hyperfind-export-",
-                                        //        ".png", new File(dirPaths.get(object.label)));
-                                        if (f.createNewFile()) {
-                                            ImageIO.write(img, "png", f);
-                                        }
-                                    } catch (IOException ex) {
-                                        throw new RuntimeException("Failed to download image ", ex);
-                                    }
-                                })).collect(Collectors.toList());
-                        for (Future<?> f : imageFutures) {
-                            f.get();
+                        for (FeedbackObject object : batch) {
+                            Path subDir = downloadDir.resolve(object.label() == 1 ? "positive" : "negative");
+                            subDir.toFile().mkdirs();
+
+                            String[] nameSplits = object.id().objectId().split("/");
+                            String filename = nameSplits[nameSplits.length - 1];
+
+                            try {
+                                Files.write(subDir.resolve("hyperfind_export_" + filename),
+                                        results.get(object.id()).getData());
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
                         }
-                    } catch (InterruptedException | ExecutionException | IOException e1) {
-                        e1.printStackTrace();
-                    }
+                    });
                 }
                 m.results.clearFeedBackItems();
             }
@@ -779,12 +775,12 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        popup(r.getResult().name(), PopupPanel.createInstance(this,
+        popup(r.getResult().getName(), PopupPanel.createInstance(this,
                 r, examplePredicateFactories, model));
     }
 
     private void popup(HyperFindResult r, SearchResult oldResult) {
-        popup(r.getResult().name(), PopupPanel.createInstance(this,
+        popup(r.getResult().getName(), PopupPanel.createInstance(this,
                 r, examplePredicateFactories, model, oldResult));
     }
 
@@ -805,7 +801,7 @@ public final class Main {
 
     void reexecute(HyperFindResult result) {
         SearchResult prevResult = result.getResult();
-        ObjectId id = prevResult.id();
+        ObjectId id = prevResult.getId();
 
         ActivePredicateSet ps = result.getActivePredicateSet();
         SearchFactory factory = ps.getSearchFactory();
@@ -813,11 +809,7 @@ public final class Main {
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
-            popup(new HyperFindResult(ps, factory.generateResult(
-                    id,
-                    attributes)), prevResult);
-        } catch (IOException e1) {
-            e1.printStackTrace();
+            popup(new HyperFindResult(ps, factory.getResult(id, attributes)), prevResult);
         } finally {
             frame.setCursor(oldCursor);
         }
@@ -825,29 +817,31 @@ public final class Main {
 
     // returns null if object was dropped
     private ResultRegions getRegions(
+            Connection connection,
             HyperFindPredicate predicate,
-            ObjectIdentifier objectID, byte[] data) throws IOException {
+            ObjectId objectID,
+            byte[] data) {
         // Create factory
         HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
         List<Filter> filters = new ArrayList<Filter>(p.createFilters());
         filters.addAll(predicate.createFilters());
-        SearchFactory factory = createFactory(filters);
+        SearchFactory factory = connection.getSearchFactory(filters);
 
         // Set push attributes for patches and heatmaps
         List<String> filterNames = predicate.getFilterNames();
         Set<String> attributes = ResultRegions.getPushAttributes(filterNames);
 
         // Generate result
-        Result r;
+        SearchResult r;
         if (objectID != null) {
-            r = factory.generateResult(objectID, attributes);
+            r = factory.getResult(objectID, attributes);
         } else {
-            r = factory.generateResult(data, attributes);
+            r = factory.getResult(data, attributes);
         }
 
         // Check if object was dropped
         for (String fName : filterNames) {
-            if (r.getValue("_filter." + fName + "_score") == null) {
+            if (r.getBytes("_filter." + fName + "_score").isEmpty()) {
                 return null;
             }
         }
@@ -856,15 +850,12 @@ public final class Main {
         return new ResultRegions(filterNames, r);
     }
 
-    ResultRegions getRegions(
-            HyperFindPredicate predicate,
-            ObjectIdentifier objectID) throws IOException {
-        return getRegions(predicate, objectID, null);
+    ResultRegions getRegions(Connection connection, HyperFindPredicate predicate, ObjectId objectID) {
+        return getRegions(connection, predicate, objectID, null);
     }
 
-    ResultRegions getRegions(HyperFindPredicate predicate, byte[] data)
-            throws IOException {
-        return getRegions(predicate, null, data);
+    ResultRegions getRegions(Connection connection, HyperFindPredicate predicate, byte[] data) {
+        return getRegions(connection, predicate, null, data);
     }
 
     private void stopSearch() {

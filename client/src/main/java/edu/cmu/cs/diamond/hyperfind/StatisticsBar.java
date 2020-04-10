@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,15 +40,12 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import java.util.Map;
-
 import javax.swing.JProgressBar;
-
-import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
 
 public class StatisticsBar extends JProgressBar {
     public StatisticsBar() {
-        super();
         setStringPainted(true);
         clear();
     }
@@ -61,7 +58,7 @@ public class StatisticsBar extends JProgressBar {
         setIndeterminate(false);
         long passed = searched - dropped;
         String str = String.format("Total %d, Searched %d, Dropped %d (%.2f%%), Passed %d (%.2f%%)",
-                total, searched, dropped, 100f*dropped/searched, passed, 100f*passed/searched);
+                total, searched, dropped, 100f * dropped / searched, passed, 100f * passed / searched);
         setString(str);
         setMaximum(total > Integer.MAX_VALUE ?
                 Integer.MAX_VALUE : (int) total);
@@ -69,15 +66,14 @@ public class StatisticsBar extends JProgressBar {
                 Integer.MAX_VALUE : (int) searched);
     }
 
-    public void update(Map<String, ServerStatistics> serverStats) {
+    public void update(Map<String, SearchStats> serverStats) {
         long t = 0;
         long s = 0;
         long d = 0;
-        for (ServerStatistics ss : serverStats.values()) {
-            Map<String, Long> map = ss.getServerStats();
-            t += map.get(ss.TOTAL_OBJECTS);
-            s += map.get(ss.PROCESSED_OBJECTS);
-            d += map.get(ss.DROPPED_OBJECTS);
+        for (SearchStats ss : serverStats.values()) {
+            t += ss.totalObjects();
+            s += ss.processedObjects();
+            d += ss.droppedObjects();
         }
         setNumbers(t, s, d);
     }
