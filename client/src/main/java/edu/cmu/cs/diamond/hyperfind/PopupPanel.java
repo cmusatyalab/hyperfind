@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -40,19 +40,67 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.awt.*;
-import java.awt.event.*;
+import com.google.common.collect.ImmutableList;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
-
-import javax.swing.*;
+import javax.swing.AbstractListModel;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
@@ -60,14 +108,11 @@ import javax.swing.event.ListDataListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
-import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
-import edu.cmu.cs.diamond.opendiamond.Result;
-import edu.cmu.cs.diamond.opendiamond.Util;
-
 public class PopupPanel extends JPanel {
     private static class PredicateInstanceCellRenderer
             extends DefaultListCellRenderer {
-        public Component getListCellRendererComponent(JList list,
+        public Component getListCellRendererComponent(
+                JList list,
                 Object value, int index, boolean isSelected,
                 boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list,
@@ -92,13 +137,13 @@ public class PopupPanel extends JPanel {
         this.img = img;
     }
 
-    private static String attributeToString(String name, byte[] value) {
+    private static String attributeToString(String name, SearchResult result) {
         if (name.endsWith(".int")) {
-            return Integer.toString(Util.extractInt(value));
+            return Integer.toString(result.getInt(name).getAsInt());
         } else if (name.endsWith(".time")) {
-            return Long.toString(Util.extractLong(value));
+            return Long.toString(result.getLong(name).getAsLong());
         } else if (name.endsWith(".double")) {
-            return Double.toString(Util.extractDouble(value));
+            return Double.toString(result.getDouble(name).getAsDouble());
         } else if (name.endsWith(".jpeg")) {
             return "JPEG";
         } else if (name.endsWith(".png")) {
@@ -108,76 +153,94 @@ public class PopupPanel extends JPanel {
         } else if (name.endsWith(".binary")) {
             return "Binary";
         } else if (name.endsWith(".patches")) {
-            return BoundingBox.fromPatchesList(value).toString();
+            return BoundingBox.fromPatchesList(result.getBytes(name).get()).toString();
         } else {
-            String str = Util.extractString(value);
+            String str = result.getString(name).get();
             int len = Math.min(str.length(), 1024);
             return str.substring(0, len);
         }
     }
 
-    public static PopupPanel createInstance(Main m, HyperFindResult hr,
+    public static PopupPanel createInstance(
+            Main m,
+            Connection connection,
+            HyperFindResult hr,
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            PredicateListModel model, Result prevResult) {
+            PredicateListModel model,
+            Optional<SearchResult> prevResult) {
 
-        Result r = hr.getResult();
-        BufferedImage img = Util.extractImageFromResult(r);
+        SearchResult r = hr.getResult();
+        BufferedImage img = extractImageFromResult(r);
 
-        Set<String> keys= new HashSet<String>();
-        keys.addAll(r.getKeys());
-        if (prevResult != null) {
-            keys.addAll(prevResult.getKeys());
-        }
+        Set<String> keys = new HashSet<>(r.getKeys());
+        prevResult.ifPresent(result -> keys.addAll(result.getKeys()));
 
         Map<String, byte[]> attributes = new HashMap<String, byte[]>();
+
         for (String k : keys) {
             // skip "data" attribute
             if (!k.equals("")) {
-                if(r.getValue(k)!=null)
-                    attributes.put(k, r.getValue(k));
-                else if(prevResult != null && prevResult.getValue(k)!=null) {
+                Optional<byte[]> bytes = r.getBytes(k);
+                if (bytes.isPresent()) {
+                    attributes.put(k, bytes.get());
+                } else if (prevResult.map(p -> p.getBytes(k).isPresent()).orElse(false)) {
                     //get attributes from previous run
-                    if (prevResult.getValue(k).length != 0)
-                        attributes.put(k, prevResult.getValue(k));
+                    byte[] prevBytes = prevResult.get().getBytes(k).get();
+                    if (prevBytes.length != 0) {
+                        attributes.put(k, prevBytes);
+                    }
                 }
             }
         }
-        return createInstance(m, r.getObjectIdentifier(), img, r.getData(),
+
+        return createInstance(
+                m,
+                connection,
+                Optional.of(new SearchResult(r.getId(), attributes)),
+                img,
+                r.getData(),
                 hr.getActivePredicateSet().getActivePredicates(),
-                examplePredicateFactories, hr.getRegions(), attributes, model);
+                examplePredicateFactories,
+                hr.getRegions(),
+                model);
     }
 
-    public static PopupPanel createInstance(Main m, HyperFindResult hr,
+    public static PopupPanel createInstance(
+            Main m,
+            Connection connection,
+            HyperFindResult hr,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             PredicateListModel model) {
 
-        return createInstance(m, hr, examplePredicateFactories, model, null);
+        return createInstance(m, connection, hr, examplePredicateFactories, model, Optional.empty());
     }
 
-
-    public static PopupPanel createInstance(Main m, BufferedImage img,
+    public static PopupPanel createInstance(
+            Main m,
+            Connection connection,
+            BufferedImage img,
             byte resultData[],
             List<HyperFindPredicateFactory> examplePredicateFactories,
             PredicateListModel model) {
-        Map<String, byte[]> attributes = Collections.emptyMap();
-        List<ActivePredicate> activePredicates = Collections.emptyList();
-        ResultRegions regions = new ResultRegions();
-
-        return createInstance(m, null, img, resultData, activePredicates,
-                examplePredicateFactories, regions, attributes, model);
+        return createInstance(m, connection, Optional.empty(), img, resultData, ImmutableList.of(),
+                examplePredicateFactories, new ResultRegions(), model);
     }
 
-    private static PopupPanel createInstance(Main m,
-            ObjectIdentifier objectID, BufferedImage img, byte resultData[],
+    private static PopupPanel createInstance(
+            Main m,
+            Connection connection,
+            Optional<SearchResult> result,
+            BufferedImage img,
+            byte resultData[],
             List<ActivePredicate> activePredicates,
             List<HyperFindPredicateFactory> examplePredicateFactories,
-            ResultRegions regions, final Map<String, byte[]> attributes,
+            ResultRegions regions,
             PredicateListModel predicateListModel) {
         PopupPanel p = new PopupPanel(img);
 
         // sort keys
-        final List<String> keys = new ArrayList<String>(attributes.keySet());
-        Collections.sort(keys);
+        List<String> keys = result.map(r -> r.getKeys().stream().sorted().collect(Collectors.toList()))
+                .orElseGet(ImmutableList::of);
 
         TableModel model = new AbstractTableModel() {
             @Override
@@ -193,31 +256,31 @@ public class PopupPanel extends JPanel {
             @Override
             public Object getValueAt(int rowIndex, int columnIndex) {
                 String key = keys.get(rowIndex);
-                byte value[] = attributes.get(key);
+                byte value[] = result.get().getBytes(key).get();
 
                 switch (columnIndex) {
-                case 0:
-                    return key;
-                case 1:
-                    return Integer.toString(value.length);
-                case 2:
-                    return attributeToString(key, value);
-                default:
-                    return null;
+                    case 0:
+                        return key;
+                    case 1:
+                        return Integer.toString(value.length);
+                    case 2:
+                        return attributeToString(key, result.get());
+                    default:
+                        return null;
                 }
             }
 
             @Override
             public String getColumnName(int column) {
                 switch (column) {
-                case 0:
-                    return "Name";
-                case 1:
-                    return "Size";
-                case 2:
-                    return "Value";
-                default:
-                    return null;
+                    case 0:
+                        return "Name";
+                    case 1:
+                        return "Size";
+                    case 2:
+                        return "Value";
+                    default:
+                        return null;
                 }
             }
         };
@@ -228,17 +291,17 @@ public class PopupPanel extends JPanel {
 
         // assemble entire window
         Box hBox = Box.createHorizontalBox();
-        
+
         // create leftSide only when object is image
-        byte[] displayURLBytes = attributes.get("hyperfind.object-display-url");
+        Optional<String> displayUrl = result.flatMap(r -> r.getString("hyperfind.object-display-url"));
         ImageRegionsLabel image = null;
-        if (displayURLBytes == null && img != null) {
+        if (displayUrl.isPresent() && img != null) {
             image = new ImageRegionsLabel(img);
             Box leftSide = Box.createVerticalBox();
             leftSide.add(new RegionsListPanel(activePredicates, regions,
                     image));
-            leftSide.add(new TestPredicatePanel(m, predicateListModel, image,
-                    objectID, img, p));
+            leftSide.add(new TestPredicatePanel(m, connection, predicateListModel, image,
+                    result.map(SearchResult::getId), img, p));
             leftSide.add(new ExampleSearchPanel(predicateListModel, image,
                     img, examplePredicateFactories));
             hBox.add(leftSide);
@@ -246,8 +309,7 @@ public class PopupPanel extends JPanel {
 
         // create rightSide for arbitrary data pane, image pane or text pane
         Box vBox = Box.createVerticalBox();
-        if (displayURLBytes != null) {    // arbitrary data
-            final String displayURL = Util.extractString(displayURLBytes);
+        if (displayUrl.isPresent()) {    // arbitrary data
             JButton button = new JButton("View Object");
             button.setAlignmentX(CENTER_ALIGNMENT);
             button.addActionListener(new ActionListener() {
@@ -255,7 +317,7 @@ public class PopupPanel extends JPanel {
                 public void actionPerformed(ActionEvent event) {
                     Desktop desktop = Desktop.getDesktop();
                     try {
-                        desktop.browse(new URI(displayURL));
+                        desktop.browse(new URI(displayUrl.get()));
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -289,7 +351,8 @@ public class PopupPanel extends JPanel {
             }
             JSplitPane rightSide = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true,
                     scrollPane, propertiesPane);
-            int scrollPaneHeight = Math.min(700,
+            int scrollPaneHeight = Math.min(
+                    700,
                     (int) scrollPane.getPreferredSize().getHeight() + 1);
             rightSide.setDividerLocation(scrollPaneHeight);
             vBox.add(rightSide);
@@ -302,6 +365,58 @@ public class PopupPanel extends JPanel {
         p.add(hBox);
 
         return p;
+    }
+
+    // TODO(hturki): Dedup from opendiamond-java's Utils class
+    private static BufferedImage extractImageFromResult(SearchResult r) {
+        // first, try rgbimage
+        Optional<byte[]> rgbimage = r.getBytes("_rgb_image.rgbimage");
+        if (rgbimage.isPresent()) {
+            return decodeRGBImage(rgbimage.get());
+        }
+
+        // then, try ImageIO
+        byte[] data = r.getData();
+        if (data != null) {
+            InputStream in = new ByteArrayInputStream(data);
+            try {
+                return ImageIO.read(in);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    // TODO(hturki): Dedup from opendiamond-java's Utils class
+    private static BufferedImage decodeRGBImage(byte[] rgbimage) {
+        ByteBuffer buf = ByteBuffer.wrap(rgbimage);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+
+        // skip header
+        buf.position(8);
+
+        // sizes
+        int h = buf.getInt();
+        int w = buf.getInt();
+
+        // do it
+        BufferedImage result = new BufferedImage(w, h,
+                BufferedImage.TYPE_INT_RGB);
+        int data[] = ((DataBufferInt) result.getRaster().getDataBuffer())
+                .getData();
+        for (int i = 0; i < data.length; i++) {
+            byte r = buf.get();
+            byte g = buf.get();
+            byte b = buf.get();
+            buf.get();
+
+            data[i] = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+        }
+
+        return result;
     }
 
     private static class ExampleSearchPanel extends JPanel {
@@ -319,7 +434,8 @@ public class PopupPanel extends JPanel {
 
         private final JButton addToExistingButton;
 
-        public ExampleSearchPanel(final PredicateListModel model,
+        public ExampleSearchPanel(
+                final PredicateListModel model,
                 final ImageRegionsLabel image, BufferedImage img,
                 List<HyperFindPredicateFactory> examplePredicateFactories) {
             setBorder(BorderFactory.createTitledBorder("Example Search"));
@@ -583,9 +699,11 @@ public class PopupPanel extends JPanel {
     private static class TestPredicatePanel extends JPanel {
         private final Main m;
 
+        private final Connection connection;
+
         private final ImageRegionsLabel image;
 
-        private final ObjectIdentifier objectID;
+        private final Optional<ObjectId> objectId;
 
         private final BufferedImage img;
 
@@ -595,14 +713,20 @@ public class PopupPanel extends JPanel {
 
         private HyperFindPredicate selected;
 
-        public TestPredicatePanel(Main m, PredicateListModel model,
-                ImageRegionsLabel image, ObjectIdentifier objectID,
-                BufferedImage img, PopupPanel pp) {
+        public TestPredicatePanel(
+                Main m,
+                Connection connection,
+                PredicateListModel model,
+                ImageRegionsLabel image,
+                Optional<ObjectId> objectId,
+                BufferedImage img,
+                PopupPanel pp) {
             setBorder(BorderFactory.createTitledBorder("Test Predicate"));
 
             this.m = m;
+            this.connection = connection;
             this.image = image;
-            this.objectID = objectID;
+            this.objectId = objectId;
             this.img = img;
             this.pp = pp;
 
@@ -686,10 +810,10 @@ public class PopupPanel extends JPanel {
                             .getPredefinedCursor(Cursor.WAIT_CURSOR));
 
                     ResultRegions regions;
-                    if (objectID != null) {
-                        regions = m.getRegions(selected, objectID);
+                    if (objectId.isPresent()) {
+                        regions = m.getRegions(connection, selected, objectId.get());
                     } else {
-                        regions = m.getRegions(selected, encodePNM());
+                        regions = m.getRegions(connection, selected, encodePNM());
                     }
                     if (regions != null) {
                         label.setText("Object passed");
@@ -724,19 +848,24 @@ public class PopupPanel extends JPanel {
     }
 
     private static class RegionsListPanel extends JPanel {
-        public RegionsListPanel(List<ActivePredicate> activePredicates,
+        public RegionsListPanel(
+                List<ActivePredicate> activePredicates,
                 ResultRegions regions, final ImageRegionsLabel image) {
             Box box = Box.createVerticalBox();
 
-            setMinimumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+            setMinimumSize(new Dimension(
+                    PATCH_LIST_PREFERRED_WIDTH,
                     PATCH_LIST_MINIMUM_HEIGHT));
-            setPreferredSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+            setPreferredSize(new Dimension(
+                    PATCH_LIST_PREFERRED_WIDTH,
                     PATCH_LIST_MINIMUM_HEIGHT));
-            setMaximumSize(new Dimension(PATCH_LIST_PREFERRED_WIDTH,
+            setMaximumSize(new Dimension(
+                    PATCH_LIST_PREFERRED_WIDTH,
                     Integer.MAX_VALUE));
             setLayout(new BorderLayout());
 
-            JScrollPane jsp = new JScrollPane(box,
+            JScrollPane jsp = new JScrollPane(
+                    box,
                     ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             jsp.setBorder(BorderFactory.createTitledBorder("Result Regions"));
@@ -777,7 +906,8 @@ public class PopupPanel extends JPanel {
                     f.format("%s", predicateName);
                     if (bbs.size() > 0) {
                         // similarity metric comes from the patches attribute
-                        f.format(" (similarity %.0f%%)",
+                        f.format(
+                                " (similarity %.0f%%)",
                                 100 - 100.0 * distance);
                     }
                     PredicateList.updateCheckBox(cb, f.toString(), name, false);

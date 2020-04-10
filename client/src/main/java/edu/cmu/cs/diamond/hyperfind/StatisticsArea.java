@@ -47,17 +47,13 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.util.Map;
 import java.util.Optional;
-<<<<<<< HEAD
 import java.util.Timer;
-import java.util.TimerTask;
-=======
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
->>>>>>> fix
 
 final class StatisticsArea extends JPanel {
 

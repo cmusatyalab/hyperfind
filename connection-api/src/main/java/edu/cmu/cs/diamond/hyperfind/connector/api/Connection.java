@@ -44,6 +44,7 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 
 public interface Connection {
 
@@ -54,5 +55,7 @@ public interface Connection {
     Bundle getBundle(InputStream inputStream);
 
     Bundle restoreBundle(BundleState state);
+
+    void updateCookies(Optional<String> proxyIp);
 
 }

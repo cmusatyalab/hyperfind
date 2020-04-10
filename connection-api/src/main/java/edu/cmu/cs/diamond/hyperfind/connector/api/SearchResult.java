@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.Set;
 
 public final class SearchResult {
 
@@ -63,6 +65,10 @@ public final class SearchResult {
 
     public ObjectId getId() {
         return id;
+    }
+
+    public Set<String> getKeys() {
+        return attributes.keySet();
     }
 
     public String getName() {
@@ -86,6 +92,16 @@ public final class SearchResult {
         }
 
         return OptionalInt.of(ByteBuffer.wrap(bytes.get()).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt());
+    }
+
+    public OptionalLong getLong(String attrName) {
+        Optional<byte[]> bytes = getBytes(attrName);
+
+        if (bytes.isEmpty()) {
+            return OptionalLong.empty();
+        }
+
+        return OptionalLong.of(ByteBuffer.wrap(bytes.get()).order(java.nio.ByteOrder.LITTLE_ENDIAN).getLong());
     }
 
     public OptionalDouble getDouble(String attrName) {

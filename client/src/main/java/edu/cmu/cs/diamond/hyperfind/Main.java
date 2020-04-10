@@ -93,6 +93,7 @@ import java.util.Formatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -129,9 +130,11 @@ public final class Main {
 
     private static final int IMAGE_DOWNLOAD_BATCH_SIZE = 50;
 
-    public static Boolean PROXY_FLAG = false;
+    public static Boolean proxyFlag = false;
 
     private final ThumbnailBox results;
+
+    private final Connection connection;
 
     private SearchFactory searchFactory;
 
@@ -151,11 +154,13 @@ public final class Main {
 
     private Main(
             JFrame frame,
+            Connection connection,
             ThumbnailBox results,
             PredicateListModel model,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             JComboBox codecs) {
         this.frame = frame;
+        this.connection = connection;
         this.results = results;
         this.model = model;
         this.examplePredicateFactories = examplePredicateFactories;
@@ -234,7 +239,7 @@ public final class Main {
                 examplePredicateFactories, codecList);
 
         JComboBox<HyperFindPredicate> codecs = new JComboBox<>(codecList.toArray(HyperFindPredicate[]::new));
-        Main m = new Main(frame, results, model, examplePredicateFactories, codecs);
+        Main m = new Main(frame, connection, results, model, examplePredicateFactories, codecs);
 
         predicateList.setTransferHandler(new PredicateImportTransferHandler(m, model, connection));
 
@@ -397,7 +402,7 @@ public final class Main {
                 try {
                     // start search
                     proxyBox.setEnabled(false);
-                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
+                    m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<>(p.createFilters());
@@ -493,7 +498,8 @@ public final class Main {
                             String filename = nameSplits[nameSplits.length - 1];
 
                             try {
-                                Files.write(subDir.resolve("hyperfind_export_" + filename),
+                                Files.write(
+                                        subDir.resolve("hyperfind_export_" + filename),
                                         results.get(object.id()).getData());
                             } catch (IOException ex) {
                                 ex.printStackTrace();
@@ -523,12 +529,7 @@ public final class Main {
         defineScopeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    m.cookies = CookieMap.createDefaultCookieMap(
-                            PROXY_FLAG ? m.properties.getProxyIP() : null);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
+                connection.updateCookies(proxyFlag ? Optional.of(m.properties.getProxyIP()) : Optional.empty());
             }
         });
 
@@ -536,14 +537,9 @@ public final class Main {
         proxyBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                PROXY_FLAG = proxyBox.isSelected() ? true : false;
-                try {
-                    m.results.setConfig(PROXY_FLAG, m.properties.checkDownload(), m.properties.colorByModelVersion());
-                    m.cookies = CookieMap.createDefaultCookieMap(
-                            PROXY_FLAG ? m.properties.getProxyIP() : null);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
+                proxyFlag = proxyBox.isSelected();
+                m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
+                connection.updateCookies(proxyFlag ? Optional.of(m.properties.getProxyIP()) : Optional.empty());
             }
         });
 
@@ -727,7 +723,7 @@ public final class Main {
     }
 
     void popup(String name, BufferedImage img) {
-        popup(name, PopupPanel.createInstance(this, img, null,
+        popup(name, PopupPanel.createInstance(this, connection, img, null,
                 examplePredicateFactories, model));
     }
 
@@ -775,13 +771,13 @@ public final class Main {
     }
 
     private void popup(HyperFindResult r) {
-        popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r, examplePredicateFactories, model));
+        popup(r.getResult().getName(), PopupPanel.createInstance(this, connection, r, examplePredicateFactories,
+                model));
     }
 
-    private void popup(HyperFindResult r, SearchResult oldResult) {
-        popup(r.getResult().getName(), PopupPanel.createInstance(this,
-                r, examplePredicateFactories, model, oldResult));
+    private void popup(HyperFindResult r, Optional<SearchResult> oldResult) {
+        popup(r.getResult().getName(), PopupPanel.createInstance(this, connection, r, examplePredicateFactories, model,
+                oldResult));
     }
 
     private void popup(String title, PopupPanel p) {
@@ -809,7 +805,7 @@ public final class Main {
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             Set<String> attributes = Collections.emptySet();
-            popup(new HyperFindResult(ps, factory.getResult(id, attributes)), prevResult);
+            popup(new HyperFindResult(ps, factory.getResult(id, attributes)), Optional.ofNullable(prevResult));
         } finally {
             frame.setCursor(oldCursor);
         }
@@ -883,20 +879,21 @@ public final class Main {
         return dirs;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if (args.length != 2) {
             printUsage();
             System.exit(1);
         }
 
-        final List<File> bundleDirectories = splitDirs(args[0]);
-        final List<File> filterDirectories = splitDirs(args[1]);
+         List<File> bundleDirectories = splitDirs(args[0]);
+         List<File> filterDirectories = splitDirs(args[1]);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(bundleDirectories, filterDirectories);
+                    createMain(null);
+                    // createMain(bundleDirectories, filterDirectories);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

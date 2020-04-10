@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.imageio.ImageIO;
 
@@ -69,15 +70,15 @@ public class ResultRegions {
     ResultRegions(Collection<String> filterNames, SearchResult r) {
         for (String name : filterNames) {
             // patches
-            byte[] patch = r.attributes().get(getPatchAttributeName(name));
-            if (patch != null) {
-                patches.put(name, BoundingBox.fromPatchesList(patch));
+            Optional<byte[]> patch = r.getBytes(getPatchAttributeName(name));
+            if (patch.isPresent()) {
+                patches.put(name, BoundingBox.fromPatchesList(patch.get()));
             }
 
             // heatmap
-            byte[] heatmap = r.attributes().get(getHeatmapAttributeName(name));
-            if (heatmap != null) {
-                ByteArrayInputStream in = new ByteArrayInputStream(heatmap);
+            Optional<byte[]> heatmap = r.getBytes(getHeatmapAttributeName(name));
+            if (heatmap.isPresent()) {
+                ByteArrayInputStream in = new ByteArrayInputStream(heatmap.get());
                 try {
                     heatmaps.put(name, ImageIO.read(in));
                 } catch (IOException e) {

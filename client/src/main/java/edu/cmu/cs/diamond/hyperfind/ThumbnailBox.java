@@ -869,20 +869,12 @@ public class ThumbnailBox extends JPanel {
                             Optional.ofNullable(modelStats.get()));
                 });
             } else {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        stats.setIndeterminateMessage("Waiting for First Results");
-                    }
-                });
+                SwingUtilities.invokeLater(() -> stats.setIndeterminateMessage("Waiting for First Results"));
             }
         } catch (RuntimeException ignore) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    stats.setDone();
-                    statsArea.setDone();
-                }
+            SwingUtilities.invokeLater(() -> {
+                stats.setDone();
+                statsArea.setDone();
             });
         }
     }

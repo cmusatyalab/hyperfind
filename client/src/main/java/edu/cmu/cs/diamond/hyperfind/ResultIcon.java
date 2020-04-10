@@ -40,21 +40,15 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.Graphics;
-import javax.imageio.ImageIO;
 import java.io.IOException;
-
-import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
+import java.util.HashMap;
+import java.util.Map;
+import javax.imageio.ImageIO;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
 class ResultIcon {
 
