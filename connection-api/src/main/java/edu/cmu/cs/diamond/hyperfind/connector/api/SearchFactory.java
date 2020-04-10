@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.api;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,6 +52,6 @@ public interface SearchFactory {
 
     SearchResult getResult(byte[] data, Set<String> attributes);
 
-    Map<ObjectId, SearchResult> getResults(Iterable<ObjectId> objectIds, Set<String> attributes);
+    Map<ObjectId, SearchResult> getResults(Collection<ObjectId> objectIds, Set<String> attributes);
 
 }

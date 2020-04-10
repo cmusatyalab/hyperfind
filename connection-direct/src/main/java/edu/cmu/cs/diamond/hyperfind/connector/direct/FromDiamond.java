@@ -40,6 +40,8 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BooleanOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
@@ -53,6 +55,8 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.StringOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
+import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
+import edu.cmu.cs.diamond.opendiamond.Result;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -63,6 +67,16 @@ import java.util.stream.Collectors;
 public final class FromDiamond {
 
     private FromDiamond() {
+    }
+
+    public static ObjectId convert(ObjectIdentifier value) {
+        return ObjectId.of(value.getObjectID(), value.getDeviceName(), value.getHostname());
+    }
+
+    public static SearchResult convert(Result result) {
+        return new SearchResult(
+                FromDiamond.convert(result.getObjectIdentifier()),
+                result.getKeys().stream().collect(Collectors.toMap(k -> k, result::getValue)));
     }
 
     public static Bundle convert(edu.cmu.cs.diamond.opendiamond.Bundle value) {

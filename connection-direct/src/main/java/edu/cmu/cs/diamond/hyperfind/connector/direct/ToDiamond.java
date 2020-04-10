@@ -40,12 +40,25 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.opendiamond.FilterCode;
 import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 
 public final class ToDiamond {
 
     private ToDiamond() {
+    }
+
+    public static edu.cmu.cs.diamond.opendiamond.Filter convert(Filter filter) {
+        return new edu.cmu.cs.diamond.opendiamond.Filter(
+                filter.name(),
+                new FilterCode(filter.code()),
+                filter.minScore(),
+                filter.maxScore(),
+                filter.dependencies(),
+                filter.arguments(),
+                filter.blob());
     }
 
     public static ObjectIdentifier convert(ObjectId objectId) {

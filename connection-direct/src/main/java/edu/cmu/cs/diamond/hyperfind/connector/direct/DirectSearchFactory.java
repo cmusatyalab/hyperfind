@@ -40,77 +40,79 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
-import edu.cmu.cs.diamond.opendiamond.BundleFactory;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import one.util.streamex.EntryStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class DirectConnection implements Connection {
+public final class DirectSearchFactory implements SearchFactory {
 
-    private final BundleFactory bundleFactory;
+    private static final Logger log = LoggerFactory.getLogger(DirectSearchFactory.class);
+
+    private final edu.cmu.cs.diamond.opendiamond.SearchFactory delegate;
     private final ExecutorService downloadExecutor;
-    private CookieMap cookieMap;
 
-    public DirectConnection(String bundleDirs, String filterDirs) {
-        this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
-        this.downloadExecutor = Executors.newCachedThreadPool();
-
-        updateCookies(Optional.empty());
+    public DirectSearchFactory(
+            List<Filter> filters,
+            CookieMap cookieMap,
+            ExecutorService downloadExecutor) {
+        this.delegate = new edu.cmu.cs.diamond.opendiamond.SearchFactory(
+                filters.stream().map(ToDiamond::convert).collect(Collectors.toList()),
+                cookieMap);
+        this.downloadExecutor = downloadExecutor;
     }
 
     @Override
-    public SearchFactory getSearchFactory(List<Filter> filters) {
-        return new DirectSearchFactory(filters, cookieMap, downloadExecutor);
+    public Search createSearch(Set<String> _attributes) {
+        return null;
     }
 
     @Override
-    public List<Bundle> getBundles() {
-        return bundleFactory.getBundles().stream().map(FromDiamond::convert).collect(Collectors.toList());
-    }
-
-    @Override
-    public Bundle getBundle(InputStream inputStream) {
+    public SearchResult getResult(ObjectId objectId, Set<String> attributes) {
         try {
-            return FromDiamond.convert(bundleFactory.getBundle(inputStream));
+            return FromDiamond.convert(delegate.generateResult(ToDiamond.convert(objectId), attributes));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to get bundle", e);
+            throw new RuntimeException("Failed to get result", e);
         }
     }
 
     @Override
-    public Bundle restoreBundle(BundleState state) {
+    public SearchResult getResult(byte[] data, Set<String> attributes) {
         try {
-            return FromDiamond.convert(new edu.cmu.cs.diamond.opendiamond.Bundle(
-                    new edu.cmu.cs.diamond.opendiamond.Bundle.PreparedFileLoader(
-                            state.bundleContents(),
-                            state.memberDirs().stream().map(File::new).collect(Collectors.toList()))));
+            return FromDiamond.convert(delegate.generateResult(data, attributes));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to restore bundle", e);
+            throw new RuntimeException("Failed to get result", e);
         }
     }
 
     @Override
-    public void updateCookies(Optional<String> proxyIp) {
-        try {
-            cookieMap = CookieMap.createDefaultCookieMap(proxyIp.orElse(null));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create cookie map", e);
-        }
-    }
+    public Map<ObjectId, SearchResult> getResults(Collection<ObjectId> objectIds, Set<String> attributes) {
+        Map<ObjectId, Future<SearchResult>> downloadFutures =
+                objectIds.stream().collect(Collectors.toMap(i -> i, i -> downloadExecutor.submit(() -> {
+                    log.info("Downloading item: {}", i.objectId());
+                    return getResult(i, attributes);
+                })));
 
-    private static List<File> splitDirs(String paths) {
-        return Arrays.stream(paths.split(":")).map(File::new).filter(File::isDirectory).collect(Collectors.toList());
+        return EntryStream.of(downloadFutures).mapValues(f -> {
+            try {
+                return f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Failed to download image", e);
+            }
+        }).toMap();
     }
 }

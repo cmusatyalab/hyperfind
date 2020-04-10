@@ -86,6 +86,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -864,36 +865,27 @@ public final class Main {
     }
 
     private static void printUsage() {
-        System.out.println("usage: " + Main.class.getName()
-                + " bundle-directories filter-directories");
+        System.out.printf("usage: %s connector-type <connector args>", Main.class.getName());
+        System.out.println();
     }
 
-    private static List<File> splitDirs(String paths) {
-        List<File> dirs = new ArrayList<File>();
-        for (String path : paths.split(":")) {
-            File dir = new File(path);
-            if (dir.isDirectory()) {
-                dirs.add(dir);
-            }
-        }
-        return dirs;
-    }
-
-    public static void main(String[] args) {
-        if (args.length != 2) {
+    public static void main(String[] args) throws Exception {
+        if (args.length < 1) {
             printUsage();
             System.exit(1);
         }
 
-         List<File> bundleDirectories = splitDirs(args[0]);
-         List<File> filterDirectories = splitDirs(args[1]);
+        String[] connnectorArgs = Arrays.stream(args).skip(1).toArray(String[]::new);
+        Class<?>[] connnectorArgClasses = Arrays.stream(connnectorArgs).map(c -> String.class).toArray(Class[]::new);
+
+        Connection connection =
+                (Connection) Class.forName(args[0]).getConstructor(connnectorArgClasses).newInstance((Object[]) connnectorArgs);
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
-                    createMain(null);
-                    // createMain(bundleDirectories, filterDirectories);
+                    createMain(connection);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
