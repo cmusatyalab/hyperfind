@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.api;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,7 +52,7 @@ public interface Search {
 
     void labelExamples(Map<ObjectId, Integer> examples);
 
-    void retrainFilter(Map<String, FeedbackObject> map);
+    void retrainFilter(Collection<FeedbackObject> objects);
 
     void close();
 

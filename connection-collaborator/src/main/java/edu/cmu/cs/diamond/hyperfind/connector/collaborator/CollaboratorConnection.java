@@ -65,11 +65,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.net.ssl.SSLException;
 
 public final class CollaboratorConnection implements Connection {
 
     private final CollaborationServiceGrpc.CollaborationServiceStub service;
+    private final ExecutorService resultExecutor;
 
     public CollaboratorConnection(String host, String port) {
         this(host, Integer.parseInt(port), Optional.empty());
@@ -92,11 +95,13 @@ public final class CollaboratorConnection implements Connection {
         } catch (SSLException e) {
             throw new RuntimeException("Failed to create channel", e);
         }
+
+        this.resultExecutor = Executors.newCachedThreadPool();
     }
 
     @Override
     public SearchFactory getSearchFactory(List<Filter> filters) {
-        return null;
+        return new CollaboratorSearchFactory(service, filters, resultExecutor);
     }
 
     @Override

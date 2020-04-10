@@ -42,6 +42,9 @@ package edu.cmu.cs.diamond.hyperfind.connector.collaborator;
 
 import com.google.protobuf.ByteString;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BooleanOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
@@ -63,6 +66,16 @@ import one.util.streamex.EntryStream;
 public final class FromProto {
 
     private FromProto() {
+    }
+
+    public static ObjectId convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.ObjectId value) {
+        return ObjectId.of(value.getObjectId(), value.getDeviceName(), value.getHostname());
+    }
+
+    public static SearchResult convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult value) {
+        return new SearchResult(
+                convert(value.getId()),
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
     }
 
     public static Filter convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter value) {
@@ -151,5 +164,14 @@ public final class FromProto {
 
     public static Choice convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.Choice value) {
         return Choice.of(value.getDisplayName(), value.getValue(), value.getIsDefault());
+    }
+
+    public static SearchStats convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats value) {
+        return SearchStats.of(
+                value.getTotalObjects(),
+                value.getProcessedObjects(),
+                value.getDroppedObjects(),
+                value.getTruePositives(),
+                value.getFalseNegatives());
     }
 }

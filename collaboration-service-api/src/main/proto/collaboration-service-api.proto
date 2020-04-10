@@ -7,11 +7,87 @@ import "google/protobuf/wrappers.proto";
 package edu.cmu.cs.diamond.hyperfind.collaboration.api;
 
 service CollaborationService {
+  rpc GetResults (GetResultsRequest) returns (stream SearchResult);
+  rpc GetResult (GetResultsDataRequest) returns (SearchResult);
+
+  rpc CreateSearch (CreateSearchRequest) returns (SearchId);
+  rpc GetSearchResults (SearchId) returns (stream SearchResultResponse);
+  rpc GetSearchStats (SearchId) returns (stream SearchStats);
+  rpc LabelExamples (LabelExamplesRequest) returns (google.protobuf.Empty);
+  rpc RetrainFilter (RetrainFilterRequest) returns (google.protobuf.Empty);
+  rpc CloseSearch (SearchId) returns (google.protobuf.Empty);
+
   rpc GetBundles (google.protobuf.Empty) returns (stream Bundle);
   rpc GetBundle (google.protobuf.BytesValue) returns (Bundle);
   rpc RestoreBundle (BundleState) returns (Bundle);
+
   rpc UpdateCookies (google.protobuf.StringValue) returns (google.protobuf.Empty);
   rpc GetFilters (FilterBuilderReference) returns (stream Filter);
+}
+
+message GetResultsRequest {
+  repeated ObjectId objectIds = 1;
+  repeated Filter filters = 2;
+  repeated string attributes = 3;
+}
+
+message ObjectId {
+  string objectId = 1;
+  string deviceName = 2;
+  string hostname = 3;
+}
+
+message GetResultsDataRequest {
+  bytes data = 1;
+  repeated Filter filters = 2;
+  repeated string attributes = 3;
+}
+
+message CreateSearchRequest {
+  repeated Filter filters = 1;
+  repeated string attributes = 2;
+}
+
+message SearchResultResponse {
+  oneof value {
+    SearchResult result = 1;
+    google.protobuf.Empty empty = 2;
+  }
+}
+
+message SearchResult {
+  ObjectId id = 1;
+  map<string, bytes> attributes = 2;
+}
+
+message SearchStats {
+  string serverName = 1;
+  int64 totalObjects = 2;
+  int64 processedObjects = 3;
+  int64 droppedObjects = 4;
+  int64 truePositives = 5;
+  int64 falseNegatives = 6;
+}
+
+message LabelExamplesRequest {
+  SearchId searchId = 1;
+  repeated LabeledExample examples = 2;
+}
+
+message LabeledExample {
+  ObjectId id = 1;
+  int32 label = 2;
+}
+
+message RetrainFilterRequest {
+  SearchId searchId = 1;
+  repeated FeedbackObject objects = 2;
+}
+
+message FeedbackObject {
+  ObjectId id = 1;
+  int32 label = 2;
+  bytes featureVector = 3;
 }
 
 message Bundle {
@@ -116,4 +192,8 @@ message Filter {
   double minScore = 5;
   double maxScore = 6;
   bytes blob = 7;
+}
+
+message SearchId {
+  string value = 1;
 }

@@ -41,6 +41,9 @@
 package edu.cmu.cs.diamond.hyperfind.connector.collaborator;
 
 import com.google.protobuf.ByteString;
+import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import one.util.streamex.EntryStream;
 
@@ -53,6 +56,34 @@ public final class ToProto {
         return edu.cmu.cs.diamond.hyperfind.collaboration.api.BundleState.newBuilder()
                 .putAllBundleContents(EntryStream.of(value.bundleContents()).mapValues(ByteString::copyFrom).toMap())
                 .addAllMemberDirs(value.memberDirs())
+                .build();
+    }
+
+    public static edu.cmu.cs.diamond.hyperfind.collaboration.api.ObjectId convert(ObjectId value) {
+        return edu.cmu.cs.diamond.hyperfind.collaboration.api.ObjectId.newBuilder()
+                .setObjectId(value.objectId())
+                .setDeviceName(value.deviceName())
+                .setHostname(value.hostname())
+                .build();
+    }
+
+    public static edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter convert(Filter value) {
+        return edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter.newBuilder()
+                .setCode(ByteString.copyFrom(value.code()))
+                .addAllDependences(value.dependencies())
+                .addAllArguments(value.arguments())
+                .setName(value.name())
+                .setMinScore(value.minScore())
+                .setMaxScore(value.maxScore())
+                .setBlob(ByteString.copyFrom(value.blob()))
+                .build();
+    }
+
+    public static edu.cmu.cs.diamond.hyperfind.collaboration.api.FeedbackObject convert(FeedbackObject value) {
+        return edu.cmu.cs.diamond.hyperfind.collaboration.api.FeedbackObject.newBuilder()
+                .setId(convert(value.id()))
+                .setLabel(value.label())
+                .setFeatureVector(ByteString.copyFrom(value.featureVector()))
                 .build();
     }
 }

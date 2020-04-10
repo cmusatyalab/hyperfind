@@ -482,7 +482,7 @@ public class ThumbnailBox extends JPanel {
                     statsArea.setDone();
                     revalidate();
                     repaint();
-                    search.retrainFilter(feedbackItems);
+                    search.retrainFilter(feedbackItems.values());
                     System.out.println("Retrain finish !");
                     clearFeedBackItems();
                     pauseState = false;

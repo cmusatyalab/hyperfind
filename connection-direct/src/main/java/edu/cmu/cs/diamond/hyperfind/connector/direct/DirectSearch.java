@@ -47,6 +47,7 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import edu.cmu.cs.diamond.opendiamond.LabeledExample;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -86,9 +87,10 @@ public final class DirectSearch implements Search {
     }
 
     @Override
-    public void retrainFilter(Map<String, FeedbackObject> map) {
+    public void retrainFilter(Collection<FeedbackObject> objects) {
         try {
-            delegate.retrainFilter(EntryStream.of(map).mapValues(ToDiamond::convert).toMap());
+            delegate.retrainFilter(objects.stream()
+                    .collect(Collectors.toMap(o -> o.id().objectId(), ToDiamond::convert)));
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException("Failed to retrain filter", e);
         }

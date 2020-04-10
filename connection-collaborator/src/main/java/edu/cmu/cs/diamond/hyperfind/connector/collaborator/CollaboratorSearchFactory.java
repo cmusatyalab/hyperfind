@@ -40,34 +40,100 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.collaborator;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.ByteString;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.CollaborationServiceGrpc;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.CreateSearchRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsDataRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchId;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connector.collaborator.grpc.BlockingStreamObserver;
+import edu.cmu.cs.diamond.hyperfind.connector.collaborator.grpc.UnaryStreamObserver;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 public final class CollaboratorSearchFactory implements SearchFactory {
 
+    private final CollaborationServiceGrpc.CollaborationServiceStub service;
+    private final List<edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter> filters;
+    private final ExecutorService resultExecutor;
+
+    public CollaboratorSearchFactory(
+            CollaborationServiceGrpc.CollaborationServiceStub service,
+            List<Filter> filters,
+            ExecutorService resultExecutor) {
+        this.service = service;
+        this.filters = filters.stream().map(ToProto::convert).collect(Collectors.toList());
+        this.resultExecutor = resultExecutor;
+    }
+
     @Override
     public Search createSearch(Set<String> attributes) {
-        return null;
+        CreateSearchRequest request = CreateSearchRequest.newBuilder()
+                .addAllFilters(filters)
+                .addAllAttributes(attributes)
+                .build();
+
+        UnaryStreamObserver<SearchId> observer = new UnaryStreamObserver<>();
+        service.createSearch(request, observer);
+
+        return new CollaboratorSearch(service, observer.value(), resultExecutor);
     }
 
     @Override
     public SearchResult getResult(ObjectId objectId, Set<String> attributes) {
-        return null;
+        Map<ObjectId, SearchResult> results = getResults(ImmutableSet.of(objectId), attributes);
+        Preconditions.checkArgument(results.containsKey(objectId), "Object id not found in results: %s", objectId);
+        return results.get(objectId);
     }
 
     @Override
     public SearchResult getResult(byte[] data, Set<String> attributes) {
-        return null;
+        GetResultsDataRequest request = GetResultsDataRequest.newBuilder()
+                .setData(ByteString.copyFrom(data))
+                .addAllFilters(filters)
+                .addAllAttributes(attributes)
+                .build();
+
+        UnaryStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult> observer =
+                new UnaryStreamObserver<>();
+        service.getResult(request, observer);
+
+        return FromProto.convert(observer.value());
     }
 
     @Override
     public Map<ObjectId, SearchResult> getResults(Collection<ObjectId> objectIds, Set<String> attributes) {
-        return null;
-    }
+        GetResultsRequest request = GetResultsRequest.newBuilder()
+                .addAllObjectIds(objectIds.stream().map(ToProto::convert).collect(Collectors.toList()))
+                .addAllFilters(filters)
+                .addAllAttributes(attributes)
+                .build();
 
+        ImmutableMap.Builder<ObjectId, SearchResult> results = ImmutableMap.builder();
+        BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult> observer =
+                new BlockingStreamObserver<>() {
+                    @Override
+                    public void onNext(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult value) {
+                        SearchResult converted = FromProto.convert(value);
+                        results.put(converted.getId(), converted);
+                    }
+                };
+
+        service.getResults(request, observer);
+        observer.waitForFinish();
+
+        return results.build();
+    }
 }

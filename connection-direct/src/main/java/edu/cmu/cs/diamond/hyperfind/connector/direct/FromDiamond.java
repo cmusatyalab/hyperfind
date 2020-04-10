@@ -75,10 +75,10 @@ public final class FromDiamond {
         return ObjectId.of(value.getObjectID(), value.getDeviceName(), value.getHostname());
     }
 
-    public static SearchResult convert(Result result) {
+    public static SearchResult convert(Result value) {
         return new SearchResult(
-                FromDiamond.convert(result.getObjectIdentifier()),
-                result.getKeys().stream().collect(Collectors.toMap(k -> k, result::getValue)));
+                convert(value.getObjectIdentifier()),
+                value.getKeys().stream().collect(Collectors.toMap(k -> k, value::getValue)));
     }
 
     public static SearchStats convert(ServerStatistics value) {
