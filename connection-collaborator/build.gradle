@@ -1,0 +1,7 @@
+dependencies {
+    implementation project(':connection-api')
+    implementation project(':collaboration-service-api')
+
+    implementation 'io.grpc:grpc-netty-shaded'
+    implementation 'one.util:streamex'
+}

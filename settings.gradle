@@ -1,7 +1,10 @@
 rootProject.name = 'hyperfind'
 
 include 'client'
+
 include 'collaboration-service'
+include 'collaboration-service-api'
+
 include 'connection-api'
 include 'connection-collaborator'
 include 'connection-direct'

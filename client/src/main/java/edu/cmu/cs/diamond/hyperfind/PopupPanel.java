@@ -898,9 +898,7 @@ public class PopupPanel extends JPanel {
                     f.format("%s", predicateName);
                     if (bbs.size() > 0) {
                         // similarity metric comes from the patches attribute
-                        f.format(
-                                " (similarity %.0f%%)",
-                                100 - 100.0 * distance);
+                        f.format(" (similarity %.0f%%)", 100 - 100.0 * distance);
                     }
                     PredicateList.updateCheckBox(cb, f.toString(), name, false);
 

@@ -1,0 +1,119 @@
+syntax = "proto3";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+package edu.cmu.cs.diamond.hyperfind.collaboration.api;
+
+service CollaborationService {
+  rpc GetBundles (google.protobuf.Empty) returns (stream Bundle);
+  rpc GetBundle (google.protobuf.BytesValue) returns (Bundle);
+  rpc RestoreBundle (BundleState) returns (Bundle);
+  rpc UpdateCookies (google.protobuf.StringValue) returns (google.protobuf.Empty);
+  rpc GetFilters (FilterBuilderReference) returns (stream Filter);
+}
+
+message Bundle {
+  string displayName = 1;
+  BundleType type = 2;
+  repeated OptionGroup options = 3;
+  BundleState state = 4;
+  FilterBuilderReference filterBuilder = 5;
+}
+
+enum BundleType {
+  CODEC = 0;
+  PREDICATE = 1;
+}
+
+message OptionGroup {
+  google.protobuf.StringValue displayName = 1;
+  repeated Option options = 2;
+}
+
+message Option {
+  oneof value {
+    ExampleOption example = 1;
+    ChoiceOption choice = 2;
+    BooleanOption boolean = 3;
+    NumberOption number = 4;
+    StringOption string = 5;
+    FileOption file = 6;
+  }
+}
+
+message ExampleOption {
+  string displayName = 1;
+  string name = 2;
+}
+
+message ChoiceOption {
+  string displayName = 1;
+  string name = 2;
+  repeated Choice choices = 3;
+  string disabledValue = 4;
+  google.protobuf.BoolValue initiallyEnabled = 5;
+}
+
+message Choice {
+  string displayName = 1;
+  string value = 2;
+  bool isDefault = 3;
+}
+
+message BooleanOption {
+  string displayName = 1;
+  string name = 2;
+  bool defaultValue = 3;
+}
+
+message NumberOption {
+  string displayName = 1;
+  string name = 2;
+  double defaultValue = 3;
+  google.protobuf.DoubleValue min = 4;
+  google.protobuf.DoubleValue max = 5;
+  double step = 6;
+  double disabledValue = 7;
+  google.protobuf.BoolValue initiallyEnabled = 8;
+}
+
+message StringOption {
+  string displayName = 1;
+  string name = 2;
+  string defaultValue = 3;
+  int32 height = 4;
+  int32 width = 5;
+  bool multiLine = 6;
+  string disabledValue = 7;
+  google.protobuf.BoolValue initiallyEnabled = 8;
+}
+
+message FileOption {
+  string displayName = 1;
+  string name = 2;
+}
+
+message BundleState {
+  map<string, bytes> bundleContents = 1;
+  repeated string memberDirs = 2;
+}
+
+message FilterBuilderReference {
+  oneof value {
+    int32 index = 1;
+    bytes input = 2;
+    BundleState bundleState = 3;
+  }
+}
+
+message Filter {
+  bytes code = 1;
+  repeated string dependences = 2;
+  repeated string arguments = 3;
+  string name = 4;
+  double minScore = 5;
+  double maxScore = 6;
+  bytes blob = 7;
+}

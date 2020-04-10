@@ -92,12 +92,11 @@ public final class FromDiamond {
 
     public static Bundle convert(edu.cmu.cs.diamond.opendiamond.Bundle value) {
         try {
-            List<edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup> options = value.getOptions();
             edu.cmu.cs.diamond.opendiamond.Bundle.PreparedFileLoader fileLoader = value.export().fileLoader;
             return Bundle.of(
                     value.getDisplayName(),
                     BundleType.valueOf(value.getType().name()),
-                    options.stream().map(FromDiamond::convert).collect(Collectors.toList()),
+                    value.getOptions().stream().map(FromDiamond::convert).collect(Collectors.toList()),
                     BundleState.of(
                             fileLoader.bundleContents,
                             fileLoader.memberDirs.stream().map(File::toString).collect(Collectors.toList())),
