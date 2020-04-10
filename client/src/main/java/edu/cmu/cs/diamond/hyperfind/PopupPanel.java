@@ -67,10 +67,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
@@ -175,7 +175,7 @@ public class PopupPanel extends JPanel {
         Set<String> keys = new HashSet<>(r.getKeys());
         prevResult.ifPresent(result -> keys.addAll(result.getKeys()));
 
-        Map<String, byte[]> attributes = new HashMap<String, byte[]>();
+        Map<String, byte[]> attributes = new HashMap<>();
 
         for (String k : keys) {
             // skip "data" attribute
@@ -219,7 +219,7 @@ public class PopupPanel extends JPanel {
             Main m,
             Connection connection,
             BufferedImage img,
-            byte resultData[],
+            byte[] resultData,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             PredicateListModel model) {
         return createInstance(m, connection, Optional.empty(), img, resultData, ImmutableList.of(),
@@ -231,7 +231,7 @@ public class PopupPanel extends JPanel {
             Connection connection,
             Optional<SearchResult> result,
             BufferedImage img,
-            byte resultData[],
+            byte[] resultData,
             List<ActivePredicate> activePredicates,
             List<HyperFindPredicateFactory> examplePredicateFactories,
             ResultRegions regions,
@@ -295,7 +295,7 @@ public class PopupPanel extends JPanel {
         // create leftSide only when object is image
         Optional<String> displayUrl = result.flatMap(r -> r.getString("hyperfind.object-display-url"));
         ImageRegionsLabel image = null;
-        if (displayUrl.isPresent() && img != null) {
+        if (displayUrl.isEmpty() && img != null) {
             image = new ImageRegionsLabel(img);
             Box leftSide = Box.createVerticalBox();
             leftSide.add(new RegionsListPanel(activePredicates, regions,
@@ -337,13 +337,7 @@ public class PopupPanel extends JPanel {
                 scrollPane.getHorizontalScrollBar().setUnitIncrement(20);
                 scrollPane.getVerticalScrollBar().setUnitIncrement(20);
             } else {    // text
-                String text;
-                try {
-                    text = new String(resultData, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                    text = "";
-                }
+                String text = new String(resultData, StandardCharsets.UTF_8);
                 JTextArea textArea = new JTextArea(text, 25, 80);
                 textArea.setEditable(false);
                 textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
@@ -367,7 +361,7 @@ public class PopupPanel extends JPanel {
         return p;
     }
 
-    // TODO(hturki): Dedup from opendiamond-java's Utils class
+    // TODO(hturki): Dedupe from opendiamond-java's Utils class
     private static BufferedImage extractImageFromResult(SearchResult r) {
         // first, try rgbimage
         Optional<byte[]> rgbimage = r.getBytes("_rgb_image.rgbimage");
@@ -390,7 +384,7 @@ public class PopupPanel extends JPanel {
         return null;
     }
 
-    // TODO(hturki): Dedup from opendiamond-java's Utils class
+    // TODO(hturki): Dedupe from opendiamond-java's Utils class
     private static BufferedImage decodeRGBImage(byte[] rgbimage) {
         ByteBuffer buf = ByteBuffer.wrap(rgbimage);
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -403,8 +397,7 @@ public class PopupPanel extends JPanel {
         int w = buf.getInt();
 
         // do it
-        BufferedImage result = new BufferedImage(w, h,
-                BufferedImage.TYPE_INT_RGB);
+        BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         int data[] = ((DataBufferInt) result.getRaster().getDataBuffer())
                 .getData();
         for (int i = 0; i < data.length; i++) {
@@ -839,7 +832,6 @@ public class PopupPanel extends JPanel {
             g2.dispose();
 
             ByteArrayOutputStream ppmOut = new ByteArrayOutputStream();
-            // System.out.println(buf);
             if (!ImageIO.write(buf, "PNM", ppmOut)) {
                 throw new IOException("Can't write out PNM");
             }

@@ -41,33 +41,61 @@
 package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
 import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
-import edu.cmu.cs.diamond.opendiamond.FilterCode;
-import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
+import edu.cmu.cs.diamond.opendiamond.LabeledExample;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import one.util.streamex.EntryStream;
 
-public final class ToDiamond {
+public final class DirectSearch implements Search {
 
-    private ToDiamond() {
+    private final edu.cmu.cs.diamond.opendiamond.Search delegate;
+
+    public DirectSearch(edu.cmu.cs.diamond.opendiamond.Search delegate) {
+        this.delegate = delegate;
     }
 
-    public static edu.cmu.cs.diamond.opendiamond.Filter convert(Filter value) {
-        return new edu.cmu.cs.diamond.opendiamond.Filter(
-                value.name(),
-                new FilterCode(value.code()),
-                value.minScore(),
-                value.maxScore(),
-                value.dependencies(),
-                value.arguments(),
-                value.blob());
+    @Override
+    public Optional<SearchResult> getNextResult() {
+        try {
+            return Optional.ofNullable(delegate.getNextResult()).map(FromDiamond::convert);
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException("Failed to get next result", e);
+        }
     }
 
-    public static ObjectIdentifier convert(ObjectId value) {
-        return new ObjectIdentifier(value.objectId(), value.deviceName(), value.hostname());
+    @Override
+    public Map<String, SearchStats> getStats() {
+        try {
+            return EntryStream.of(delegate.getStatistics()).mapValues(FromDiamond::convert).toMap();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to get search stats", e);
+        }
     }
 
-    public static edu.cmu.cs.diamond.opendiamond.FeedbackObject convert(FeedbackObject value) {
-        return new edu.cmu.cs.diamond.opendiamond.FeedbackObject(value.featureVector(), value.label(),
-                convert(value.id()));
+    @Override
+    public void labelExamples(Map<ObjectId, Integer> examples) {
+        delegate.labelExamples(examples.entrySet().stream()
+                .map(e -> new LabeledExample(ToDiamond.convert(e.getKey()), e.getValue()))
+                .collect(Collectors.toSet()));
+    }
+
+    @Override
+    public void retrainFilter(Map<String, FeedbackObject> map) {
+        try {
+            delegate.retrainFilter(EntryStream.of(map).mapValues(ToDiamond::convert).toMap());
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException("Failed to retrain filter", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        delegate.close();
     }
 }

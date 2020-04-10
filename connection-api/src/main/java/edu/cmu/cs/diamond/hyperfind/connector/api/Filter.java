@@ -77,5 +77,4 @@ public interface Filter {
             byte[] blob) {
         return ImmutableFilter.of(code, dependencies, arguments, name, minScore, maxScore, blob);
     }
-    
 }

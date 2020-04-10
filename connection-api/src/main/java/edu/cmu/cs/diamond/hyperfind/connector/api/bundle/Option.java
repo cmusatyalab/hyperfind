@@ -42,10 +42,9 @@ package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
 public interface Option {
 
-   String displayName();
+    String displayName();
 
-   String name();
+    String name();
 
-   <T> T accept(OptionVisitor<T> visitor);
-
+    <T> T accept(OptionVisitor<T> visitor);
 }

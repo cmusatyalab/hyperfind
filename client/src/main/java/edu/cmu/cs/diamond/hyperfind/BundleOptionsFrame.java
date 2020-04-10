@@ -198,7 +198,7 @@ public class BundleOptionsFrame extends JFrame {
         for (OptionGroup group : options) {
             addSeparator(group.displayName());
             for (Option option : group.options()) {
-                OptionField field = option.accept(new OptionVisitor<OptionField>() {
+                OptionField field = option.accept(new OptionVisitor<>() {
                     @Override
                     public OptionField accept(StringOption option) {
                         return new StringField(option);
@@ -245,7 +245,7 @@ public class BundleOptionsFrame extends JFrame {
 
         // Extra dependencies given by user that were not specified in predicate files
         if (instanceNameField != null) {
-            addSeparator("More");
+            addSeparator(Optional.of("More"));
             StringOption extraDepsOpt = StringOption.of("Extra dependencies", UUID.randomUUID().toString(), "", 4, 20
                     , true, "", Optional.empty());
             extraDepsField = new StringField(extraDepsOpt);
@@ -270,11 +270,11 @@ public class BundleOptionsFrame extends JFrame {
         setTitle("Edit " + detail);
     }
 
-    private void addSeparator(String label) {
+    private void addSeparator(Optional<String> label) {
         JPanel p = new JPanel(new GridBagLayout());
         GridBagConstraints c;
 
-        if (label != null) {
+        if (label.isPresent()) {
             // left border
             c = new GridBagConstraints();
             c.gridy = 0;
@@ -285,7 +285,7 @@ public class BundleOptionsFrame extends JFrame {
             c = new GridBagConstraints();
             c.gridy = 0;
             c.insets = new Insets(0, 4, 0, 4);
-            p.add(new JLabel(label), c);
+            p.add(new JLabel(label.get()), c);
         }
 
         // right border
@@ -301,13 +301,15 @@ public class BundleOptionsFrame extends JFrame {
         c.gridy = currentRow++;
         c.gridwidth = 3;
         c.fill = GridBagConstraints.HORIZONTAL;
-        if (label == null) {
+
+        if (label.isEmpty()) {
             // simple separator between predicate name and options; don't use
             // pronounced section break
             c.insets = new Insets(3, 0, 3, 0);
         } else {
             c.insets = new Insets(10, 0, 0, 0);
         }
+
         content.add(p, c);
     }
 

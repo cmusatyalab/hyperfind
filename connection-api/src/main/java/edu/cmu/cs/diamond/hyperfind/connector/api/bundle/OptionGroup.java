@@ -41,18 +41,19 @@
 package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public interface OptionGroup {
 
     @Value.Parameter
-    String displayName();
+    Optional<String> displayName();
 
     @Value.Parameter
     List<Option> options();
 
-    static OptionGroup of(String displayName, List<Option> options) {
+    static OptionGroup of(Optional<String> displayName, List<Option> options) {
         return ImmutableOptionGroup.of(displayName, options);
     }
 }

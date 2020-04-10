@@ -77,8 +77,12 @@ public final class DirectSearchFactory implements SearchFactory {
     }
 
     @Override
-    public Search createSearch(Set<String> _attributes) {
-        return null;
+    public Search createSearch(Set<String> attributes) {
+        try {
+            return new DirectSearch(delegate.createSearch(attributes));
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to create search", e);
+        }
     }
 
     @Override

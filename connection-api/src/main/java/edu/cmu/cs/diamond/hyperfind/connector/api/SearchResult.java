@@ -116,7 +116,7 @@ public final class SearchResult {
                 .getLong()));
     }
 
-    // TODO: deduplicate with opendiamond-java's Utils class
+    // TODO(hturki): deduplicate with opendiamond-java's Utils class
     public Optional<String> getString(String attrName) {
         return getBytes(attrName).map(value -> {
             if (value.length == 0) {

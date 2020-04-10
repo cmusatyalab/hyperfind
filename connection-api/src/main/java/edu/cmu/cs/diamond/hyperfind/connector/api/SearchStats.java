@@ -60,4 +60,12 @@ public interface SearchStats {
     @Value.Parameter
     long falseNegatives();
 
+    static SearchStats of(
+            long totalObjects,
+            long processedObjects,
+            long droppedObjects,
+            long truePositives,
+            long falseNegatives) {
+        return ImmutableSearchStats.of(totalObjects, processedObjects, droppedObjects, truePositives, falseNegatives);
+    }
 }

@@ -40,8 +40,10 @@
 
 package edu.cmu.cs.diamond.hyperfind.connector.direct;
 
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BooleanOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
@@ -54,9 +56,9 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.NumberOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.StringOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
 import edu.cmu.cs.diamond.opendiamond.Result;
+import edu.cmu.cs.diamond.opendiamond.ServerStatistics;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -77,6 +79,15 @@ public final class FromDiamond {
         return new SearchResult(
                 FromDiamond.convert(result.getObjectIdentifier()),
                 result.getKeys().stream().collect(Collectors.toMap(k -> k, result::getValue)));
+    }
+
+    public static SearchStats convert(ServerStatistics value) {
+        return SearchStats.of(
+                value.getServerStats().get(ServerStatistics.TOTAL_OBJECTS),
+                value.getServerStats().get(ServerStatistics.PROCESSED_OBJECTS),
+                value.getServerStats().get(ServerStatistics.DROPPED_OBJECTS),
+                value.getServerStats().get(ServerStatistics.TP_OBJECTS),
+                value.getServerStats().get(ServerStatistics.FN_OBJECTS));
     }
 
     public static Bundle convert(edu.cmu.cs.diamond.opendiamond.Bundle value) {
@@ -122,7 +133,7 @@ public final class FromDiamond {
 
     public static OptionGroup convert(edu.cmu.cs.diamond.opendiamond.bundle.OptionGroup value) {
         return OptionGroup.of(
-                value.getDisplayName(),
+                Optional.ofNullable(value.getDisplayName()),
                 value.getOptions().stream().map(FromDiamond::convert).collect(Collectors.toList()));
     }
 
