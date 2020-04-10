@@ -745,13 +745,9 @@ public final class Main {
                 jm.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        try {
-                            HyperFindPredicate p = f.createHyperFindPredicate();
-                            model.addPredicate(p);
-                            p.edit();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                        HyperFindPredicate p = f.createHyperFindPredicate();
+                        model.addPredicate(p);
+                        p.edit();
                     }
                 });
                 if (f.needsExamples()) {

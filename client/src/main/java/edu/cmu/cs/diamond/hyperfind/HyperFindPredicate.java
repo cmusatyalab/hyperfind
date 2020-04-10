@@ -41,11 +41,10 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -121,7 +120,7 @@ public class HyperFindPredicate {
         }
     }
 
-    public void addExamples(List<BufferedImage> examples) {
+    public void addExamples(List<byte[]> examples) {
         frame.addExamples(examples);
     }
 
@@ -188,7 +187,7 @@ public class HyperFindPredicate {
         final public BundleState bundleState;
         final public HashMap<String, String> optionMap;
         final public String instanceName;
-        final public ArrayList<BufferedImage> examples;
+        final public ArrayList<byte[]> examples;
 
         public HyperFindPredicateState(HyperFindPredicate predicate) {
             this.bundleState = predicate.bundle.state();

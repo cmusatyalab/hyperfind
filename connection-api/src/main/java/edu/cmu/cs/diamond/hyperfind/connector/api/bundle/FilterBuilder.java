@@ -41,7 +41,6 @@
 package edu.cmu.cs.diamond.hyperfind.connector.api.bundle;
 
 import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
-import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,6 +48,6 @@ import java.util.Optional;
 @FunctionalInterface
 public interface FilterBuilder {
 
-    List<Filter> getFilters(Map<String, String> optionMap, Optional<List<BufferedImage>> examples);
+    List<Filter> getFilters(Map<String, String> optionMap, Optional<List<byte[]>> examples);
 
 }

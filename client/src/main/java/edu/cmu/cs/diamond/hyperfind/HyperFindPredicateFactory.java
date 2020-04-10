@@ -46,7 +46,6 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ExampleOption;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
 import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -86,11 +85,11 @@ public class HyperFindPredicateFactory {
         return needsExamples;
     }
 
-    public HyperFindPredicate createHyperFindPredicate() throws IOException {
+    public HyperFindPredicate createHyperFindPredicate() {
         return new HyperFindPredicate(bundle);
     }
 
-    public HyperFindPredicate createHyperFindPredicate(List<BufferedImage> examples) throws IOException {
+    public HyperFindPredicate createHyperFindPredicate(List<byte[]> examples) {
         HyperFindPredicate predicate = createHyperFindPredicate();
         predicate.addExamples(examples);
         return predicate;

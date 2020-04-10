@@ -116,50 +116,59 @@ public final class FromProto {
             case EXAMPLE:
                 return ExampleOption.of(value.getExample().getDisplayName(), value.getExample().getName());
             case CHOICE:
-                edu.cmu.cs.diamond.hyperfind.collaboration.api.ChoiceOption choice = value.getChoice();
-                return ChoiceOption.of(
-                        choice.getDisplayName(),
-                        choice.getName(),
-                        choice.getChoicesList().stream().map(FromProto::convert).collect(Collectors.toList()),
-                        choice.getDisabledValue(),
-                        choice.hasInitiallyEnabled()
-                                ? Optional.of(choice.getInitiallyEnabled().getValue())
-                                : Optional.empty());
+                return convert(value.getChoice());
             case BOOLEAN:
                 edu.cmu.cs.diamond.hyperfind.collaboration.api.BooleanOption bool = value.getBoolean();
                 return BooleanOption.of(bool.getDisplayName(), bool.getName(), bool.getDefaultValue());
             case NUMBER:
-                edu.cmu.cs.diamond.hyperfind.collaboration.api.NumberOption number = value.getNumber();
-                return NumberOption.of(
-                        number.getDisplayName(),
-                        number.getName(),
-                        number.getDefaultValue(),
-                        number.hasMin() ? OptionalDouble.of(number.getMin().getValue()) : OptionalDouble.empty(),
-                        number.hasMax() ? OptionalDouble.of(number.getMax().getValue()) : OptionalDouble.empty(),
-                        number.getStep(),
-                        number.getDisabledValue(),
-                        number.hasInitiallyEnabled()
-                                ? Optional.of(number.getInitiallyEnabled().getValue())
-                                : Optional.empty());
+                return convert(value.getNumber());
             case STRING:
-                edu.cmu.cs.diamond.hyperfind.collaboration.api.StringOption string = value.getString();
-                return StringOption.of(
-                        string.getDisplayName(),
-                        string.getName(),
-                        string.getDefaultValue(),
-                        string.getHeight(),
-                        string.getWidth(),
-                        string.getMultiLine(),
-                        string.getDisabledValue(),
-                        string.hasInitiallyEnabled()
-                                ? Optional.of(string.getInitiallyEnabled().getValue())
-                                : Optional.empty());
+                return convert(value.getString());
             case FILE:
                 return FileOption.of(value.getFile().getDisplayName(), value.getFile().getName());
             case VALUE_NOT_SET:
         }
 
         throw new IllegalArgumentException("Unrecognized option type: " + value);
+    }
+
+    private static Option convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.ChoiceOption choice) {
+        return ChoiceOption.of(
+                choice.getDisplayName(),
+                choice.getName(),
+                choice.getChoicesList().stream().map(FromProto::convert).collect(Collectors.toList()),
+                choice.getDisabledValue(),
+                choice.hasInitiallyEnabled()
+                        ? Optional.of(choice.getInitiallyEnabled().getValue())
+                        : Optional.empty());
+    }
+
+    private static Option convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.NumberOption number) {
+        return NumberOption.of(
+                number.getDisplayName(),
+                number.getName(),
+                number.getDefaultValue(),
+                number.hasMin() ? OptionalDouble.of(number.getMin().getValue()) : OptionalDouble.empty(),
+                number.hasMax() ? OptionalDouble.of(number.getMax().getValue()) : OptionalDouble.empty(),
+                number.getStep(),
+                number.getDisabledValue(),
+                number.hasInitiallyEnabled()
+                        ? Optional.of(number.getInitiallyEnabled().getValue())
+                        : Optional.empty());
+    }
+
+    private static Option convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.StringOption string) {
+        return StringOption.of(
+                string.getDisplayName(),
+                string.getName(),
+                string.getDefaultValue(),
+                string.getHeight(),
+                string.getWidth(),
+                string.getMultiLine(),
+                string.getDisabledValue(),
+                string.hasInitiallyEnabled()
+                        ? Optional.of(string.getInitiallyEnabled().getValue())
+                        : Optional.empty());
     }
 
     public static Choice convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.Choice value) {

@@ -41,13 +41,13 @@
 package edu.cmu.cs.diamond.hyperfind.connector.collaborator;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.CollaborationServiceGrpc;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.FilterBuilderReference;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetFiltersRequest;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
@@ -57,7 +57,6 @@ import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.FilterBuilder;
 import edu.cmu.cs.diamond.hyperfind.connector.collaborator.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.connector.collaborator.grpc.UnaryStreamObserver;
 import io.grpc.ManagedChannel;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -67,6 +66,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 
 public final class CollaboratorConnection implements Connection {
@@ -106,7 +106,7 @@ public final class CollaboratorConnection implements Connection {
 
     @Override
     public List<Bundle> getBundles() {
-        ArrayList<Bundle> bundles = Lists.newArrayList();
+        List<Bundle> bundles = new ArrayList<>();
 
         BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle> observer =
                 new BlockingStreamObserver<>() {
@@ -169,7 +169,7 @@ public final class CollaboratorConnection implements Connection {
         }
 
         @Override
-        public List<Filter> getFilters(Map<String, String> optionMap, Optional<List<BufferedImage>> examples) {
+        public List<Filter> getFilters(Map<String, String> optionMap, Optional<List<byte[]>> examples) {
             ImmutableList.Builder<Filter> filters = ImmutableList.builder();
 
             BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter> observer =
@@ -179,7 +179,16 @@ public final class CollaboratorConnection implements Connection {
                             filters.add(FromProto.convert(value));
                         }
                     };
-            service.getFilters(reference, observer);
+
+            GetFiltersRequest.Builder request = GetFiltersRequest.newBuilder()
+                    .setReference(reference)
+                    .putAllOptionMap(optionMap);
+
+            examples.ifPresent(e -> request.addAllExamples(e.stream()
+                    .map(ByteString::copyFrom)
+                    .collect(Collectors.toList())));
+
+            service.getFilters(request.build(), observer);
             observer.waitForFinish();
 
             return filters.build();

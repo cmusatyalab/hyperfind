@@ -64,6 +64,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -114,6 +115,7 @@ import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.text.JTextComponent;
+import org.apache.commons.io.IOUtils;
 
 public class BundleOptionsFrame extends JFrame {
 
@@ -796,17 +798,18 @@ public class BundleOptionsFrame extends JFrame {
 
         private static class Example {
 
-            private final BufferedImage image;
+            private final byte[] example;
 
             private final Icon icon;
 
-            public Example(BufferedImage image) {
+            public Example(byte[] example) {
+                this.example = example;
+
+                BufferedImage image = readImage(example);
                 // copy image
                 int width = image.getWidth();
                 int height = image.getHeight();
-                this.image = new BufferedImage(width, height,
-                        BufferedImage.TYPE_INT_RGB);
-                Graphics2D g2 = this.image.createGraphics();
+                Graphics2D g2 = image.createGraphics();
                 g2.drawImage(image, 0, 0, null);
                 g2.dispose();
 
@@ -818,19 +821,30 @@ public class BundleOptionsFrame extends JFrame {
                     width *= scale;
                     height *= scale;
                 }
+
                 BufferedImage buf = new BufferedImage(width, height,
                         BufferedImage.TYPE_INT_RGB);
+
                 g2 = buf.createGraphics();
                 g2.setRenderingHint(
                         RenderingHints.KEY_INTERPOLATION,
                         RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                 g2.drawImage(image, 0, 0, width, height, null);
                 g2.dispose();
+
                 this.icon = new ImageIcon(buf);
             }
 
-            public BufferedImage getBufferedImage() {
-                return image;
+            private BufferedImage readImage(byte[] example) {
+                try {
+                    return ImageIO.read(new ByteArrayInputStream(example));
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to read image", e);
+                }
+            }
+
+            public byte[] getExample() {
+                return example;
             }
 
             public Icon getIcon() {
@@ -838,14 +852,14 @@ public class BundleOptionsFrame extends JFrame {
             }
         }
 
-        private final DefaultListModel model;
+        private final DefaultListModel<Example> model;
 
         private final JPanel panel;
 
         public ExampleField(ExampleOption option) {
             super(option);
 
-            model = new DefaultListModel();
+            model = new DefaultListModel<>();
             model.addListDataListener(new ListDataListener() {
                 @Override
                 public void intervalAdded(ListDataEvent e) {
@@ -863,12 +877,13 @@ public class BundleOptionsFrame extends JFrame {
                 }
             });
 
-            final JList list = new JList(model) {
+            JList<Example> list = new JList<>(model) {
                 @Override
                 public Dimension getPreferredScrollableViewportSize() {
                     return new Dimension(3 * CELL_SIZE, 2 * CELL_SIZE);
                 }
             };
+
             list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
             list.setVisibleRowCount(0);
             list.setFixedCellHeight(CELL_SIZE);
@@ -883,11 +898,10 @@ public class BundleOptionsFrame extends JFrame {
                 @Override
                 public boolean importData(TransferSupport support) {
                     try {
-                        List<BufferedImage> images =
-                                new ArrayList<BufferedImage>();
+                        List<byte[]> images = new ArrayList<byte[]>();
                         for (URI u : getURIs(support)) {
                             try {
-                                images.add(ImageIO.read(u.toURL()));
+                                images.add(IOUtils.toByteArray(u));
                             } catch (IOException e) {
                             }
                         }
@@ -966,7 +980,7 @@ public class BundleOptionsFrame extends JFrame {
             return;    // no-op
         }
 
-        public void setExamples(List<BufferedImage> examples) {
+        public void setExamples(List<byte[]> examples) {
             model.clear();
             for (int i = 0; i < examples.size(); i++) {
                 model.addElement(new Example(examples.get(i)));
@@ -983,17 +997,17 @@ public class BundleOptionsFrame extends JFrame {
             return Integer.toString(model.getSize());
         }
 
-        public void addExamples(List<BufferedImage> examples) {
-            for (BufferedImage image : examples) {
+        public void addExamples(List<byte[]> examples) {
+            for (byte[] image : examples) {
                 model.addElement(new Example(image));
             }
         }
 
-        public List<BufferedImage> getExamples() {
-            List<BufferedImage> list = new ArrayList<BufferedImage>();
+        public List<byte[]> getExamples() {
+            List<byte[]> list = new ArrayList<>();
             for (int i = 0; i < model.size(); i++) {
                 Example example = (Example) model.get(i);
-                list.add(example.getBufferedImage());
+                list.add(example.getExample());
             }
             return list;
         }
@@ -1033,7 +1047,7 @@ public class BundleOptionsFrame extends JFrame {
         }
     }
 
-    public List<BufferedImage> getExamples() {
+    public List<byte[]> getExamples() {
         if (exampleField != null) {
             return exampleField.getExamples();
         } else {
@@ -1041,7 +1055,7 @@ public class BundleOptionsFrame extends JFrame {
         }
     }
 
-    public void setExamples(List<BufferedImage> examples) {
+    public void setExamples(List<byte[]> examples) {
         if (exampleField != null) {
             exampleField.setExamples(examples);
         }
@@ -1055,7 +1069,7 @@ public class BundleOptionsFrame extends JFrame {
         return exampleField != null;
     }
 
-    public void addExamples(List<BufferedImage> examples) {
+    public void addExamples(List<byte[]> examples) {
         if (exampleField != null) {
             exampleField.addExamples(examples);
         }

@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
@@ -485,17 +486,12 @@ public class PopupPanel extends JPanel {
                 jm.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        try {
-                            // make examples
-                            List<BufferedImage> examples = createExamples();
+                        // make examples
+                        List<byte[]> examples = createExamples();
 
-                            HyperFindPredicate p = f.createHyperFindPredicate(
-                                    examples);
-                            model.addPredicate(p);
-                            p.edit();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
+                        HyperFindPredicate p = f.createHyperFindPredicate(examples);
+                        model.addPredicate(p);
+                        p.edit();
                     }
                 });
                 predicates.add(jm);
@@ -578,8 +574,8 @@ public class PopupPanel extends JPanel {
             });
         }
 
-        private List<BufferedImage> createExamples() {
-            List<BufferedImage> examples = new ArrayList<BufferedImage>();
+        private List<byte[]> createExamples() {
+            List<byte[]> examples = new ArrayList<>();
             for (Rectangle r : image.getDrawnPatches()) {
                 BufferedImage b = new BufferedImage(r.width, r.height,
                         BufferedImage.TYPE_INT_RGB);
@@ -589,7 +585,13 @@ public class PopupPanel extends JPanel {
                         r.x + r.width, r.y + r.height, null);
                 g2.dispose();
 
-                examples.add(b);
+                try {
+                    ByteArrayOutputStream output = new ByteArrayOutputStream();
+                    Preconditions.checkArgument(ImageIO.write(b, "PNG", output), "Failed to write image as png");
+                    examples.add(output.toByteArray());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             return examples;
         }

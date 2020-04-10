@@ -103,7 +103,7 @@ public final class CollaboratorSearch implements Search {
 
         Futures.addCallback(downloadFuture, new FutureCallback<Object>() {
             @Override
-            public void onSuccess(@Nullable Object result) {
+            public void onSuccess(@Nullable Object _result) {
                 log.info("Download thread completed successfully");
             }
 
