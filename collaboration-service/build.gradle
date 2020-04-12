@@ -1,0 +1,18 @@
+apply plugin: 'com.palantir.sls-java-service-distribution'
+
+dependencies {
+    implementation project(':connection-direct')
+    implementation project(':proto-conversions')
+
+    implementation 'io.dropwizard:dropwizard-core'
+    implementation 'io.grpc:grpc-netty-shaded'
+    implementation 'one.util:streamex'
+
+    annotationProcessor 'org.immutables:value'
+    compileOnly 'org.immutables:value::annotations'
+}
+
+distribution {
+    mainClass 'edu.cmu.cs.diamond.hyperfind.collaboration.service.CollaborationService'
+    args 'server', 'var/conf/collaboration-service.yml'
+}

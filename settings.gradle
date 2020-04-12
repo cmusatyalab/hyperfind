@@ -6,5 +6,7 @@ include 'collaboration-service'
 include 'collaboration-service-api'
 
 include 'connection-api'
-include 'connection-collaborator'
+include 'connection-collaboration'
 include 'connection-direct'
+
+include 'proto-conversions'

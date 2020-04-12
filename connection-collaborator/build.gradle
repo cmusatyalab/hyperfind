@@ -1,8 +1,0 @@
-dependencies {
-    implementation project(':connection-api')
-    implementation project(':collaboration-service-api')
-
-    implementation 'io.grpc:grpc-netty-shaded'
-    implementation 'one.util:streamex'
-    implementation 'org.slf4j:slf4j-api'
-}

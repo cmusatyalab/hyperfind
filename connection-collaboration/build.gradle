@@ -1,0 +1,6 @@
+dependencies {
+    compile project(':proto-conversions')
+
+    compile 'io.grpc:grpc-netty-shaded'
+    compile 'org.slf4j:slf4j-api'
+}

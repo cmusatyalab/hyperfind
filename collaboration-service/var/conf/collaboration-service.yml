@@ -1,0 +1,4 @@
+port: 7177
+server:
+  applicationConnectors: []
+  adminConnectors: []

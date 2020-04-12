@@ -21,7 +21,7 @@ service CollaborationService {
   rpc GetBundle (google.protobuf.BytesValue) returns (Bundle);
   rpc RestoreBundle (BundleState) returns (Bundle);
 
-  rpc UpdateCookies (google.protobuf.StringValue) returns (google.protobuf.Empty);
+  rpc UpdateCookies (UpdateCookiesRequest) returns (google.protobuf.Empty);
   rpc GetFilters (GetFiltersRequest) returns (stream Filter);
 }
 
@@ -202,4 +202,8 @@ message Filter {
 
 message SearchId {
   string value = 1;
+}
+
+message UpdateCookiesRequest {
+  google.protobuf.StringValue proxyIp = 1;
 }

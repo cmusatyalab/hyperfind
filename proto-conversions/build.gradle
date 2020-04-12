@@ -1,0 +1,6 @@
+dependencies {
+    compile project(':collaboration-service-api')
+    compile project(':connection-api')
+
+    compile 'one.util:streamex'
+}
