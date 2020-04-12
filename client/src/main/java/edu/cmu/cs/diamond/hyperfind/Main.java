@@ -52,14 +52,15 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
-import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -183,7 +184,7 @@ public final class Main {
         });
     }
 
-    public static Main createMain(Connection connection) throws IOException {
+    public static Main createMain(Connection connection, Optional<RunningSearch> runningSearch) throws IOException {
         // ugly hack to set application name for GNOME Shell
         // http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6528430
         try {
@@ -453,6 +454,15 @@ public final class Main {
                     }
                     attributes.addAll(ResultRegions.getPushAttributes(filterNames));
 
+                    List<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
+                    for (HyperFindPredicate pred : selectedPredicates) {
+                        states.add(pred.export());
+                    }
+
+                    model.getSelectedPredicates().stream().map(p -> p.export())
+
+                    writer.write(gson.toJson(states));
+
                     m.search = factory.createSearch(attributes);
 
                     // clear old state
@@ -571,8 +581,7 @@ public final class Main {
                         Writer writer = new FileWriter(filename);
                         System.out.println("Saving predicates to " + filename);
 
-                        ArrayList<HyperFindPredicate.HyperFindPredicateState> states =
-                                new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
+                        List<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
                         for (HyperFindPredicate pred : selectedPredicates) {
                             states.add(pred.export());
                         }
@@ -596,7 +605,7 @@ public final class Main {
 
                         System.out.println("Importing predicates from " + chooser.getSelectedFile().getCanonicalPath());
                         Reader reader = new FileReader(chooser.getSelectedFile());
-                        ArrayList<HyperFindPredicate.HyperFindPredicateState> restored_states;
+                        List<HyperFindPredicate.HyperFindPredicateState> restored_states;
                         Type type = new TypeToken<ArrayList<HyperFindPredicate.HyperFindPredicateState>>() {
                         }.getType();
                         restored_states = gson.fromJson(reader, type);
@@ -861,7 +870,7 @@ public final class Main {
     }
 
     private static void printUsage() {
-        System.out.printf("usage: %s connector-type <connector args>", Main.class.getName());
+        System.out.printf("usage: %s connection-type <connection args>", Main.class.getName());
         System.out.println();
     }
 

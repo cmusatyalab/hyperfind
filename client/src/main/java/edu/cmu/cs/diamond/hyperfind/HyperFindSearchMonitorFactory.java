@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;

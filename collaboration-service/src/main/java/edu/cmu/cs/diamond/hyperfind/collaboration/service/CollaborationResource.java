@@ -65,10 +65,10 @@ import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResultResponse;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.UpdateCookiesRequest;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
 import io.grpc.stub.StreamObserver;
@@ -114,7 +114,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             List<ObjectId> objectIds =
                     request.getObjectIdsList().stream().map(FromProto::convert).collect(Collectors.toList());
 
-            Map<ObjectId, edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult> results =
+            Map<ObjectId, edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult> results =
                     searchFactory.getResults(objectIds, ImmutableSet.copyOf(request.getAttributesList()));
             results.values().forEach(r -> observer.onNext(ToProto.convert(r)));
             observer.onCompleted();
@@ -128,7 +128,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     public void getResult(GetResultsDataRequest request, StreamObserver<SearchResult> observer) {
         try {
             SearchFactory searchFactory = buildSearchFactory(request.getFiltersList());
-            edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult result = searchFactory.getResult(
+            edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult result = searchFactory.getResult(
                     request.getData().toByteArray(),
                     ImmutableSet.copyOf(request.getAttributesList()));
             observer.onNext(ToProto.convert(result));
@@ -164,7 +164,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             // The frontend should make sure not too many objects get sent at once, but if we run into memory
             // issues we can impleement manual flow control
             while (true) {
-                Optional<edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult> result = search.getNextResult();
+                Optional<edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult> result = search.getNextResult();
                 SearchResultResponse.Builder builder = SearchResultResponse.newBuilder();
                 if (result.isPresent()) {
                     observer.onNext(builder.setResult(ToProto.convert(result.get())).build());
@@ -247,7 +247,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     @Override
     public void getBundles(Empty _request, StreamObserver<Bundle> observer) {
         try {
-            List<edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle> bundles = connection.getBundles();
+            List<edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle> bundles = connection.getBundles();
             for (int i = 0; i < bundles.size(); i++) {
                 observer.onNext(ToProto.convert(
                         bundles.get(i),
@@ -277,7 +277,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
         }
     }
 
-    private edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle getBundle(FilterBuilderReference reference) {
+    private edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle getBundle(FilterBuilderReference reference) {
         switch (reference.getValueCase()) {
             case INDEX:
                 return connection.getBundles().get(reference.getIndex());
@@ -326,7 +326,7 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
                     .collect(Collectors.toList()))
                     : Optional.empty();
 
-            List<edu.cmu.cs.diamond.hyperfind.connector.api.Filter> filters =
+            List<edu.cmu.cs.diamond.hyperfind.connection.api.Filter> filters =
                     getBundle(request.getReference()).filterBuilder().getFilters(request.getOptionMapMap(), examples);
 
             filters.forEach(f -> observer.onNext(ToProto.convert(f)));

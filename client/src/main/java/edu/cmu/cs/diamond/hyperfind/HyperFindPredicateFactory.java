@@ -40,12 +40,12 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ExampleOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.ExampleOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Option;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.OptionGroup;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

@@ -40,11 +40,11 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Filter;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleState;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -206,9 +206,8 @@ public class HyperFindPredicate {
     }
 
     public static HyperFindPredicate restore(HyperFindPredicateState state, Connection connection) {
-        HyperFindPredicate predicate = null;
         Bundle bundle = connection.restoreBundle(state.bundleState);
-        predicate = new HyperFindPredicate(bundle);
+        HyperFindPredicate predicate = new HyperFindPredicate(bundle);
         predicate.frame.setOptionMap(state.optionMap);
         predicate.frame.setInstanceName(state.instanceName);
 

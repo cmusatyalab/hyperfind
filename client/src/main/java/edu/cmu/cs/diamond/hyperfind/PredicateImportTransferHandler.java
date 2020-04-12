@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;

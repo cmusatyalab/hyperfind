@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
 import java.awt.BorderLayout;
 import java.awt.Dimension;

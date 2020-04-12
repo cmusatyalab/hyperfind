@@ -40,16 +40,16 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.BooleanOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Choice;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ChoiceOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.ExampleOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.FileOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.NumberOption;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.Option;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionGroup;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.OptionVisitor;
-import edu.cmu.cs.diamond.hyperfind.connector.api.bundle.StringOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BooleanOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Choice;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.ChoiceOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.ExampleOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.FileOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.NumberOption;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Option;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.OptionGroup;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.OptionVisitor;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.StringOption;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;

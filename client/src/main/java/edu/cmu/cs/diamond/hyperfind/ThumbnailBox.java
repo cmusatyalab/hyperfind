@@ -42,13 +42,14 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultType;
-import edu.cmu.cs.diamond.hyperfind.connector.api.FeedbackObject;
-import edu.cmu.cs.diamond.hyperfind.connector.api.ObjectId;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Search;
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchResult;
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchStats;
+import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
 import java.awt.Adjustable;
 import java.awt.BasicStroke;
@@ -582,11 +583,12 @@ public class ThumbnailBox extends JPanel {
                                         if (filename.endsWith(".jpg")) {
                                             images.put(filename.substring(0, filename.length() - 4), ImageIO.read(zi));
                                         } else {
+                                            InputStreamReader reader =
+                                                    new InputStreamReader(zi, StandardCharsets.UTF_8);
                                             metadata.put(
                                                     filename,
-                                                    new Gson().fromJson(new InputStreamReader(
-                                                            zi,
-                                                            StandardCharsets.UTF_8), Map.class));
+                                                    new Gson().fromJson(
+                                                            reader, new TypeToken<Map<String, ?>>() {}.getType()));
                                         }
                                     }
                                 }
@@ -712,7 +714,8 @@ public class ThumbnailBox extends JPanel {
                                     sampledTPCount += 1;
                                 }
                             } else if (colorByModelVersion && modelVersion.isPresent()) {
-                                drawBorder(g,
+                                drawBorder(
+                                        g,
                                         Color.getHSBColor((float) ((0.1 * modelVersion.getAsInt()) % 1), 1, 1),
                                         origW,
                                         origH,

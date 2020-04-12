@@ -42,8 +42,8 @@ package edu.cmu.cs.diamond.hyperfind.collaboration.service;
 
 import edu.cmu.cs.diamond.hyperfind.collaboration.service.config.CollaborationServiceConfig;
 import edu.cmu.cs.diamond.hyperfind.collaboration.service.config.ServerSslConfig;
-import edu.cmu.cs.diamond.hyperfind.connector.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connector.direct.DirectConnection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
+import edu.cmu.cs.diamond.hyperfind.connection.direct.DirectConnection;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Environment;
 import java.io.File;

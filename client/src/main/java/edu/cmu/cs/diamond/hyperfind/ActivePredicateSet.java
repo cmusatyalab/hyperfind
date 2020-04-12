@@ -40,7 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import edu.cmu.cs.diamond.hyperfind.connector.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
