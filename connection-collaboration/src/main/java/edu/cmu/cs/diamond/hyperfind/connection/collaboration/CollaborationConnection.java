@@ -45,14 +45,17 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
-import edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle;
+import com.google.protobuf.util.Timestamps;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.CollaborationServiceGrpc;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.FilterBuilderReference;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetFiltersRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchId;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.UpdateCookiesRequest;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.FilterBuilder;
@@ -65,6 +68,7 @@ import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -110,10 +114,41 @@ public final class CollaborationConnection implements Connection {
     }
 
     @Override
+    public List<SearchInfo> getRunningSearches() {
+        List<SearchInfo> searches = new ArrayList<>();
+
+        BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchInfo> observer =
+                new BlockingStreamObserver<>() {
+                    @Override
+                    public void onNext(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchInfo value) {
+                        searches.add(SearchInfo.of(
+                                () -> getSearch(value.getSearchId()),
+                                Instant.ofEpochMilli(Timestamps.toMillis(value.getStartTime()))));
+                    }
+                };
+
+        service.getRunningSearches(Empty.newBuilder().build(), observer);
+        observer.waitForFinish();
+
+        return searches;
+    }
+
+    private RunningSearch getSearch(SearchId searchId) {
+        UnaryStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.RunningSearch> observer =
+                new UnaryStreamObserver<>();
+        service.getSearch(searchId, observer);
+        edu.cmu.cs.diamond.hyperfind.collaboration.api.RunningSearch search = observer.value();
+        return RunningSearch.of(
+                new CollaboratorSearch(service, searchId, resultExecutor),
+                search.getFiltersList().stream().map(FromProto::convert).collect(Collectors.toList()),
+                search.getPredicateStatesList().stream().map(FromProto::convert).collect(Collectors.toList()));
+    }
+
+    @Override
     public List<Bundle> getBundles() {
         List<Bundle> bundles = new ArrayList<>();
 
-        BlockingStreamObserver<Bundle> observer =
+        BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle> observer =
                 new BlockingStreamObserver<>() {
                     @Override
                     public void onNext(edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle value) {
@@ -134,7 +169,7 @@ public final class CollaborationConnection implements Connection {
     @Override
     public Bundle getBundle(InputStream inputStream) {
         try {
-            UnaryStreamObserver<Bundle> observer =
+            UnaryStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle> observer =
                     new UnaryStreamObserver<>();
             ByteString contents = ByteString.readFrom(inputStream);
             service.getBundle(BytesValue.newBuilder().setValue(contents).build(), observer);

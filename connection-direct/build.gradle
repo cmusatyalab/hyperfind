@@ -1,5 +1,7 @@
 dependencies {
     compile project(':connection-api')
+
+    compile 'com.google.guava:guava'
     compile 'one.util:streamex'
     compile 'org.slf4j:slf4j-api'
 

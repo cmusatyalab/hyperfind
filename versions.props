@@ -1,6 +1,7 @@
 commons-io:commons-io=2.6
 com.google.code.gson:gson=2.8.6
 com.google.guava:guava=28.2-jre
+com.google.protobuf:*=3.11.1
 com.sun.xml.bind:jaxb-core=2.3.0.1
 com.sun.xml.bind:jaxb-impl=2.3.1
 edu.cmu.cs.diamond.opendiamond:opendiamond-java=v8.1.1-8-g4039f4f-SNAPSHOT
@@ -8,7 +9,7 @@ io.dropwizard:*=2.0.7
 io.grpc:*=1.28.1
 javax.annotation:javax.annotation-api=1.3.2
 one.util:streamex=0.7.2
-org.immutables:value = 2.8.3
+org.immutables:* = 2.8.3
 org.slf4j:slf4j-api=1.7.30
 org.swinglabs:swingx=1.6.1
 

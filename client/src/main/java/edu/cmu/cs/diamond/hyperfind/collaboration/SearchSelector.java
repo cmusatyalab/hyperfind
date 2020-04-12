@@ -40,23 +40,13 @@
 
 package edu.cmu.cs.diamond.hyperfind.collaboration;
 
-import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
-import edu.cmu.cs.diamond.hyperfind.persistence.HyperFindPersistence;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.swing.JFrame;
 import javax.swing.JList;
@@ -64,23 +54,21 @@ import javax.swing.JScrollPane;
 
 public class SearchSelector extends JFrame {
 
-    private final Connection connection;
+    private final List<SearchInfo> runningSearches;
     private final Consumer<Optional<SearchInfo>> selectionCallback;
 
     public SearchSelector(
-            Connection connection,
+            List<SearchInfo> runningSearches,
             Consumer<Optional<SearchInfo>> selectionCallback) {
         super("Running Searches");
-        this.connection = connection;
+        this.runningSearches = runningSearches;
         this.selectionCallback = selectionCallback;
         initUI();
     }
 
     private void initUI() {
-        List<SessionState> sessions = loadSessions();
-
-        String[] items = Stream.concat(Stream.of("Start new search"),
-                sessions.stream().map(SearchSelector::toListItem))
+        String[] items = Stream.concat(Stream.of("Start New Search"),
+                runningSearches.stream().map(SearchSelector::toListItem))
                 .toArray(String[]::new);
 
         JList<String> list = new JList<>(items);
@@ -93,7 +81,7 @@ public class SearchSelector extends JFrame {
                     if (index == 0) {
                         selectionCallback.accept(Optional.empty());
                     } else {
-                        selectionCallback.accept(Optional.of(sessions.get(index - 1)));
+                        selectionCallback.accept(Optional.of(runningSearches.get(index - 1)));
                     }
                 }
             }
@@ -106,26 +94,7 @@ public class SearchSelector extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
-    private static List<SessionState> loadSessions() {
-        if (!SESSIONS_DIR.toFile().exists()) {
-            return Collections.emptyList();
-        }
-
-        try (Stream<Path> files = Files.list(SESSIONS_DIR)) {
-            return files.map(SessionSelector::getSessionState)
-                    .sorted(Comparator.comparingLong(SessionState::getLastModified).reversed())
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to list files in session directory " + SESSIONS_DIR, e);
-        }
-    }
-
-    private static String toListItem(SessionState state) {
-        return String.format("Running search (started %s)", Instant.ofEpochMilli(state.getLastModified()));
-    }
-
-    private static SessionState getSessionState(Path path) {
-        File file = path.toFile();
-        return new SessionState(file.getName(), file.lastModified(), HyperFindPersistence.loadPredicates(file));
+    private static String toListItem(SearchInfo search) {
+        return String.format("Running Search (started %s)", search.startTime());
     }
 }

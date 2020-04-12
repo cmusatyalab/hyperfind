@@ -2,6 +2,7 @@ syntax = "proto3";
 option java_multiple_files = true;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 package edu.cmu.cs.diamond.hyperfind.collaboration.api;
@@ -16,6 +17,8 @@ service CollaborationService {
   rpc LabelExamples (LabelExamplesRequest) returns (google.protobuf.Empty);
   rpc RetrainFilter (RetrainFilterRequest) returns (google.protobuf.Empty);
   rpc CloseSearch (SearchId) returns (google.protobuf.Empty);
+  rpc GetRunningSearches (google.protobuf.Empty) returns (stream SearchInfo);
+  rpc GetSearch (SearchId) returns (RunningSearch);
 
   rpc GetBundles (google.protobuf.Empty) returns (stream Bundle);
   rpc GetBundle (google.protobuf.BytesValue) returns (Bundle);
@@ -45,7 +48,15 @@ message GetResultsDataRequest {
 
 message CreateSearchRequest {
   repeated Filter filters = 1;
-  repeated string attributes = 2;
+  repeated HyperFindPredicateState predicateStates = 2;
+  repeated string attributes = 3;
+}
+
+message HyperFindPredicateState {
+  BundleState bundleState = 1;
+  map<string, string> optionMap = 2;
+  string instanceName = 3;
+  repeated bytes examples = 4;
 }
 
 message SearchResultResponse {
@@ -67,6 +78,16 @@ message SearchStats {
   int64 droppedObjects = 4;
   int64 truePositives = 5;
   int64 falseNegatives = 6;
+}
+
+message SearchInfo {
+  SearchId searchId = 1;
+  google.protobuf.Timestamp startTime = 2;
+}
+
+message RunningSearch {
+  repeated Filter filters = 1;
+  repeated HyperFindPredicateState predicateStates = 2;
 }
 
 message LabelExamplesRequest {

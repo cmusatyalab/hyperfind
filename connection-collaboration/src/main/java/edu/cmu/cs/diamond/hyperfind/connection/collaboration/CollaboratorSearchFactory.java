@@ -49,13 +49,14 @@ import edu.cmu.cs.diamond.hyperfind.collaboration.api.CreateSearchRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsDataRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchId;
-import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.BlockingStreamObserver;
-import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.BlockingStreamObserver;
+import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
 import java.util.Collection;
@@ -81,9 +82,10 @@ public final class CollaboratorSearchFactory implements SearchFactory {
     }
 
     @Override
-    public Search createSearch(Set<String> attributes) {
+    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> predicateState) {
         CreateSearchRequest request = CreateSearchRequest.newBuilder()
                 .addAllFilters(filters)
+                .addAllPredicateStates(predicateState.stream().map(ToProto::convert).collect(Collectors.toList()))
                 .addAllAttributes(attributes)
                 .build();
 

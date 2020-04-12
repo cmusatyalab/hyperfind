@@ -42,12 +42,11 @@ package edu.cmu.cs.diamond.hyperfind;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import javax.swing.event.ChangeEvent;
@@ -181,39 +180,23 @@ public class HyperFindPredicate {
     }
 
     /**
-     * Objects to serialized/deserialized to/from JSON
+     * Objects to serialize/deserialize to/from JSON
      */
-    public static class HyperFindPredicateState {
-        final public BundleState bundleState;
-        final public HashMap<String, String> optionMap;
-        final public String instanceName;
-        final public ArrayList<byte[]> examples;
-
-        public HyperFindPredicateState(HyperFindPredicate predicate) {
-            this.bundleState = predicate.bundle.state();
-            this.optionMap = new HashMap<>(predicate.frame.getOptionMap());
-            this.instanceName = predicate.getInstanceName();
-            if (predicate.frame.needsExamples()) {
-                this.examples = new ArrayList<>(predicate.frame.getExamples());
-            } else {
-                this.examples = null;
-            }
-        }
-    }
-
     public HyperFindPredicateState export() {
-        return new HyperFindPredicateState(this);
+        return HyperFindPredicateState.of(
+                bundle.state(),
+                frame.getOptionMap(),
+                getInstanceName(),
+                frame.needsExamples() ? Optional.of(frame.getExamples()) : Optional.empty());
     }
 
     public static HyperFindPredicate restore(HyperFindPredicateState state, Connection connection) {
-        Bundle bundle = connection.restoreBundle(state.bundleState);
+        Bundle bundle = connection.restoreBundle(state.bundleState());
         HyperFindPredicate predicate = new HyperFindPredicate(bundle);
-        predicate.frame.setOptionMap(state.optionMap);
-        predicate.frame.setInstanceName(state.instanceName);
+        predicate.frame.setOptionMap(state.optionMap());
+        predicate.frame.setInstanceName(state.instanceName());
 
-        if (null != state.examples) {
-            predicate.frame.setExamples(state.examples);
-        }
+        state.examples().ifPresent(predicate.frame::setExamples);
 
         return predicate;
     }

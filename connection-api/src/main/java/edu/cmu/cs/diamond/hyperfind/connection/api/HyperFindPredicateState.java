@@ -40,19 +40,35 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
-import java.util.Collection;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
+import org.immutables.gson.Gson;
+import org.immutables.value.Value;
 
-public interface SearchFactory {
+@Gson.TypeAdapters
+@Value.Immutable
+public interface HyperFindPredicateState {
 
-    Search createSearch(Set<String> attributes, List<HyperFindPredicateState> predicateState);
+    @Value.Parameter
+    BundleState bundleState();
 
-    SearchResult getResult(ObjectId objectId, Set<String> attributes);
+    @Value.Parameter
+    Map<String, String> optionMap();
 
-    SearchResult getResult(byte[] data, Set<String> attributes);
+    @Value.Parameter
+    String instanceName();
 
-    Map<ObjectId, SearchResult> getResults(Collection<ObjectId> objectIds, Set<String> attributes);
+    @Value.Parameter
+    Optional<List<byte[]>> examples();
+
+    static HyperFindPredicateState of(
+            BundleState bundleState,
+            Map<String, String> optionMap,
+            String instanceName,
+            Optional<List<byte[]>> examples) {
+        return ImmutableHyperFindPredicateState.of(bundleState, optionMap, instanceName, examples);
+    }
 
 }

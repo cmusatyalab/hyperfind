@@ -43,6 +43,7 @@ package edu.cmu.cs.diamond.hyperfind.proto;
 import com.google.protobuf.ByteString;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
@@ -98,6 +99,19 @@ public final class FromProto {
                 value.getOptionsList().stream().map(FromProto::convert).collect(Collectors.toList()),
                 convert(value.getState()),
                 filterBuilder);
+    }
+
+    public static HyperFindPredicateState convert(
+            edu.cmu.cs.diamond.hyperfind.collaboration.api.HyperFindPredicateState value) {
+        return HyperFindPredicateState.of(
+                convert(value.getBundleState()),
+                value.getOptionMapMap(),
+                value.getInstanceName(),
+                value.getExamplesCount() > 0
+                        ? Optional.of(value.getExamplesList().stream()
+                        .map(ByteString::toByteArray)
+                        .collect(Collectors.toList()))
+                        : Optional.empty());
     }
 
     public static BundleState convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.BundleState value) {

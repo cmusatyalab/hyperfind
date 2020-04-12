@@ -40,9 +40,11 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.direct;
 
+import com.google.common.collect.ImmutableList;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
@@ -73,6 +75,11 @@ public final class DirectConnection implements Connection {
     @Override
     public SearchFactory getSearchFactory(List<Filter> filters) {
         return new DirectSearchFactory(filters, cookieMap, downloadExecutor);
+    }
+
+    @Override
+    public List<SearchInfo> getRunningSearches() {
+        return ImmutableList.of();
     }
 
     @Override

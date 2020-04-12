@@ -52,15 +52,20 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
+import edu.cmu.cs.diamond.hyperfind.collaboration.SearchSelector;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.GsonAdaptersHyperFindPredicateState;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
-import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
+import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.GsonAdaptersBundleState;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -98,7 +103,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -414,7 +418,9 @@ public final class Main {
                     // decoded image and not the filter output attributes
                     for (int i = 0; i < m.results.NUM_PANELS; i++) {
                         m.results.resultLists.get(i).setTransferHandler(
-                                new ResultExportTransferHandler(connection.getSearchFactory(filters), executor));
+                                new ResultExportTransferHandler(
+                                        connection.getSearchFactory(filters),
+                                        executor));
                     }
 
                     filters.addAll(model.createFilters());
@@ -454,16 +460,10 @@ public final class Main {
                     }
                     attributes.addAll(ResultRegions.getPushAttributes(filterNames));
 
-                    List<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
-                    for (HyperFindPredicate pred : selectedPredicates) {
-                        states.add(pred.export());
-                    }
-
-                    model.getSelectedPredicates().stream().map(p -> p.export())
-
-                    writer.write(gson.toJson(states));
-
-                    m.search = factory.createSearch(attributes);
+                    List<HyperFindPredicateState> predicateState = model.getSelectedPredicates().stream()
+                            .map(HyperFindPredicate::export)
+                            .collect(Collectors.toList());
+                    m.search = factory.createSearch(attributes, predicateState);
 
                     // clear old state
                     m.results.terminate();
@@ -482,7 +482,6 @@ public final class Main {
             }
         });
 
-        ExecutorService downloadExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -559,6 +558,8 @@ public final class Main {
                 .setPrettyPrinting()
                 .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
                 .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
+                .registerTypeAdapterFactory(new GsonAdaptersHyperFindPredicateState())
+                .registerTypeAdapterFactory(new GsonAdaptersBundleState())
                 .create();
         final String savedSearchExtension = "hyperfindsearch";
         final JFileChooser chooser = new JFileChooser();
@@ -581,7 +582,7 @@ public final class Main {
                         Writer writer = new FileWriter(filename);
                         System.out.println("Saving predicates to " + filename);
 
-                        List<HyperFindPredicate.HyperFindPredicateState> states = new ArrayList<HyperFindPredicate.HyperFindPredicateState>();
+                        List<HyperFindPredicateState> states = new ArrayList<HyperFindPredicateState>();
                         for (HyperFindPredicate pred : selectedPredicates) {
                             states.add(pred.export());
                         }
@@ -605,12 +606,12 @@ public final class Main {
 
                         System.out.println("Importing predicates from " + chooser.getSelectedFile().getCanonicalPath());
                         Reader reader = new FileReader(chooser.getSelectedFile());
-                        List<HyperFindPredicate.HyperFindPredicateState> restored_states;
-                        Type type = new TypeToken<ArrayList<HyperFindPredicate.HyperFindPredicateState>>() {
+                        List<HyperFindPredicateState> restored_states;
+                        Type type = new TypeToken<ArrayList<HyperFindPredicateState>>() {
                         }.getType();
                         restored_states = gson.fromJson(reader, type);
 
-                        for (HyperFindPredicate.HyperFindPredicateState state : restored_states) {
+                        for (HyperFindPredicateState state : restored_states) {
                             model.addPredicate(HyperFindPredicate.restore(state, connection));
                         }
                     }
@@ -727,6 +728,25 @@ public final class Main {
                 }
             }
         });
+
+        runningSearch.ifPresent(search -> {
+            search.predicateState()
+                    .forEach(p -> model.addPredicate(HyperFindPredicate.restore(p, connection)));
+
+            List<HyperFindSearchMonitor> monitors =
+                    HyperFindSearchMonitorFactory.getInterestedSearchMonitors(search.filters());
+
+            SearchFactory factory = connection.getSearchFactory(search.filters());
+            m.searchFactory = factory;
+            m.search = search.search();
+
+            // start
+            m.results.start(
+                    m.search,
+                    new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
+                    monitors);
+        });
+
         frame.setVisible(true);
 
         return m;
@@ -884,16 +904,27 @@ public final class Main {
         Class<?>[] connnectorArgClasses = Arrays.stream(connnectorArgs).map(c -> String.class).toArray(Class[]::new);
 
         Connection connection =
-                (Connection) Class.forName(args[0]).getConstructor(connnectorArgClasses).newInstance((Object[]) connnectorArgs);
+                (Connection) Class.forName(args[0])
+                        .getConstructor(connnectorArgClasses)
+                        .newInstance((Object[]) connnectorArgs);
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    createMain(connection);
-                } catch (IOException e) {
-                    e.printStackTrace();
+        List<SearchInfo> runningSearches = connection.getRunningSearches();
+
+        SwingUtilities.invokeLater(() -> {
+            try {
+                if (runningSearches.isEmpty()) {
+                    createMain(connection, Optional.empty());
+                } else {
+                    new SearchSelector(runningSearches, searchInfo -> {
+                        try {
+                            createMain(connection, searchInfo.map(s -> s.searchSupplier().get()));
+                        } catch (IOException ex) {
+                            throw new RuntimeException("Failed to create main frame", ex);
+                        }
+                    }).setVisible(true);
                 }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create main frame", e);
             }
         });
     }

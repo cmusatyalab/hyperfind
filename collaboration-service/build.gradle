@@ -4,6 +4,7 @@ dependencies {
     implementation project(':connection-direct')
     implementation project(':proto-conversions')
 
+    implementation 'com.google.protobuf:protobuf-java-util'
     implementation 'com.sun.xml.bind:jaxb-core'
     implementation 'com.sun.xml.bind:jaxb-impl'
     implementation 'io.dropwizard:dropwizard-core'
@@ -17,5 +18,7 @@ dependencies {
 distribution {
     mainClass 'edu.cmu.cs.diamond.hyperfind.collaboration.service.CollaborationService'
     args 'server', 'var/conf/collaboration-service.yml'
-    defaultJvmOpts '-Xdebug', '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005'
+
+    // Uncomment to debug remotely
+    // defaultJvmOpts '-Xdebug', '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005'
 }

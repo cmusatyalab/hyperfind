@@ -41,6 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind.connection.direct;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
@@ -77,7 +78,7 @@ public final class DirectSearchFactory implements SearchFactory {
     }
 
     @Override
-    public Search createSearch(Set<String> attributes) {
+    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> _predicateState) {
         try {
             return new DirectSearch(delegate.createSearch(attributes));
         } catch (IOException | InterruptedException e) {

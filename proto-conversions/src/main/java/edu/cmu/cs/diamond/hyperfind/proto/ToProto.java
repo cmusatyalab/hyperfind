@@ -48,6 +48,7 @@ import edu.cmu.cs.diamond.hyperfind.collaboration.api.BundleType;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.FilterBuilderReference;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
@@ -89,6 +90,19 @@ public final class ToProto {
                 .setMaxScore(value.maxScore())
                 .setBlob(ByteString.copyFrom(value.blob()))
                 .build();
+    }
+
+    public static edu.cmu.cs.diamond.hyperfind.collaboration.api.HyperFindPredicateState convert(
+            HyperFindPredicateState value) {
+        edu.cmu.cs.diamond.hyperfind.collaboration.api.HyperFindPredicateState.Builder builder =
+                edu.cmu.cs.diamond.hyperfind.collaboration.api.HyperFindPredicateState.newBuilder()
+                        .setBundleState(convert(value.bundleState()))
+                        .putAllOptionMap(value.optionMap())
+                        .setInstanceName(value.instanceName());
+
+        value.examples().ifPresent(e -> e.forEach(b -> builder.addExamples(ByteString.copyFrom(b))));
+
+        return builder.build();
     }
 
     public static edu.cmu.cs.diamond.hyperfind.collaboration.api.FeedbackObject convert(FeedbackObject value) {

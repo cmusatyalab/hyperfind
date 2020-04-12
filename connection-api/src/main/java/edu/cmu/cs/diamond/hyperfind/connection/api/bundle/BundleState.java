@@ -42,8 +42,10 @@ package edu.cmu.cs.diamond.hyperfind.connection.api.bundle;
 
 import java.util.List;
 import java.util.Map;
+import org.immutables.gson.Gson;
 import org.immutables.value.Value;
 
+@Gson.TypeAdapters
 @Value.Immutable
 public interface BundleState {
 

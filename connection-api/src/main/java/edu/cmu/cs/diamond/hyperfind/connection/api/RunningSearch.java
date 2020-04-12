@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -48,12 +49,19 @@ public interface RunningSearch {
     @Value.Parameter
     Search search();
 
-    // Used to repopulate filter list in frontend
+    /**
+     * Used to repopulate filter list in frontend.
+     */
     @Value.Parameter
-    byte[] predicateState();
+    List<Filter> filters();
 
-    static RunningSearch of(Search search, byte[] predicateState) {
-        return ImmutableRunningSearch.of(search, predicateState);
+    /**
+     * Used to repopulate filter list in frontend.
+     */
+    @Value.Parameter
+    List<HyperFindPredicateState> predicateState();
+
+    static RunningSearch of(Search search, List<Filter> filters, List<HyperFindPredicateState> predicateState) {
+        return ImmutableRunningSearch.of(search, filters, predicateState);
     }
-
 }

@@ -1,4 +1,7 @@
 dependencies {
+    annotationProcessor 'org.immutables:gson'
+    compileOnly 'org.immutables:gson::annotations'
+
     annotationProcessor 'org.immutables:value'
     compileOnly 'org.immutables:value::annotations'
 }

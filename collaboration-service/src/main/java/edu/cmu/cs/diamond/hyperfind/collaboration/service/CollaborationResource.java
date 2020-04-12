@@ -48,6 +48,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Empty;
+import com.google.protobuf.util.Timestamps;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.Bundle;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.BundleState;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.CollaborationServiceGrpc;
@@ -57,10 +58,13 @@ import edu.cmu.cs.diamond.hyperfind.collaboration.api.FilterBuilderReference;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetFiltersRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsDataRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.GetResultsRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.LabelExamplesRequest;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.LabeledExample;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.RetrainFilterRequest;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.RunningSearch;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchId;
+import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResultResponse;
 import edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats;
@@ -72,6 +76,7 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
 import io.grpc.stub.StreamObserver;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,21 +90,21 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     private static final Logger log = LoggerFactory.getLogger(CollaborationResource.class);
 
     private final Connection connection;
-    private final Map<SearchId, Search> searches;
+    private final Map<SearchId, SearchMetadata> searches;
 
     public CollaborationResource(Connection connection) {
         this.connection = connection;
 
         this.searches = Caffeine.newBuilder()
                 .maximumSize(10000)
-                .removalListener(new RemovalListener<SearchId, Search>() {
+                .removalListener(new RemovalListener<SearchId, SearchMetadata>() {
                     @Override
-                    public void onRemoval(SearchId key, Search value, RemovalCause cause) {
+                    public void onRemoval(SearchId key, SearchMetadata value, RemovalCause cause) {
                         if (!cause.equals(RemovalCause.EXPLICIT)) {
                             log.warn("Discarding non-finished search {} (cause: {})", key.getValue(), cause);
                         }
 
-                        value.close();
+                        value.search.close();
                         log.info("Closed search {}", key.getValue());
                     }
                 })
@@ -145,8 +150,17 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             SearchFactory searchFactory = buildSearchFactory(request.getFiltersList());
 
             SearchId searchId = SearchId.newBuilder().setValue(UUID.randomUUID().toString()).build();
-            Search search = searchFactory.createSearch(ImmutableSet.copyOf(request.getAttributesList()));
-            searches.put(searchId, search);
+
+            Search search = searchFactory.createSearch(
+                    ImmutableSet.copyOf(request.getAttributesList()),
+                    request.getPredicateStatesList().stream().map(FromProto::convert).collect(Collectors.toList()));
+
+            SearchMetadata metadata = new SearchMetadata(search,
+                    Instant.now(),
+                    request.getFiltersList(),
+                    request.getPredicateStatesList());
+
+            searches.put(searchId, metadata);
             observer.onNext(searchId);
             observer.onCompleted();
         } catch (RuntimeException | Error e) {
@@ -158,13 +172,14 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     @Override
     public void getSearchResults(SearchId request, StreamObserver<SearchResultResponse> observer) {
         try {
-            Search search = searches.get(request);
+            SearchMetadata search = searches.get(request);
             Preconditions.checkNotNull(search, "Search %s not found", request.getValue());
 
             // The frontend should make sure not too many objects get sent at once, but if we run into memory
-            // issues we can impleement manual flow control
+            // issues we can implement manual flow control
             while (true) {
-                Optional<edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult> result = search.getNextResult();
+                Optional<edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult> result =
+                        search.search.getNextResult();
                 SearchResultResponse.Builder builder = SearchResultResponse.newBuilder();
                 if (result.isPresent()) {
                     observer.onNext(builder.setResult(ToProto.convert(result.get())).build());
@@ -184,10 +199,11 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     @Override
     public void getSearchStats(SearchId request, StreamObserver<SearchStats> observer) {
         try {
-            Search search = searches.get(request);
+            SearchMetadata search = searches.get(request);
             Preconditions.checkNotNull(search, "Search %s not found", request.getValue());
 
-            search.getStats().forEach((serverName, stats) -> observer.onNext(ToProto.convert(serverName, stats)));
+            search.search.getStats().forEach(
+                    (serverName, stats) -> observer.onNext(ToProto.convert(serverName, stats)));
             observer.onCompleted();
         } catch (RuntimeException | Error e) {
             log.error("Failed to get search stats", e);
@@ -199,10 +215,10 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     public void labelExamples(LabelExamplesRequest request, StreamObserver<Empty> observer) {
         try {
             SearchId searchId = request.getSearchId();
-            Search search = searches.get(searchId);
+            SearchMetadata search = searches.get(searchId);
             Preconditions.checkNotNull(search, "Search %s not found", searchId.getValue());
 
-            search.labelExamples(request.getExamplesList().stream()
+            search.search.labelExamples(request.getExamplesList().stream()
                     .collect(Collectors.toMap(e -> FromProto.convert(e.getId()), LabeledExample::getLabel)));
 
             observer.onNext(Empty.newBuilder().build());
@@ -217,10 +233,10 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     public void retrainFilter(RetrainFilterRequest request, StreamObserver<Empty> observer) {
         try {
             SearchId searchId = request.getSearchId();
-            Search search = searches.get(searchId);
+            SearchMetadata search = searches.get(searchId);
             Preconditions.checkNotNull(search, "Search %s not found", searchId.getValue());
 
-            search.retrainFilter(request.getObjectsList().stream()
+            search.search.retrainFilter(request.getObjectsList().stream()
                     .map(FromProto::convert)
                     .collect(Collectors.toList()));
 
@@ -240,6 +256,37 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             observer.onCompleted();
         } catch (RuntimeException | Error e) {
             log.error("Failed to close search", e);
+            observer.onError(e);
+        }
+    }
+
+    @Override
+    public void getRunningSearches(Empty _request, StreamObserver<SearchInfo> observer) {
+        try {
+            searches.forEach((searchId, metadata) -> observer.onNext(SearchInfo.newBuilder()
+                    .setSearchId(searchId)
+                    .setStartTime(Timestamps.fromMillis(metadata.startTime.toEpochMilli()))
+                    .build()));
+            observer.onCompleted();
+        } catch (RuntimeException | Error e) {
+            log.error("Failed to get running searches", e);
+            observer.onError(e);
+        }
+    }
+
+    @Override
+    public void getSearch(SearchId request, StreamObserver<RunningSearch> observer) {
+        try {
+            SearchMetadata search = searches.get(request);
+            Preconditions.checkNotNull(search, "Search %s not found", request.getValue());
+
+            observer.onNext(RunningSearch.newBuilder()
+                    .addAllFilters(search.filters)
+                    .addAllPredicateStates(search.predicateStates)
+                    .build());
+            observer.onCompleted();
+        } catch (RuntimeException | Error e) {
+            log.error("Failed to get running searche", e);
             observer.onError(e);
         }
     }
@@ -340,5 +387,23 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
 
     private SearchFactory buildSearchFactory(List<Filter> filters) {
         return connection.getSearchFactory(filters.stream().map(FromProto::convert).collect(Collectors.toList()));
+    }
+
+    private static final class SearchMetadata {
+        private final Search search;
+        private final Instant startTime;
+        private final List<Filter> filters;
+        private final List<HyperFindPredicateState> predicateStates;
+
+        private SearchMetadata(
+                Search search,
+                Instant startTime,
+                List<Filter> filters,
+                List<HyperFindPredicateState> predicateStates) {
+            this.search = search;
+            this.startTime = startTime;
+            this.filters = filters;
+            this.predicateStates = predicateStates;
+        }
     }
 }
