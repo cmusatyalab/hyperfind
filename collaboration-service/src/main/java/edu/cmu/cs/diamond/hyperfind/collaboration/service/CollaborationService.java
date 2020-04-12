@@ -83,4 +83,8 @@ public final class CollaborationService extends Application<CollaborationService
             throw new RuntimeException("Failed to create ssl context", e);
         }
     }
+
+    public static void main(String[] args) throws Exception {
+        new CollaborationService().run(args);
+    }
 }

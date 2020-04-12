@@ -60,6 +60,7 @@ import edu.cmu.cs.diamond.hyperfind.connector.collaboration.grpc.UnaryStreamObse
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -78,26 +79,26 @@ public final class CollaborationConnection implements Connection {
     private final ExecutorService resultExecutor;
 
     public CollaborationConnection(String host, String port) {
-        this(host, Integer.parseInt(port), Optional.empty());
+        this(host, Integer.parseInt(port), false, Optional.empty());
     }
 
-    public CollaborationConnection(String host, String port, String trustStorePath) {
-        this(host, Integer.parseInt(port), Optional.of(trustStorePath));
+    public CollaborationConnection(String host, String port, String useSsl) {
+        this(host, Integer.parseInt(port), Boolean.parseBoolean(useSsl), Optional.empty());
     }
 
-    private CollaborationConnection(String host, int port, Optional<String> trustStorePath) {
-        io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder sslContextBuilder
-                = io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
-        trustStorePath.ifPresent(t -> sslContextBuilder.trustManager(Paths.get(t).toFile()));
+    public CollaborationConnection(String host, String port, String useSsl, String trustStorePath) {
+        this(host, Integer.parseInt(port), Boolean.parseBoolean(useSsl), Optional.of(trustStorePath));
+    }
 
-        try {
-            ManagedChannel channel = io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder.forAddress(host, port)
-                    .sslContext(sslContextBuilder.build())
-                    .build();
-            this.service = CollaborationServiceGrpc.newStub(channel);
-        } catch (SSLException e) {
-            throw new RuntimeException("Failed to create channel", e);
-        }
+    private CollaborationConnection(String host, int port, boolean useSsl, Optional<String> trustStorePath) {
+        ManagedChannel channel = useSsl
+                ? createSslChannel(host, port, trustStorePath)
+                : ManagedChannelBuilder.forAddress(host, port)
+                        .maxInboundMessageSize(Integer.MAX_VALUE)
+                        .usePlaintext()
+                        .build();
+
+        this.service = CollaborationServiceGrpc.newStub(channel);
 
         this.resultExecutor = Executors.newCachedThreadPool();
     }
@@ -161,6 +162,21 @@ public final class CollaborationConnection implements Connection {
         UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
         service.updateCookies(request.build(), observer);
         observer.waitForFinish();
+    }
+
+    private static ManagedChannel createSslChannel(String host, int port, Optional<String> trustStorePath) {
+        io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder sslContextBuilder
+                = io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
+        trustStorePath.ifPresent(t -> sslContextBuilder.trustManager(Paths.get(t).toFile()));
+
+        try {
+            return io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder.forAddress(host, port)
+                    .sslContext(sslContextBuilder.build())
+                    .maxInboundMessageSize(Integer.MAX_VALUE)
+                    .build();
+        } catch (SSLException e) {
+            throw new RuntimeException("Failed to create channel", e);
+        }
     }
 
     private final class DelegatingFilterBuilder implements FilterBuilder {

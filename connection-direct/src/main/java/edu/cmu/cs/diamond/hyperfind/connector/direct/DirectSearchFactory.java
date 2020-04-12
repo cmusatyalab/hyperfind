@@ -107,7 +107,7 @@ public final class DirectSearchFactory implements SearchFactory {
     public Map<ObjectId, SearchResult> getResults(Collection<ObjectId> objectIds, Set<String> attributes) {
         Map<ObjectId, Future<SearchResult>> downloadFutures =
                 objectIds.stream().collect(Collectors.toMap(i -> i, i -> downloadExecutor.submit(() -> {
-                    log.info("Downloading item: {}", i.objectId());
+                    log.info("Fetching item: {}", i.objectId());
                     return getResult(i, attributes);
                 })));
 

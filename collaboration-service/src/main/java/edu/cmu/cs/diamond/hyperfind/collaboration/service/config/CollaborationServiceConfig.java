@@ -46,7 +46,7 @@ import java.util.Optional;
 
 public final class CollaborationServiceConfig extends Configuration {
 
-    @JsonProperty("datasources")
+    @JsonProperty("port")
     private int port;
 
     @JsonProperty("ssl")

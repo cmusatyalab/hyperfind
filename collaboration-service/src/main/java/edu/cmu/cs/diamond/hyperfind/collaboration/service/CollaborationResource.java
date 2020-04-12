@@ -96,11 +96,11 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
                     @Override
                     public void onRemoval(SearchId key, Search value, RemovalCause cause) {
                         if (!cause.equals(RemovalCause.EXPLICIT)) {
-                            log.warn("Discarding non-finished search {} (cause: {})", key, cause);
+                            log.warn("Discarding non-finished search {} (cause: {})", key.getValue(), cause);
                         }
 
                         value.close();
-                        log.info("Closed search {}", key);
+                        log.info("Closed search {}", key.getValue());
                     }
                 })
                 .build().asMap();
