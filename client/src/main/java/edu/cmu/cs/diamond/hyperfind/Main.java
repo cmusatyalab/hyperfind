@@ -76,8 +76,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -204,6 +202,7 @@ public final class Main {
                 HyperFindPredicateFactory.createHyperFindPredicateFactories(connection.getBundles());
 
         JFrame frame = new JFrame("HyperFind");
+
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
         JButton retrainButton = new JButton("Retrain");
@@ -715,19 +714,7 @@ public final class Main {
         frame.pack();
 
         frame.setMinimumSize(new Dimension(640, 480));
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosed(WindowEvent e) {
-                m.stopSearch();
-                // clear state from previous search
-                m.results.terminate();
-                m.popupFrame.dispose();
-                for (HyperFindPredicate codec : codecList) {
-                    codec.dispose();
-                }
-            }
-        });
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         runningSearch.ifPresent(search -> {
             search.predicateState()
