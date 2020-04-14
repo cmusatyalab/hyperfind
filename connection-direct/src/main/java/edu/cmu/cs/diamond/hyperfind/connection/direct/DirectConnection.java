@@ -67,7 +67,7 @@ public final class DirectConnection implements Connection {
 
     public DirectConnection(String bundleDirs, String filterDirs) {
         this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
-        this.downloadExecutor = Executors.newCachedThreadPool();
+        this.downloadExecutor = Executors.newFixedThreadPool(8);
 
         updateCookies(Optional.empty());
     }

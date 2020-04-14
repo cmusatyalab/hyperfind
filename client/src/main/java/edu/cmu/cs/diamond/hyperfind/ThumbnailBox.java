@@ -73,6 +73,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -503,7 +505,9 @@ public class ThumbnailBox extends JPanel {
     }
 
     // called on AWT thread
-    public void start(Search s, ActivePredicateSet activePredicateSet, List<HyperFindSearchMonitor> monitors) {
+    public void start(
+            Search s, ActivePredicateSet activePredicateSet, List<HyperFindSearchMonitor> monitors,
+            Optional<Path> exportDir) {
         stats.setDone();
         statsArea.setDone();
         search = s;
@@ -569,6 +573,12 @@ public class ThumbnailBox extends JPanel {
                             }
 
                             SearchResult result = resultOpt.get();
+
+                            Optional<byte[]> modelExport = result.getBytes("_delphi.model_export");
+                            if (exportDir.isPresent() && modelExport.isPresent()) {
+                                String exportFilename = result.getString("_delphi.model_export_filename.string").get();
+                                Files.write(exportDir.get().resolve(exportFilename), modelExport.get());
+                            }
 
                             Optional<byte[]> systemExamples = result.getBytes("_delphi.system_examples");
                             if (systemExamples.isPresent()) {
@@ -785,7 +795,7 @@ public class ThumbnailBox extends JPanel {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
-                            stats.showException(e.getCause());
+                            stats.showException(e.getCause() != null ? e.getCause() : e);
                         }
                     });
                     e.printStackTrace();

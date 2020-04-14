@@ -104,6 +104,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -400,7 +401,7 @@ public final class Main {
         });
 
         // buttons
-
+        AtomicReference<Path> exportDir = new AtomicReference<>();
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -447,6 +448,8 @@ public final class Main {
                     attributes.add("_delphi.precision.double");
                     attributes.add("_delphi.recall.double");
                     attributes.add("_delphi.f1_score.double");
+                    attributes.add("_delphi.model_export");
+                    attributes.add("_delphi.model_export_filename.string");
 
                     for (HyperFindSearchMonitor m : monitors) {
                         attributes.addAll(m.getPushAttributes());
@@ -468,10 +471,13 @@ public final class Main {
                     m.results.terminate();
 
                     // start
+                    setExportDir(m, exportDir);
+
                     m.results.start(
                             m.search,
                             new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
-                            monitors);
+                            monitors,
+                            Optional.ofNullable(exportDir.get()));
                 } catch (RuntimeException e1) {
                     proxyBox.setEnabled(true);
                     Throwable e2 = e1.getCause();
@@ -489,8 +495,7 @@ public final class Main {
                 boolean downloadResults = m.properties.checkDownload();
 
                 if (downloadResults) {
-                    Path downloadDir =
-                            m.properties.getDownloadDirectory().resolve("hyperfind-" + System.currentTimeMillis());
+                    Path downloadDir = exportDir.get();
 
                     Map<String, FeedbackObject> map = m.results.getFeedbackItems();
 
@@ -727,16 +732,27 @@ public final class Main {
             m.searchFactory = factory;
             m.search = search.search();
 
+            setExportDir(m, exportDir);
+
             // start
             m.results.start(
                     m.search,
                     new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
-                    monitors);
+                    monitors,
+                    Optional.ofNullable(exportDir.get()));
         });
 
         frame.setVisible(true);
 
         return m;
+    }
+
+    private static void setExportDir(Main m, AtomicReference<Path> exportDir) {
+        if (m.properties.checkDownload()) {
+            Path dir = m.properties.getDownloadDirectory().resolve("hyperfind-" + System.currentTimeMillis());
+            dir.toFile().mkdirs();
+            exportDir.set(dir);
+        }
     }
 
     void popup(String name, BufferedImage img) {
@@ -817,8 +833,7 @@ public final class Main {
         Cursor oldCursor = frame.getCursor();
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            Set<String> attributes = Collections.emptySet();
-            popup(new HyperFindResult(ps, factory.getResult(id, attributes)), Optional.ofNullable(prevResult));
+            popup(new HyperFindResult(ps, factory.getResult(id, Collections.emptySet())), Optional.ofNullable(prevResult));
         } finally {
             frame.setCursor(oldCursor);
         }
