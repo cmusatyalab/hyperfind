@@ -641,7 +641,7 @@ public class ThumbnailBox extends JPanel {
 
                             // This is a 'positive' that we're only receiving to get the system examples
                             // Don't show the image and adjust statistics to account for this false 'positive'
-                            if (result.getBytes("_delphi.should_discard").isPresent()) {
+                            if (result.getBytes("_delphi.should_discard.int").isPresent()) {
                                 discardedPositivesCount++;
                                 continue;
                             }
