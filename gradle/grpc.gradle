@@ -1,0 +1,29 @@
+apply plugin: 'com.google.protobuf'
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.11.2'
+    }
+
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.26.0'
+        }
+    }
+
+    generateProtoTasks {
+        // all() returns the collection of all protoc tasks
+        all().each { task ->
+            project.getTasks().getByName("idea").dependsOn(task)
+        }
+        all()*.plugins { grpc {} }
+    }
+}
+
+dependencies {
+    compile 'com.google.protobuf:protobuf-java'
+    compile 'io.grpc:grpc-protobuf'
+    compile 'io.grpc:grpc-stub'
+
+    compileOnly 'javax.annotation:javax.annotation-api'
+}

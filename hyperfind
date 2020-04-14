@@ -1,4 +1,0 @@
-#!/bin/sh
-echo using bundle dirs: ${BUNDLES:="$HOME/.diamond/codecs:$HOME/.diamond/predicates:/usr/local/share/diamond/codecs:/usr/local/share/diamond/predicates:/usr/share/diamond/codecs:/usr/share/diamond/predicates"}
-echo using filters dir: ${FILTERS:="$HOME/.diamond/filters:/usr/local/share/diamond/filters:/usr/share/diamond/filters"}
-java -cp $(dirname "$0")/hyperfind.jar:/usr/share/java/hyperfind.jar edu.cmu.cs.diamond.hyperfind.Main $BUNDLES $FILTERS

@@ -1,0 +1,13 @@
+dependencies {
+    compile project(':connection-api')
+
+    compile 'com.google.guava:guava'
+    compile 'one.util:streamex'
+    compile 'org.slf4j:slf4j-api'
+
+    compile 'edu.cmu.cs.diamond.opendiamond:opendiamond-java'
+
+    // Uncomment to use local opendiamond-java placed in the same parent directory
+    // implementation fileTree(dir: '../../opendiamond-java/build/libs', include: '*.jar')
+    // implementation 'javax.xml.bind:jaxb-api:2.3.1'
+}
