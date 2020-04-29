@@ -199,7 +199,7 @@ final class StatisticsArea extends JPanel {
         for (SearchStats ss : serverStats.values()) {
             t += ss.totalObjects();
             s += ss.processedObjects();
-            d += (ss.droppedObjects()  + discardedPositives);
+            d += (ss.droppedObjects() + discardedPositives);
             n += ss.falseNegatives();
         }
 

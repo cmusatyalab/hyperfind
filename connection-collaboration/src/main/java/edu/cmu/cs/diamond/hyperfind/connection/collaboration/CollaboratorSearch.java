@@ -67,6 +67,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -81,7 +82,7 @@ public final class CollaboratorSearch implements Search {
     private final SearchId searchId;
     private final ListeningExecutorService resultExecutor;
 
-    private final LinkedBlockingQueue<Optional<SearchResult>> results = new LinkedBlockingQueue<>(1000);
+    private final LinkedBlockingQueue<Optional<SearchResult>> results = new LinkedBlockingQueue<>(1);
     private final AtomicReference<Throwable> downloadThrowable = new AtomicReference<>();
 
     public CollaboratorSearch(
@@ -93,14 +94,22 @@ public final class CollaboratorSearch implements Search {
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
 
         ListenableFuture<?> downloadFuture = this.resultExecutor.submit(() -> {
-            BlockingStreamObserver<SearchResultResponse> observer = new BlockingStreamObserver<>() {
-                @Override
-                public void onNext(SearchResultResponse value) {
-                    queueResult(convert(value));
-                }
-            };
-            service.getSearchResults(searchId, observer);
-            observer.waitForFinish();
+            AtomicBoolean shouldContinue = new AtomicBoolean(true);
+
+            while (shouldContinue.get()) {
+                BlockingStreamObserver<SearchResultResponse> observer = new BlockingStreamObserver<>() {
+                    @Override
+                    public void onNext(SearchResultResponse value) {
+                        Optional<SearchResult> result = convert(value);
+                        queueResult(result);
+                        if (result.isEmpty()) {
+                            shouldContinue.set(false);
+                        }
+                    }
+                };
+                service.getSearchResults(searchId, observer);
+                observer.waitForFinish();
+            }
         });
 
         Futures.addCallback(downloadFuture, new FutureCallback<Object>() {

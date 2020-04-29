@@ -88,6 +88,7 @@ import org.slf4j.LoggerFactory;
 public final class CollaborationResource extends CollaborationServiceGrpc.CollaborationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(CollaborationResource.class);
+    private static final int BATCH_SIZE = 10;
 
     private final Connection connection;
     private final Map<SearchId, SearchMetadata> searches;
@@ -175,9 +176,9 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             SearchMetadata search = searches.get(request);
             Preconditions.checkNotNull(search, "Search %s not found", request.getValue());
 
-            // The frontend should make sure not too many objects get sent at once, but if we run into memory
-            // issues we can implement manual flow control
-            while (true) {
+            // TODO(hturki): Rather than returning in batches, implement flow control that corresponds to what's
+            // displayed on the client
+            for (int i = 0; i < BATCH_SIZE; i++) {
                 Optional<edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult> result =
                         search.search.getNextResult();
                 SearchResultResponse.Builder builder = SearchResultResponse.newBuilder();

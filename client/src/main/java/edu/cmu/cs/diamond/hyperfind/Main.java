@@ -722,6 +722,8 @@ public final class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         runningSearch.ifPresent(search -> {
+            m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
+
             search.predicateState()
                     .forEach(p -> model.addPredicate(HyperFindPredicate.restore(p, connection)));
 
