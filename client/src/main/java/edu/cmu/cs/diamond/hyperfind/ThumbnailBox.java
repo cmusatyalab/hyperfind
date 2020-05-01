@@ -114,12 +114,16 @@ import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import one.util.streamex.EntryStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The ThumbnailBox contains a scrolling panel of the thumbnails of search results + a conditional "Get next xxx
  * results" button + statistics bar NOTE: Status for start, stop buttons and stats bar is changed within the class.
  */
 public class ThumbnailBox extends JPanel {
+
+    private static final Logger log = LoggerFactory.getLogger(ThumbnailBox.class);
 
     public static final int NUM_PANELS = 2;
 
@@ -486,7 +490,7 @@ public class ThumbnailBox extends JPanel {
                     revalidate();
                     repaint();
                     search.retrainFilter(feedbackItems.values());
-                    System.out.println("Retrain finish !");
+                    log.info("Retrain finish !");
                     clearFeedBackItems();
                     pauseState = false;
                 } catch (RuntimeException e) {
@@ -568,7 +572,7 @@ public class ThumbnailBox extends JPanel {
                             Optional<SearchResult> resultOpt = search.getNextResult();
 
                             if (resultOpt.isEmpty()) {
-                                System.out.println("RESULT NULL");
+                                log.info("RESULT NULL");
                                 break;
                             }
 
@@ -577,7 +581,9 @@ public class ThumbnailBox extends JPanel {
                             Optional<byte[]> modelExport = result.getBytes("_delphi.model_export");
                             if (exportDir.isPresent() && modelExport.isPresent()) {
                                 String exportFilename = result.getString("_delphi.model_export_filename.string").get();
+                                log.info("Exporting model {}", exportDir.get().resolve(exportFilename));
                                 Files.write(exportDir.get().resolve(exportFilename), modelExport.get());
+                                log.info("Export finished");
                             }
 
                             Optional<byte[]> systemExamples = result.getBytes("_delphi.system_examples");
@@ -724,9 +730,11 @@ public class ThumbnailBox extends JPanel {
                                     sampledTPCount += 1;
                                 }
                             } else if (colorByModelVersion && modelVersion.isPresent()) {
+                                // Adding 0.5 to model version because otherwise the border is red which can
+                                // get confused with the ground truth borders
                                 drawBorder(
                                         g,
-                                        Color.getHSBColor((float) ((0.1 * modelVersion.getAsInt()) % 1), 1, 1),
+                                        Color.getHSBColor((float) ((0.1 * (modelVersion.getAsInt() + 0.5)) % 1), 1, 1),
                                         origW,
                                         origH,
                                         80);
@@ -753,8 +761,6 @@ public class ThumbnailBox extends JPanel {
                             publish(resultIcon);
                         }
                     } finally {
-                        // System.out.println("STOP");
-
                         timer.stop();
                         // update stats one more time, if possible
                         updateStats();
@@ -872,7 +878,7 @@ public class ThumbnailBox extends JPanel {
             if (hasStats) {
                 SwingUtilities.invokeLater(() -> {
                     long passed = resultLists.get(0).getModel().getSize();
-                    stats.update(serverStats);
+                    stats.update(serverStats, discardedPositivesCount);
                     statsArea.update(
                             serverStats,
                             passed,

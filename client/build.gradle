@@ -10,6 +10,8 @@ dependencies {
     implementation 'com.sun.xml.bind:jaxb-impl'
     implementation 'one.util:streamex'
     implementation 'org.swinglabs:swingx'
+    implementation 'ch.qos.logback:logback-classic'
+
 
     runtime project(':connection-collaboration')
     runtime project(':connection-direct')

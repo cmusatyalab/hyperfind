@@ -161,18 +161,22 @@ final class StatisticsArea extends JPanel {
         if (true_positives > 0 || false_negatives > 0 || false_display > 0) {
             str_display.append(String.format("\n x------- AUGMENTED --------x \n"));
             long labeled_total = true_positives + false_negatives + false_display;
-            float precision = 100f * true_positives / displayed;
+
+            float precision = ((float) true_positives) / displayed;
+            float recall = ((float) true_positives) / labeled_total;
+
             if(!timerStart) {
                 diff_tp = true_positives;
                 diff_displayed = displayed;
-                avg_precision = precision;
+                avg_precision = 100f * precision;
             }
             str_display.append(String.format("\n %0$-18s %d \n", "True Positives", true_positives));
             str_display.append(String.format("\n %0$-18s %d \n", "FN Displayed", false_display));
             str_display.append(String.format("\n %0$-17s %d \n", "FN Dropped", false_negatives));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, precision));
+            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f * precision));
             str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Avg. Precision ", diff_tp, diff_displayed, avg_precision));
-            str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Curr. Recall", true_positives, labeled_total, 100f * true_positives / labeled_total));
+            str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Recall", true_positives, labeled_total, 100f * recall));
+            str_display.append(String.format("\n %0$-17s %.3f \n", "F1 Score", 2 * (precision * recall) / (precision + recall)));
         }
 
         if (modelStatistics.isPresent()) {
@@ -181,7 +185,7 @@ final class StatisticsArea extends JPanel {
             str_display.append(String.format("\n %0$-18s %d \n", "Test Set Size", modelStatistics.get().getTestExamples()));
             str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", modelStatistics.get().getPrecision() * 100));
             str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", modelStatistics.get().getRecall() * 100));
-            str_display.append(String.format("\n %0$-17s %.1f \n", "Test Set F1 Score", modelStatistics.get().getF1Score() * 100));
+            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", modelStatistics.get().getF1Score() * 100));
         }
 
         display.setText(str_display.toString());
@@ -191,19 +195,19 @@ final class StatisticsArea extends JPanel {
 
     public void update(Map<String, SearchStats> serverStats, long displayed, long sampledPositive, long sampledNegative,
             long discardedPositives, Optional<DelphiModelStatistics> modelStatistics) {
-        long t = 0;
-        long s = 0;
-        long d = 0;
-        long n = 0;
+        long total = 0;
+        long processed = 0;
+        long dropped = discardedPositives;
+        long falseNegatives = 0;
 
         for (SearchStats ss : serverStats.values()) {
-            t += ss.totalObjects();
-            s += ss.processedObjects();
-            d += (ss.droppedObjects() + discardedPositives);
-            n += ss.falseNegatives();
+            total += ss.totalObjects();
+            processed += ss.processedObjects();
+            dropped += ss.droppedObjects();
+            falseNegatives += ss.falseNegatives();
         }
 
-        setNumbers(t, s, d, displayed, sampledPositive, n, sampledNegative, modelStatistics);
+        setNumbers(total, processed, dropped, displayed, sampledPositive, falseNegatives, sampledNegative, modelStatistics);
     }
 
     public void setDone() {
