@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -75,6 +76,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -580,9 +583,10 @@ public class ThumbnailBox extends JPanel {
 
                             Optional<byte[]> modelExport = result.getBytes("_delphi.model_export");
                             if (exportDir.isPresent() && modelExport.isPresent()) {
-                                String exportFilename = result.getString("_delphi.model_export_filename.string").get();
-                                log.info("Exporting model {}", exportDir.get().resolve(exportFilename));
-                                Files.write(exportDir.get().resolve(exportFilename), modelExport.get());
+                                int version = result.getInt("_delphi.model_export_version.int").getAsInt();
+                                String filename = String.format("model-%d", version);
+                                log.info("Exporting model {}", exportDir.get().resolve(filename));
+                                Files.write(exportDir.get().resolve(filename), modelExport.get());
                                 log.info("Export finished");
                             }
 
@@ -613,8 +617,8 @@ public class ThumbnailBox extends JPanel {
                                         .map(e -> {
                                             Map<String, ?> imageMetadata = e.getValue();
                                             String objectId = (String) imageMetadata.get("object_id");
-                                            double confidence =
-                                                    ((Number) imageMetadata.get("confidence")).doubleValue();
+                                            double score =
+                                                    ((Number) imageMetadata.get("score")).doubleValue();
                                             ObjectId systemId = ObjectId.of(
                                                     objectId,
                                                     result.getId().deviceName(),
@@ -627,7 +631,10 @@ public class ThumbnailBox extends JPanel {
                                                         ((Number) imageMetadata.get("model_version")).intValue();
                                                 drawBorder(
                                                         image.createGraphics(),
-                                                        Color.getHSBColor((float) ((0.1 * modelVersion) % 1), 1, 1),
+                                                        Color.getHSBColor(
+                                                                (float) ((0.1 * modelVersion + 1.5) % 1),
+                                                                1,
+                                                                1),
                                                         image.getWidth(),
                                                         image.getHeight(),
                                                         10);
@@ -661,6 +668,7 @@ public class ThumbnailBox extends JPanel {
                                     modelStats.set(new DelphiModelStatistics(
                                             modelVersion.getAsInt(),
                                             testExamples.getAsInt(),
+                                            result.getDouble("_delphi.auc.double").getAsDouble(),
                                             result.getDouble("_delphi.precision.double").getAsDouble(),
                                             result.getDouble("_delphi.recall.double").getAsDouble(),
                                             result.getDouble("_delphi.f1_score.double").getAsDouble()));
@@ -730,11 +738,11 @@ public class ThumbnailBox extends JPanel {
                                     sampledTPCount += 1;
                                 }
                             } else if (colorByModelVersion && modelVersion.isPresent()) {
-                                // Adding 0.5 to model version because otherwise the border is red which can
+                                // Adding 1.5 to model version because otherwise the border is red which can
                                 // get confused with the ground truth borders
                                 drawBorder(
                                         g,
-                                        Color.getHSBColor((float) ((0.1 * (modelVersion.getAsInt() + 0.5)) % 1), 1, 1),
+                                        Color.getHSBColor((float) ((0.1 * modelVersion.getAsInt() + 1.5) % 1), 1, 1),
                                         origW,
                                         origH,
                                         80);

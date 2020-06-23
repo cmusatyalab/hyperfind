@@ -43,13 +43,16 @@ package edu.cmu.cs.diamond.hyperfind.delphi;
 public class DelphiModelStatistics {
     private final long lastModelVersion;
     private final long testExamples;
+    private final double auc;
     private final double precision;
     private final double recall;
     private final double f1Score;
 
-    public DelphiModelStatistics(long lastModelVersion, long testExamples, double precision, double recall, double f1Score) {
+    public DelphiModelStatistics(long lastModelVersion, long testExamples, double auc, double precision, double recall,
+            double f1Score) {
         this.lastModelVersion = lastModelVersion;
         this.testExamples = testExamples;
+        this.auc = auc;
         this.precision = precision;
         this.recall = recall;
         this.f1Score = f1Score;
@@ -61,6 +64,10 @@ public class DelphiModelStatistics {
 
     public long getTestExamples() {
         return testExamples;
+    }
+
+    public double getAuc() {
+        return auc;
     }
 
     public double getPrecision() {

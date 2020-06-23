@@ -183,9 +183,10 @@ final class StatisticsArea extends JPanel {
             str_display.append(String.format("\n x------- MODEL STATISTICS --------x \n"));
             str_display.append(String.format("\n %0$-18s %d \n", "Model Version", modelStatistics.get().getLastModelVersion()));
             str_display.append(String.format("\n %0$-18s %d \n", "Test Set Size", modelStatistics.get().getTestExamples()));
+            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set AUC", modelStatistics.get().getAuc()));
             str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", modelStatistics.get().getPrecision() * 100));
             str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", modelStatistics.get().getRecall() * 100));
-            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", modelStatistics.get().getF1Score() * 100));
+            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", modelStatistics.get().getF1Score()));
         }
 
         display.setText(str_display.toString());
