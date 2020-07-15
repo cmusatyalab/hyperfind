@@ -73,7 +73,7 @@ public final class SearchResult {
 
     public String getName() {
         return getString(NAME_ATTR)
-                .orElseThrow(() -> new IllegalArgumentException(NAME_ATTR + " attribute not defined in earch result"));
+                .orElseThrow(() -> new IllegalArgumentException(NAME_ATTR + " attribute not defined in search result"));
     }
 
     public byte[] getData() {
