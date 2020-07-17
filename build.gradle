@@ -34,6 +34,7 @@ allprojects {
         maven {
             url 'http://palantir.bintray.com/releases'
         }
+        mavenLocal()
     }
 
     apply plugin: 'java'
@@ -47,6 +48,7 @@ allprojects {
     }
 }
 
+// Excluding client from linting for legacy purposes
 configure(subprojects.findAll { it.name != 'client' }) {
     apply plugin: 'org.inferred.processors'  // installs the 'processor' configuration needed for baseline-error-prone
     apply plugin: 'com.palantir.baseline-error-prone'

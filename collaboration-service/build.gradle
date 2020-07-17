@@ -1,14 +1,14 @@
 apply plugin: 'com.palantir.sls-java-service-distribution'
 
 dependencies {
-    implementation project(':connection-direct')
+    implementation project(':connection-diamond')
+    implementation project(':grpc-utils')
     implementation project(':proto-conversions')
 
     implementation 'com.google.protobuf:protobuf-java-util'
     implementation 'com.sun.xml.bind:jaxb-core'
     implementation 'com.sun.xml.bind:jaxb-impl'
     implementation 'io.dropwizard:dropwizard-core'
-    implementation 'io.grpc:grpc-netty-shaded'
     implementation 'one.util:streamex'
 
     annotationProcessor 'org.immutables:value'

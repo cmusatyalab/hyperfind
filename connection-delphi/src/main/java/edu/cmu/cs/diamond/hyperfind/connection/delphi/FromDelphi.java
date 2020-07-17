@@ -38,25 +38,30 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc;
+package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import com.google.common.base.Preconditions;
+import com.google.protobuf.ByteString;
+import edu.cmu.cs.delphi.api.DelphiObject;
+import edu.cmu.cs.delphi.api.InferResult;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import one.util.streamex.EntryStream;
 
-public final class UnaryStreamObserver<T> extends BlockingStreamObserver<T> {
+public final class FromDelphi {
 
-    private T result = null;
-    private boolean valueSet = false;
-
-    @Override
-    public void onNext(T value) {
-        Preconditions.checkArgument(!valueSet, "Value already set to %s, now encountering %s", result, value);
-        result = value;
-        valueSet = true;
+    private FromDelphi() {
     }
 
-    public T value() {
-        waitForFinish();
-        Preconditions.checkArgument(valueSet, "Value not set");
-        return result;
+    public static SearchResult convert(InferResult value, String hostname) {
+        return new SearchResult(
+                ObjectId.of(value.getObjectId(), hostname, hostname),
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
     }
+
+    public static SearchResult convert(DelphiObject value, String hostname) {
+        return new SearchResult(
+                ObjectId.of(value.getObjectId(), hostname, hostname),
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
+    }
+
 }

@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc;
+package edu.cmu.cs.diamond.hyperfind.grpc;
 
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CountDownLatch;

@@ -7,6 +7,8 @@ include 'collaboration-service-api'
 
 include 'connection-api'
 include 'connection-collaboration'
-include 'connection-direct'
+include 'connection-delphi'
+include 'connection-diamond'
 
+include 'grpc-utils'
 include 'proto-conversions'

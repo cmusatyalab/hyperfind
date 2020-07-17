@@ -59,15 +59,15 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.FilterBuilder;
-import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.BlockingStreamObserver;
-import edu.cmu.cs.diamond.hyperfind.connection.collaboration.grpc.UnaryStreamObserver;
+import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
+import edu.cmu.cs.diamond.hyperfind.grpc.Channels;
+import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +76,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import javax.net.ssl.SSLException;
 
 public final class CollaborationConnection implements Connection {
 
@@ -97,7 +96,7 @@ public final class CollaborationConnection implements Connection {
 
     private CollaborationConnection(String host, int port, boolean useSsl, Optional<String> trustStorePath) {
         ManagedChannel channel = useSsl
-                ? createSslChannel(host, port, trustStorePath)
+                ? Channels.createSslChannel(host, port, trustStorePath)
                 : ManagedChannelBuilder.forAddress(host, port)
                         .maxInboundMessageSize(Integer.MAX_VALUE)
                         .usePlaintext()
@@ -198,21 +197,6 @@ public final class CollaborationConnection implements Connection {
         UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
         service.updateCookies(request.build(), observer);
         observer.waitForFinish();
-    }
-
-    private static ManagedChannel createSslChannel(String host, int port, Optional<String> trustStorePath) {
-        io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder sslContextBuilder
-                = io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
-        trustStorePath.ifPresent(t -> sslContextBuilder.trustManager(Paths.get(t).toFile()));
-
-        try {
-            return io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder.forAddress(host, port)
-                    .sslContext(sslContextBuilder.build())
-                    .maxInboundMessageSize(Integer.MAX_VALUE)
-                    .build();
-        } catch (SSLException e) {
-            throw new RuntimeException("Failed to create channel", e);
-        }
     }
 
     private final class DelegatingFilterBuilder implements FilterBuilder {

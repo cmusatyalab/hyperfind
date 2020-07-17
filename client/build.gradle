@@ -14,7 +14,8 @@ dependencies {
 
 
     runtime project(':connection-collaboration')
-    runtime project(':connection-direct')
+    runtime project(':connection-delphi')
+    runtime project(':connection-diamond')
 }
 
 run {
