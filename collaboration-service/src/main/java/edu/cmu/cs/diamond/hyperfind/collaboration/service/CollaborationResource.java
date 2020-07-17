@@ -354,15 +354,15 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
     }
 
     @Override
-    public void updateCookies(UpdateCookiesRequest request, StreamObserver<Empty> observer) {
-        try {
-            connection.updateCookies(request.hasProxyIp()
-                    ? Optional.of(request.getProxyIp().getValue())
-                    : Optional.empty());
-        } catch (RuntimeException | Error e) {
-            log.error("Failed to update cookies", e);
-            observer.onError(e);
-        }
+    public void updateCookies(UpdateCookiesRequest _request, StreamObserver<Empty> _observer) {
+        // try {
+        //     connection.updateCookies(request.hasProxyIp()
+        //             ? Optional.of(request.getProxyIp().getValue())
+        //             : Optional.empty());
+        // } catch (RuntimeException | Error e) {
+        //     log.error("Failed to update cookies", e);
+        //     observer.onError(e);
+        // }
     }
 
     @Override

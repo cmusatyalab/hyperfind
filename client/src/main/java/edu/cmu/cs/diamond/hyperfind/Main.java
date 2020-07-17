@@ -63,6 +63,8 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.GsonAdaptersBundleState;
@@ -100,18 +102,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.Box;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -135,8 +134,6 @@ public final class Main {
 
     private static final int IMAGE_DOWNLOAD_BATCH_SIZE = 50;
 
-    public static Boolean proxyFlag = false;
-
     private final ThumbnailBox results;
 
     private final Connection connection;
@@ -144,8 +141,6 @@ public final class Main {
     private SearchFactory searchFactory;
 
     private Search search;
-
-    private static HyperFindProperty properties;
 
     private final PredicateListModel model;
 
@@ -170,7 +165,6 @@ public final class Main {
         this.model = model;
         this.examplePredicateFactories = examplePredicateFactories;
         this.codecs = codecs;
-        this.properties = new HyperFindProperty();
 
         popupFrame = new JFrame();
         popupFrame.setMinimumSize(new Dimension(512, 384));
@@ -206,22 +200,18 @@ public final class Main {
 
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
-        JButton retrainButton = new JButton("Retrain");
         JButton configButton = new JButton("Set Config");
-        JButton defineScopeButton = new JButton("Define Scope");
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
-        JCheckBox proxyBox = new JCheckBox("Proxy Enable");
         StatisticsBar stats = new StatisticsBar();
         StatisticsArea statsArea = new StatisticsArea();
 
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(16, 16,
                 500, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         threadPoolExecutor.allowCoreThreadTimeOut(true);
-        ExecutorService executor = threadPoolExecutor;
 
-        ThumbnailBox results = new ThumbnailBox(stopButton, startButton, retrainButton,
-                stats, statsArea, 500);
+        SearchManager searchManager = new SearchManager(startButton, stopButton);
+        ThumbnailBox results = new ThumbnailBox(searchManager, stats, statsArea, 500);
 
         // predicate list
         PredicateListModel model = new PredicateListModel();
@@ -401,14 +391,10 @@ public final class Main {
         });
 
         // buttons
-        AtomicReference<Path> exportDir = new AtomicReference<>();
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    // start search
-                    proxyBox.setEnabled(false);
-                    m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
                     HyperFindPredicate p = (HyperFindPredicate) codecs
                             .getSelectedItem();
                     List<Filter> filters = new ArrayList<>(p.createFilters());
@@ -420,7 +406,7 @@ public final class Main {
                         m.results.resultLists.get(i).setTransferHandler(
                                 new ResultExportTransferHandler(
                                         connection.getSearchFactory(filters),
-                                        executor));
+                                        threadPoolExecutor));
                     }
 
                     filters.addAll(model.createFilters());
@@ -471,15 +457,12 @@ public final class Main {
                     m.results.terminate();
 
                     // start
-                    setExportDir(m, exportDir);
-
                     m.results.start(
                             m.search,
                             new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
-                            monitors,
-                            Optional.ofNullable(exportDir.get()));
+                            monitors);
                 } catch (RuntimeException e1) {
-                    proxyBox.setEnabled(true);
+                    searchManager.searchStopped();
                     Throwable e2 = e1.getCause();
                     stats.showException(e2 != null ? e2 : e1);
                     e1.printStackTrace();
@@ -490,12 +473,11 @@ public final class Main {
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                Optional<Path> exportDirOpt = m.search.getExportDir();
                 m.stopSearch();
-                proxyBox.setEnabled(true);
-                boolean downloadResults = m.properties.checkDownload();
 
-                if (downloadResults) {
-                    Path downloadDir = exportDir.get();
+                if (exportDirOpt.isPresent()) {
+                    Path exportDir = exportDirOpt.get();
 
                     Map<String, FeedbackObject> map = m.results.getFeedbackItems();
 
@@ -505,7 +487,7 @@ public final class Main {
                                 ImmutableSet.of(SearchResult.DATA_ATTR));
 
                         for (FeedbackObject object : batch) {
-                            Path subDir = downloadDir.resolve(object.label() == 1 ? "positive" : "negative");
+                            Path subDir = exportDir.resolve(object.label() == 1 ? "positive" : "negative");
                             subDir.toFile().mkdirs();
 
                             String[] nameSplits = object.id().objectId().split("/");
@@ -525,35 +507,10 @@ public final class Main {
             }
         });
 
-        retrainButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("retrain pressed");
-                m.results.retrainSearch();
-            }
-        });
-
         configButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                m.properties = new HyperFindProperty();
-            }
-        });
-
-        defineScopeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                connection.updateCookies(proxyFlag ? Optional.of(m.properties.getProxyIP()) : Optional.empty());
-            }
-        });
-
-        //Proxy Enable CheckBox
-        proxyBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                proxyFlag = proxyBox.isSelected();
-                m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
-                connection.updateCookies(proxyFlag ? Optional.of(m.properties.getProxyIP()) : Optional.empty());
+                m.connection.openConfigPanel(searchManager);
             }
         });
 
@@ -676,22 +633,14 @@ public final class Main {
 
         // start/stop/define
         Box v1 = Box.createVerticalBox();
-        Box r2 = Box.createHorizontalBox();
-        r2.add(defineScopeButton);
-        r2.add(Box.createHorizontalStrut(20));
-        r2.add(configButton);
-        r2.add(Box.createHorizontalStrut(20));
-        v1.add(r2);
-        v1.add(Box.createVerticalStrut(4));
-
+        v1.add(Box.createVerticalStrut(10));
         Box r1 = Box.createHorizontalBox();
         r1.add(startButton);
         r1.add(Box.createHorizontalStrut(20));
         stopButton.setEnabled(false);
         r1.add(stopButton);
         r1.add(Box.createHorizontalStrut(20));
-        retrainButton.setEnabled(false);
-        r1.add(retrainButton);
+        r1.add(configButton);
         v1.add(r1);
         v1.add(Box.createVerticalStrut(4));
 
@@ -701,11 +650,7 @@ public final class Main {
         r3.add(Box.createHorizontalStrut(20));
         r3.add(importPredicatesButton);
         v1.add(r3);
-        v1.add(Box.createVerticalStrut(4));
-
-        Box r4 = Box.createHorizontalBox();
-        r4.add(proxyBox);
-        v1.add(r4);
+        v1.add(Box.createVerticalStrut(10));
 
         c1.add(v1);
 
@@ -722,8 +667,6 @@ public final class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         runningSearch.ifPresent(search -> {
-            m.results.setConfig(proxyFlag, m.properties.checkDownload(), m.properties.colorByModelVersion());
-
             search.predicateState()
                     .forEach(p -> model.addPredicate(HyperFindPredicate.restore(p, connection)));
 
@@ -734,27 +677,16 @@ public final class Main {
             m.searchFactory = factory;
             m.search = search.search();
 
-            setExportDir(m, exportDir);
-
             // start
             m.results.start(
                     m.search,
                     new ActivePredicateSet(m, model.getSelectedPredicates(), factory),
-                    monitors,
-                    Optional.ofNullable(exportDir.get()));
+                    monitors);
         });
 
         frame.setVisible(true);
 
         return m;
-    }
-
-    private static void setExportDir(Main m, AtomicReference<Path> exportDir) {
-        if (m.properties.checkDownload()) {
-            Path dir = m.properties.getDownloadDirectory().resolve("hyperfind-" + System.currentTimeMillis());
-            dir.toFile().mkdirs();
-            exportDir.set(dir);
-        }
     }
 
     void popup(String name, BufferedImage img) {
@@ -835,7 +767,9 @@ public final class Main {
         Cursor oldCursor = frame.getCursor();
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            popup(new HyperFindResult(ps, factory.getResult(id, Collections.emptySet())), Optional.ofNullable(prevResult));
+            popup(
+                    new HyperFindResult(ps, factory.getResult(id, Collections.emptySet())),
+                    Optional.ofNullable(prevResult));
         } finally {
             frame.setCursor(oldCursor);
         }
@@ -931,6 +865,49 @@ public final class Main {
                 throw new RuntimeException("Failed to create main frame", e);
             }
         });
+    }
+}
+
+class SearchManager implements SearchListenable, SearchListener {
+
+    private final JButton startButton;
+    private final JButton stopButton;
+    private final List<SearchListener> searchListeners = new ArrayList<>();
+    private Optional<Search> runningSearch = Optional.empty();
+    private Optional<Runnable> runningCallback = Optional.empty();
+
+    SearchManager(JButton startButton, JButton stopButton) {
+        this.startButton = startButton;
+        this.stopButton = stopButton;
+    }
+
+    @Override
+    public void addListener(SearchListener listener) {
+        runningSearch.ifPresent(s -> listener.searchStarted(s, runningCallback.get()));
+        searchListeners.add(listener);
+    }
+
+    @Override
+    public void removeListener(SearchListener listener) {
+        searchListeners.remove(listener);
+    }
+
+    @Override
+    public void searchStarted(Search search, Runnable retrainCallback) {
+        runningSearch = Optional.of(search);
+        runningCallback = Optional.of(retrainCallback);
+        startButton.setEnabled(false);
+        stopButton.setEnabled(true);
+        searchListeners.forEach(s -> s.searchStarted(search, retrainCallback));
+    }
+
+    @Override
+    public void searchStopped() {
+        runningSearch = Optional.empty();
+        runningCallback = Optional.empty();
+        startButton.setEnabled(true);
+        stopButton.setEnabled(false);
+        searchListeners.forEach(SearchListener::searchStopped);
     }
 }
 

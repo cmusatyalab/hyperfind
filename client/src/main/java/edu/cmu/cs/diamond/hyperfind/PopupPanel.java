@@ -197,7 +197,7 @@ public class PopupPanel extends JPanel {
         return createInstance(
                 m,
                 connection,
-                Optional.of(new SearchResult(r.getId(), attributes)),
+                Optional.of(new SearchResult(r.getId(), attributes, Optional.empty())),
                 img,
                 r.getData(),
                 hr.getActivePredicateSet().getActivePredicates(),

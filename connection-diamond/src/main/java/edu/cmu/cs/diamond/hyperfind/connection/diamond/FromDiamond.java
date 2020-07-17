@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.direct;
+package edu.cmu.cs.diamond.hyperfind.connection.diamond;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -78,7 +78,8 @@ public final class FromDiamond {
     public static SearchResult convert(Result value) {
         return new SearchResult(
                 convert(value.getObjectIdentifier()),
-                value.getKeys().stream().collect(Collectors.toMap(k -> k, value::getValue)));
+                value.getKeys().stream().collect(Collectors.toMap(k -> k, value::getValue)),
+                Optional.empty());
     }
 
     public static SearchStats convert(ServerStatistics value) {

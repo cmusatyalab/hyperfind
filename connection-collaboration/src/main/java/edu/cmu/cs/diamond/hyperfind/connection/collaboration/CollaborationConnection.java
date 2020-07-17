@@ -56,6 +56,7 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.FilterBuilder;
@@ -191,6 +192,10 @@ public final class CollaborationConnection implements Connection {
     }
 
     @Override
+    public void openConfigPanel(SearchListenable _searchListenable) {
+
+    }
+
     public void updateCookies(Optional<String> proxyIp) {
         UpdateCookiesRequest.Builder request = UpdateCookiesRequest.newBuilder();
         proxyIp.ifPresent(p -> request.setProxyIp(StringValue.newBuilder().setValue(p).build()));

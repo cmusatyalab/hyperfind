@@ -40,23 +40,10 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
-import java.io.InputStream;
-import java.util.List;
+public interface SearchListener {
 
-public interface Connection {
+    void searchStarted(Search search, Runnable retrainCallback);
 
-    SearchFactory getSearchFactory(List<Filter> filters);
-
-    List<SearchInfo> getRunningSearches();
-
-    List<Bundle> getBundles();
-
-    Bundle getBundle(InputStream inputStream);
-
-    Bundle restoreBundle(BundleState state);
-
-    void openConfigPanel(SearchListenable searchListenable);
+    void searchStopped();
 
 }

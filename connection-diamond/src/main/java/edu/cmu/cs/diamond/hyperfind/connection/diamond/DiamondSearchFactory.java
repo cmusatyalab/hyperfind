@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.direct;
+package edu.cmu.cs.diamond.hyperfind.connection.diamond;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
@@ -48,9 +48,11 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -60,17 +62,20 @@ import one.util.streamex.EntryStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class DirectSearchFactory implements SearchFactory {
+public final class DiamondSearchFactory implements SearchFactory {
 
-    private static final Logger log = LoggerFactory.getLogger(DirectSearchFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(DiamondSearchFactory.class);
 
+    private final Optional<Path> downloadPathRoot;
     private final edu.cmu.cs.diamond.opendiamond.SearchFactory delegate;
     private final ExecutorService downloadExecutor;
 
-    public DirectSearchFactory(
+    public DiamondSearchFactory(
             List<Filter> filters,
             CookieMap cookieMap,
+            Optional<Path> downloadPathRoot,
             ExecutorService downloadExecutor) {
+        this.downloadPathRoot = downloadPathRoot;
         this.delegate = new edu.cmu.cs.diamond.opendiamond.SearchFactory(
                 filters.stream().map(ToDiamond::convert).collect(Collectors.toList()),
                 cookieMap);
@@ -80,7 +85,9 @@ public final class DirectSearchFactory implements SearchFactory {
     @Override
     public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> _predicateState) {
         try {
-            return new DirectSearch(delegate.createSearch(attributes));
+            return new DiamondSearch(
+                    delegate.createSearch(attributes),
+                    downloadPathRoot.map(p -> p.resolve("search-" + System.currentTimeMillis())));
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Failed to create search", e);
         }

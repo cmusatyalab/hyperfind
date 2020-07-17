@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -55,5 +56,7 @@ public interface Search {
     void retrainFilter(Collection<FeedbackObject> objects);
 
     void close();
+
+    Optional<Path> getExportDir();
 
 }

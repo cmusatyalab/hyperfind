@@ -45,7 +45,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import javax.net.ssl.SSLException;
 
-public class Channels {
+public final class Channels {
 
     private Channels() {
     }

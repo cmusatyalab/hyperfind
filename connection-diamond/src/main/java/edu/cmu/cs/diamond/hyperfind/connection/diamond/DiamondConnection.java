@@ -38,43 +38,57 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.direct;
+package edu.cmu.cs.diamond.hyperfind.connection.diamond;
 
 import com.google.common.collect.ImmutableList;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-public final class DirectConnection implements Connection {
+public final class DiamondConnection implements Connection {
+
+    private static final File CONFIG_FILE =
+            Paths.get(System.getProperty("user.home")).resolve(".diamond/hyperfind-diamond.properties").toFile();
 
     private final BundleFactory bundleFactory;
     private final ExecutorService downloadExecutor;
-    private CookieMap cookieMap;
+    private final Properties configProps = loadProperties();
 
-    public DirectConnection(String bundleDirs, String filterDirs) {
+    private CookieMap cookieMap;
+    private Optional<Path> downloadPathRoot;
+
+    public DiamondConnection(String bundleDirs, String filterDirs) {
         this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
         this.downloadExecutor = Executors.newFixedThreadPool(8);
 
-        updateCookies(Optional.empty());
+        updateCookies(Optional.ofNullable(configProps.getProperty("proxyIP")));
+        downloadPathRoot = Optional.ofNullable(configProps.getProperty("downloadDirectory")).map(Paths::get);
     }
 
     @Override
     public SearchFactory getSearchFactory(List<Filter> filters) {
-        return new DirectSearchFactory(filters, cookieMap, downloadExecutor);
+        return new DiamondSearchFactory(filters, cookieMap, downloadPathRoot, downloadExecutor);
     }
 
     @Override
@@ -109,15 +123,57 @@ public final class DirectConnection implements Connection {
     }
 
     @Override
-    public void updateCookies(Optional<String> proxyIp) {
+    public void openConfigPanel(SearchListenable searchListenable) {
+        new DiamondConfiguration(searchListenable, configProps, this::saveProperties);
+    }
+
+    private static List<File> splitDirs(String paths) {
+        return Arrays.stream(paths.split(":")).map(File::new).filter(File::isDirectory).collect(Collectors.toList());
+    }
+
+    private Properties loadProperties() {
+        Properties defaultProps = new Properties();
+        // sets default properties
+        defaultProps.setProperty("useProxy", "false");
+        defaultProps.setProperty("proxyIP", "");
+        defaultProps.setProperty("downloadResults", "false");
+        defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
+
+        Properties props = new Properties(defaultProps);
+
+        if (CONFIG_FILE.exists()) {
+            // loads properties from file
+            try (InputStream inputStream = new FileInputStream(CONFIG_FILE)) {
+                props.load(inputStream);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load properties file", e);
+            }
+        }
+
+        return props;
+    }
+
+    private void saveProperties(Optional<String> proxyIp, Optional<String> downloadPath) {
+        configProps.setProperty("useProxy", Boolean.toString(proxyIp.isPresent()));
+        proxyIp.ifPresent(p -> configProps.setProperty("proxyIP", p));
+        configProps.setProperty("downloadResults", Boolean.toString(downloadPath.isPresent()));
+        downloadPath.ifPresent(d -> configProps.setProperty("downloadDirectory", d));
+
+        updateCookies(proxyIp);
+        downloadPathRoot = downloadPath.map(Paths::get);
+
+        try (OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
+            configProps.store(outputStream, "hyperfind settings for diamond connector");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save properties file", e);
+        }
+    }
+
+    private void updateCookies(Optional<String> proxyIp) {
         try {
             cookieMap = CookieMap.createDefaultCookieMap(proxyIp.orElse(null));
         } catch (IOException e) {
             throw new RuntimeException("Failed to create cookie map", e);
         }
-    }
-
-    private static List<File> splitDirs(String paths) {
-        return Arrays.stream(paths.split(":")).map(File::new).filter(File::isDirectory).collect(Collectors.toList());
     }
 }

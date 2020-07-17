@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.direct;
+package edu.cmu.cs.diamond.hyperfind.connection.diamond;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -47,18 +47,21 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.opendiamond.LabeledExample;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import one.util.streamex.EntryStream;
 
-public final class DirectSearch implements Search {
+public final class DiamondSearch implements Search {
 
     private final edu.cmu.cs.diamond.opendiamond.Search delegate;
+    private final Optional<Path> exportDir;
 
-    public DirectSearch(edu.cmu.cs.diamond.opendiamond.Search delegate) {
+    public DiamondSearch(edu.cmu.cs.diamond.opendiamond.Search delegate, Optional<Path> exportDir) {
         this.delegate = delegate;
+        this.exportDir = exportDir;
     }
 
     @Override
@@ -99,5 +102,10 @@ public final class DirectSearch implements Search {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    @Override
+    public Optional<Path> getExportDir() {
+        return exportDir;
     }
 }

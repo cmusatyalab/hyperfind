@@ -43,7 +43,6 @@ package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -74,12 +73,15 @@ import edu.cmu.cs.diamond.opendiamond.Cookie;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import io.grpc.Channel;
 import io.grpc.stub.StreamObserver;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -91,11 +93,13 @@ public final class DelphiSearchFactory implements SearchFactory {
     private final RetrainPolicyConfig retrainPolicy;
     private final SelectorConfig selector;
     private final boolean onlyUseBetterModels;
+    private final Optional<Path> downloadPathRoot;
 
     private final List<edu.cmu.cs.delphi.api.Filter> filters;
 
     private final CookieMap cookieMap;
     private final int delphiPort;
+    private final boolean colorByModelVersion;
 
     private final ListeningExecutorService resultExecutor;
     private final Map<String, LearningModuleServiceStub> learningModules;
@@ -105,18 +109,22 @@ public final class DelphiSearchFactory implements SearchFactory {
             RetrainPolicyConfig retrainPolicy,
             SelectorConfig selector,
             boolean onlyUseBetterModels,
+            Optional<Path> downloadPathRoot,
             List<Filter> filters,
             CookieMap cookieMap,
             int delphiPort,
+            boolean colorByModelVersion,
             ExecutorService resultExecutor,
             Function<String, Channel> channelBuilder) {
         this.trainStrategy = trainStrategy;
         this.retrainPolicy = retrainPolicy;
         this.selector = selector;
         this.onlyUseBetterModels = onlyUseBetterModels;
+        this.downloadPathRoot = downloadPathRoot;
         this.filters = filters.stream().map(ToDelphi::convert).collect(Collectors.toList());
         this.cookieMap = cookieMap;
         this.delphiPort = delphiPort;
+        this.colorByModelVersion = colorByModelVersion;
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
         this.learningModules = Arrays.stream(this.cookieMap.getHosts()).collect(Collectors.toMap(
                 h -> h,
@@ -124,7 +132,7 @@ public final class DelphiSearchFactory implements SearchFactory {
     }
 
     @Override
-    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> predicateState) {
+    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> _predicateState) {
         SearchId searchId = SearchId.newBuilder().setValue(UUID.randomUUID().toString()).build();
         String[] hosts = cookieMap.getHosts();
         List<String> nodes = Arrays.stream(hosts)
@@ -150,7 +158,8 @@ public final class DelphiSearchFactory implements SearchFactory {
             observer.waitForFinish();
         }
 
-        return new DelphiSearch(learningModules, searchId, resultExecutor);
+        return new DelphiSearch(learningModules, searchId, downloadPathRoot.map(p -> p.resolve(searchId.getValue())),
+                resultExecutor, colorByModelVersion);
     }
 
     @Override
@@ -161,7 +170,7 @@ public final class DelphiSearchFactory implements SearchFactory {
     }
 
     @Override
-    public SearchResult getResult(byte[] data, Set<String> attributes) {
+    public SearchResult getResult(byte[] _data, Set<String> _attributes) {
         throw new UnsupportedOperationException();
     }
 
@@ -170,7 +179,7 @@ public final class DelphiSearchFactory implements SearchFactory {
         Multimap<String, String> resultsByHost = HashMultimap.create();
         objectIds.forEach(id -> resultsByHost.put(id.hostname(), id.objectId()));
 
-        Map<ObjectId, SearchResult> results = Maps.newConcurrentMap();
+        Map<ObjectId, SearchResult> results = new ConcurrentHashMap<>();
         List<ListenableFuture<?>> downloadTasks = resultsByHost.asMap().entrySet().stream()
                 .map(e -> resultExecutor.submit(() -> {
                     BlockingStreamObserver<DelphiObject> observer = new BlockingStreamObserver<>() {

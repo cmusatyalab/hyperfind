@@ -195,10 +195,10 @@ final class StatisticsArea extends JPanel {
 
 
     public void update(Map<String, SearchStats> serverStats, long displayed, long sampledPositive, long sampledNegative,
-            long discardedPositives, Optional<DelphiModelStatistics> modelStatistics) {
+            Optional<DelphiModelStatistics> modelStatistics) {
         long total = 0;
         long processed = 0;
-        long dropped = discardedPositives;
+        long dropped = 0;
         long falseNegatives = 0;
 
         for (SearchStats ss : serverStats.values()) {

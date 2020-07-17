@@ -45,6 +45,8 @@ import edu.cmu.cs.delphi.api.DelphiObject;
 import edu.cmu.cs.delphi.api.InferResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import java.awt.Color;
+import java.util.Optional;
 import one.util.streamex.EntryStream;
 
 public final class FromDelphi {
@@ -52,16 +54,23 @@ public final class FromDelphi {
     private FromDelphi() {
     }
 
-    public static SearchResult convert(InferResult value, String hostname) {
+    public static SearchResult convert(InferResult value, String hostname, boolean colorByModelVersion) {
+        int modelVersion = value.getModelVersion();
+        // Adding 1.5 to model version because otherwise the border is red which can
+        // get confused with the ground truth borders
+
         return new SearchResult(
                 ObjectId.of(value.getObjectId(), hostname, hostname),
-                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
+                colorByModelVersion
+                        ? Optional.of(Color.getHSBColor((float) ((0.1 * modelVersion + 1.5) % 1), 1, 1))
+                        : Optional.empty());
     }
 
     public static SearchResult convert(DelphiObject value, String hostname) {
         return new SearchResult(
                 ObjectId.of(value.getObjectId(), hostname, hostname),
-                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
+                Optional.empty());
     }
-
 }

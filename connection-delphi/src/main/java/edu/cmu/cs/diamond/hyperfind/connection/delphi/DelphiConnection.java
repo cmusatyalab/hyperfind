@@ -45,9 +45,10 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
-import edu.cmu.cs.diamond.hyperfind.connection.direct.FromDiamond;
+import edu.cmu.cs.diamond.hyperfind.connection.diamond.FromDiamond;
 import edu.cmu.cs.diamond.hyperfind.grpc.Channels;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
@@ -125,9 +126,11 @@ public final class DelphiConnection implements Connection {
                     null,
                     null,
                     false,
+                    Optional.empty(),
                     filters,
                     cookieMap,
                     -1,
+                    false,
                     resultExecutor,
                     channelBuilder);
         } catch (IOException e) {
@@ -167,7 +170,8 @@ public final class DelphiConnection implements Connection {
     }
 
     @Override
-    public void updateCookies(Optional<String> proxyIp) {
+    public void openConfigPanel(SearchListenable _searchListenable) {
+
     }
 
     private static List<File> splitDirs(String paths) {

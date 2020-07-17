@@ -43,7 +43,7 @@ package edu.cmu.cs.diamond.hyperfind.collaboration.service;
 import edu.cmu.cs.diamond.hyperfind.collaboration.service.config.CollaborationServiceConfig;
 import edu.cmu.cs.diamond.hyperfind.collaboration.service.config.ServerSslConfig;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
-import edu.cmu.cs.diamond.hyperfind.connection.direct.DirectConnection;
+import edu.cmu.cs.diamond.hyperfind.connection.diamond.DiamondConnection;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Environment;
 import java.io.File;
@@ -59,7 +59,7 @@ public final class CollaborationService extends Application<CollaborationService
 
         config.ssl().ifPresent(s -> configureSslContext(serverBuilder, s));
 
-        Connection connection = new DirectConnection(config.bundleDirs(), config.filterDirs());
+        Connection connection = new DiamondConnection(config.bundleDirs(), config.filterDirs());
         serverBuilder.addService(new CollaborationResource(connection));
 
         environment.lifecycle().manage(new ManagedGrpcServer(serverBuilder.build()));

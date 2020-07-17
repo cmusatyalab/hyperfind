@@ -66,10 +66,10 @@ public class StatisticsBar extends JProgressBar {
                 Integer.MAX_VALUE : (int) searched);
     }
 
-    public void update(Map<String, SearchStats> serverStats, long discardedPositives) {
+    public void update(Map<String, SearchStats> serverStats) {
         long total = 0;
         long processed = 0;
-        long dropped = discardedPositives;
+        long dropped = 0;
         for (SearchStats ss : serverStats.values()) {
             total += ss.totalObjects();
             processed += ss.processedObjects();

@@ -38,7 +38,7 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.direct;
+package edu.cmu.cs.diamond.hyperfind.connection.diamond;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;

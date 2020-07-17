@@ -40,15 +40,13 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultType;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
@@ -72,12 +70,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -95,8 +88,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import javax.imageio.ImageIO;
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
@@ -140,9 +131,7 @@ public class ThumbnailBox extends JPanel {
 
     private final StatisticsBar stats;
     private final StatisticsArea statsArea;
-    private final JButton stopButton;
-    private final JButton startButton;
-    private final JButton retrainButton;
+    private final SearchListener searchListener;
     private final JButton moreResultsButton;
     private final JLabel timeLabel;
     private final JPopupMenu popupMenu;
@@ -162,10 +151,6 @@ public class ThumbnailBox extends JPanel {
 
     private long sampledTPCount = 0;
     private long sampledFNCount = 0;
-    private long discardedPositivesCount = 0;
-    private boolean proxyFlag;
-    private boolean downloadResults;
-    private boolean colorByModelVersion;
 
     private long startTime;
     private Timer timer;
@@ -174,19 +159,17 @@ public class ThumbnailBox extends JPanel {
     private List<HyperFindSearchMonitor> searchMonitors;
 
     /**
-     * @param stopButton
-     * @param startButton
-     * @param retrainButton
+     * @param searchListener
      * @param stats            Stats bar. Event handler will be set here.
      * @param statsArea        Stats TextArea. Event handler will be set here.
      * @param resultsPerScreen The amount of "Get next"
      */
     public ThumbnailBox(
-            JButton stopButton, JButton startButton, JButton retrainButton, StatisticsBar stats,
-            StatisticsArea statsArea, int resultsPerScreen) {
-        this.stopButton = stopButton;
-        this.startButton = startButton;
-        this.retrainButton = retrainButton;
+            SearchListener searchListener,
+            StatisticsBar stats,
+            StatisticsArea statsArea,
+            int resultsPerScreen) {
+        this.searchListener = searchListener;
         this.stats = stats;
         this.statsArea = statsArea;
         this.resultLists = new ArrayList<>();
@@ -249,12 +232,6 @@ public class ThumbnailBox extends JPanel {
         setTimerListener();
 
         setPopUpMenu();
-    }
-
-    public void setConfig(Boolean flag, boolean downloadResults, boolean colorByModelVersion) {
-        this.proxyFlag = flag;
-        this.downloadResults = downloadResults;
-        this.colorByModelVersion = colorByModelVersion;
     }
 
     //Scroll the resultPane to bottom if no item selected
@@ -363,11 +340,9 @@ public class ThumbnailBox extends JPanel {
                         // If item present in the Map then delete entry
                         feedbackItems.remove(icon.getName());
                     } else {
-                        if ((fv.isPresent() && fv.get().length != 0) || downloadResults) {
-                            feedbackItems.put(
-                                    icon.getName(),
-                                    FeedbackObject.of(r.getId(), cmd.getValue(), fv.orElse(new byte[0])));
-                        }
+                        feedbackItems.put(
+                                icon.getName(),
+                                FeedbackObject.of(r.getId(), cmd.getValue(), fv.orElse(new byte[0])));
                     }
 
                     labelsToSend.put(r.getId(), cmd);
@@ -447,11 +422,8 @@ public class ThumbnailBox extends JPanel {
         pauseState = true;
         sampledTPCount = 0;
         sampledFNCount = 0;
-        discardedPositivesCount = 0;
         modelStats.set(null);
-        startButton.setEnabled(true);
-        retrainButton.setEnabled(false);
-        stopButton.setEnabled(false);
+        searchListener.searchStopped();
         moreResultsButton.setVisible(false);
     }
 
@@ -512,24 +484,16 @@ public class ThumbnailBox extends JPanel {
     }
 
     // called on AWT thread
-    public void start(
-            Search s, ActivePredicateSet activePredicateSet, List<HyperFindSearchMonitor> monitors,
-            Optional<Path> exportDir) {
+    public void start(Search s, ActivePredicateSet activePredicateSet, List<HyperFindSearchMonitor> monitors) {
         stats.setDone();
         statsArea.setDone();
         search = s;
         searchMonitors = monitors;
-        startButton.setEnabled(false);
-        stopButton.setEnabled(true);
-
-        if (proxyFlag) {
-            retrainButton.setEnabled(true);
-        }
+        searchListener.searchStarted(s, this::retrainSearch);
 
         pauseState = false;
         sampledTPCount = 0;
         sampledFNCount = 0;
-        discardedPositivesCount = 0;
         modelStats.set(null);
 
         startTime = System.nanoTime();
@@ -582,81 +546,12 @@ public class ThumbnailBox extends JPanel {
                             SearchResult result = resultOpt.get();
 
                             Optional<byte[]> modelExport = result.getBytes("_delphi.model_export");
-                            if (exportDir.isPresent() && modelExport.isPresent()) {
+                            if (search.getExportDir().isPresent() && modelExport.isPresent()) {
                                 int version = result.getInt("_delphi.model_export_version.int").getAsInt();
                                 String filename = String.format("model-%d", version);
-                                log.info("Exporting model {}", exportDir.get().resolve(filename));
-                                Files.write(exportDir.get().resolve(filename), modelExport.get());
+                                log.info("Exporting model {}", search.getExportDir().get().resolve(filename));
+                                Files.write( search.getExportDir().get().resolve(filename), modelExport.get());
                                 log.info("Export finished");
-                            }
-
-                            Optional<byte[]> systemExamples = result.getBytes("_delphi.system_examples");
-                            if (systemExamples.isPresent()) {
-                                Map<String, BufferedImage> images = new HashMap<>();
-                                Map<String, Map<String, ?>> metadata = new HashMap<>();
-
-                                try (ZipInputStream zi = new ZipInputStream(new ByteArrayInputStream(systemExamples.get()))) {
-                                    ZipEntry zipEntry;
-                                    while ((zipEntry = zi.getNextEntry()) != null) {
-                                        String[] splits = zipEntry.getName().split("/");
-                                        String filename = splits[splits.length - 1];
-                                        if (filename.endsWith(".jpg")) {
-                                            images.put(filename.substring(0, filename.length() - 4), ImageIO.read(zi));
-                                        } else {
-                                            InputStreamReader reader =
-                                                    new InputStreamReader(zi, StandardCharsets.UTF_8);
-                                            metadata.put(
-                                                    filename,
-                                                    new Gson().fromJson(
-                                                            reader, new TypeToken<Map<String, ?>>() {}.getType()));
-                                        }
-                                    }
-                                }
-
-                                publish(metadata.entrySet().stream()
-                                        .map(e -> {
-                                            Map<String, ?> imageMetadata = e.getValue();
-                                            String objectId = (String) imageMetadata.get("object_id");
-                                            double score =
-                                                    ((Number) imageMetadata.get("score")).doubleValue();
-                                            ObjectId systemId = ObjectId.of(
-                                                    objectId,
-                                                    result.getId().deviceName(),
-                                                    result.getId().hostname());
-                                            SearchResult systemResult = new SearchResult(systemId, ImmutableMap.of());
-
-                                            BufferedImage image = images.get(e.getKey());
-                                            if (colorByModelVersion) {
-                                                int modelVersion =
-                                                        ((Number) imageMetadata.get("model_version")).intValue();
-                                                drawBorder(
-                                                        image.createGraphics(),
-                                                        Color.getHSBColor(
-                                                                (float) ((0.1 * modelVersion + 1.5) % 1),
-                                                                1,
-                                                                1),
-                                                        image.getWidth(),
-                                                        image.getHeight(),
-                                                        10);
-                                            }
-
-                                            return new ResultIcon(
-                                                    new HyperFindResult(activePredicateSet, systemResult),
-                                                    objectId,
-                                                    new ImageIcon(image),
-                                                    ResultIconSetting.ICON_ONLY,
-                                                    1,
-                                                    -1
-                                            );
-                                        })
-                                        .toArray(ResultIcon[]::new));
-                            }
-
-                            // This is a 'positive' that we're only receiving to get the system examples
-                            // Don't show the image and adjust statistics to account for this false 'positive'
-                            if (result.getBytes("_delphi.should_discard.int").isPresent()) {
-                                discardedPositivesCount++;
-                                continue;
                             }
 
                             OptionalInt testExamples = result.getInt("_delphi.test_examples.int");
@@ -737,12 +632,10 @@ public class ThumbnailBox extends JPanel {
                                 } else {
                                     sampledTPCount += 1;
                                 }
-                            } else if (colorByModelVersion && modelVersion.isPresent()) {
-                                // Adding 1.5 to model version because otherwise the border is red which can
-                                // get confused with the ground truth borders
+                            } else if (result.getBorderColor().isPresent()) {
                                 drawBorder(
                                         g,
-                                        Color.getHSBColor((float) ((0.1 * modelVersion.getAsInt() + 1.5) % 1), 1, 1),
+                                        result.getBorderColor().get(),
                                         origW,
                                         origH,
                                         80);
@@ -797,9 +690,7 @@ public class ThumbnailBox extends JPanel {
                                     statsTimerFuture.cancel(true);
                                 }
 
-                                startButton.setEnabled(true);
-                                retrainButton.setEnabled(false);
-                                stopButton.setEnabled(false);
+                                searchListener.searchStopped();
                                 moreResultsButton.setVisible(false);
                                 stats.setDone();
                             }
@@ -886,13 +777,12 @@ public class ThumbnailBox extends JPanel {
             if (hasStats) {
                 SwingUtilities.invokeLater(() -> {
                     long passed = resultLists.get(0).getModel().getSize();
-                    stats.update(serverStats, discardedPositivesCount);
+                    stats.update(serverStats);
                     statsArea.update(
                             serverStats,
                             passed,
                             sampledTPCount,
                             sampledFNCount,
-                            discardedPositivesCount,
                             Optional.ofNullable(modelStats.get()));
                 });
             } else {

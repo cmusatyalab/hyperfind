@@ -62,6 +62,7 @@ import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.proto.FromProto;
 import edu.cmu.cs.diamond.hyperfind.proto.ToProto;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -193,6 +194,11 @@ public final class CollaboratorSearch implements Search {
         UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
         service.closeSearch(searchId, observer);
         observer.waitForFinish();
+    }
+
+    @Override
+    public Optional<Path> getExportDir() {
+        return Optional.empty();
     }
 
     private void queueResult(Optional<SearchResult> result) {

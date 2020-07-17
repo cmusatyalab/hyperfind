@@ -41,7 +41,6 @@
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -59,7 +58,9 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -76,6 +77,7 @@ public final class DelphiSearch implements Search {
     private final Map<String, LearningModuleServiceStub> learningModules;
 
     private final SearchId searchId;
+    private final Optional<Path> exportDir;
     private final ListeningExecutorService resultExecutor;
 
     private final LinkedBlockingQueue<Optional<SearchResult>> results = new LinkedBlockingQueue<>(1);
@@ -86,9 +88,12 @@ public final class DelphiSearch implements Search {
     public DelphiSearch(
             Map<String, LearningModuleServiceStub> learningModules,
             SearchId searchId,
-            ExecutorService resultExecutor) {
+            Optional<Path> exportDir,
+            ExecutorService resultExecutor,
+            boolean colorByModelVersion) {
         this.learningModules = learningModules;
         this.searchId = searchId;
+        this.exportDir = exportDir;
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
 
         learningModules.forEach((host, learningModule) -> {
@@ -96,7 +101,7 @@ public final class DelphiSearch implements Search {
                 BlockingStreamObserver<InferResult> observer = new BlockingStreamObserver<>() {
                     @Override
                     public void onNext(InferResult value) {
-                        queueResult(Optional.of(FromDelphi.convert(value, host)));
+                        queueResult(Optional.of(FromDelphi.convert(value, host, colorByModelVersion)));
                     }
                 };
                 learningModule.getResults(searchId, observer);
@@ -151,9 +156,9 @@ public final class DelphiSearch implements Search {
 
     @Override
     public void labelExamples(Map<ObjectId, Integer> examples) {
-        Map<String, Map<String, String>> examplesByHost = Maps.newHashMap();
+        Map<String, Map<String, String>> examplesByHost = new HashMap<>();
         examples.forEach((objectId, label) -> {
-            examplesByHost.putIfAbsent(objectId.hostname(), Maps.newHashMap());
+            examplesByHost.putIfAbsent(objectId.hostname(), new HashMap<>());
             examplesByHost.get(objectId.hostname()).put(objectId.objectId(), Integer.toString(label));
         });
 
@@ -168,7 +173,7 @@ public final class DelphiSearch implements Search {
     }
 
     @Override
-    public void retrainFilter(Collection<FeedbackObject> objects) {
+    public void retrainFilter(Collection<FeedbackObject> _objects) {
         throw new UnsupportedOperationException();
     }
 
@@ -179,6 +184,11 @@ public final class DelphiSearch implements Search {
             learningModule.stopSearch(searchId, observer);
             observer.waitForFinish();
         });
+    }
+
+    @Override
+    public Optional<Path> getExportDir() {
+        return exportDir;
     }
 
     private void queueResult(Optional<SearchResult> result) {

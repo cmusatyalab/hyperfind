@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
+import java.awt.Color;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -57,10 +58,12 @@ public final class SearchResult {
 
     private final ObjectId id;
     private final Map<String, byte[]> attributes;
+    private final Optional<Color> borderColor;
 
-    public SearchResult(ObjectId id, Map<String, byte[]> attributes) {
+    public SearchResult(ObjectId id, Map<String, byte[]> attributes, Optional<Color> borderColor) {
         this.id = id;
         this.attributes = attributes;
+        this.borderColor = borderColor;
     }
 
     public ObjectId getId() {
@@ -125,5 +128,9 @@ public final class SearchResult {
                 return new String(value, 0, value.length - 1, StandardCharsets.UTF_8);
             }
         });
+    }
+
+    public Optional<Color> getBorderColor() {
+        return borderColor;
     }
 }

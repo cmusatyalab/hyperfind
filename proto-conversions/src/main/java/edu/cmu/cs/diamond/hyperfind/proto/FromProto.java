@@ -77,7 +77,8 @@ public final class FromProto {
     public static SearchResult convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchResult value) {
         return new SearchResult(
                 convert(value.getId()),
-                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap());
+                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
+                Optional.empty());
     }
 
     public static Filter convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.Filter value) {
