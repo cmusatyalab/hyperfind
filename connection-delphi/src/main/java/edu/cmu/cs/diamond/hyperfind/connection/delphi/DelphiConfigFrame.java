@@ -40,11 +40,18 @@
 
 // Resource: https://www.codejava.net/coding/reading-and-writing-configuration-for-java-application-using-properties-class
 
-package edu.cmu.cs.diamond.hyperfind.connection.diamond;
+package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.util.JsonFormat;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
+import edu.cmu.cs.diamond.hyperfind.connection.delphi.ImmutableDelphiConfiguration.Builder;
+import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.MessageListSerializer;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -53,29 +60,39 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-public class DiamondConfiguration extends JFrame implements SearchListener {
+public class DelphiConfigFrame extends JFrame implements SearchListener {
 
-    private final JCheckBox checkProxy = new JCheckBox("Use proxy IP: ");
-    private final JTextField textProxy = new JTextField();
+    private final JTextArea trainArea = createTextField();
+    private final JTextArea retrainArea = createTextField();
+    private final JTextArea selectorArea = createTextField();
 
     private final JCheckBox checkDownload = new JCheckBox("Download results to directory: ");
     private final JTextField textDownload = new JTextField();
 
-    private final JButton buttonRetrain = new JButton("Retrain Proxy");
+    private final JTextField textPort = new JTextField();
 
-    public DiamondConfiguration(
+    private final JCheckBox checkSsl = new JCheckBox("Use SSL");
+    private final JTextField textTruststore = new JTextField();
+
+    private final JCheckBox checkOnlyUseBetterModels = new JCheckBox("Only Deploy Better Models");
+    private final JCheckBox checkColorByModelVersion = new JCheckBox("Color by Model Version");
+
+    private final JButton buttonDownload = new JButton("Download Model");
+
+    public DelphiConfigFrame(
             SearchListenable searchListenable,
-            Properties configProps,
-            BiConsumer<Optional<String>, Optional<String>> saveCallback) {
+            DelphiConfiguration config,
+            Consumer<DelphiConfiguration> saveCallback) {
         searchListenable.addListener(this);
+
         setLayout(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
@@ -83,18 +100,35 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         constraints.weightx = 0;
         constraints.insets = new Insets(10, 10, 5, 10);
         constraints.anchor = GridBagConstraints.WEST;
-        add(checkProxy, constraints);
 
+        add(new JLabel("Train Strategy"), constraints);
         constraints.gridx += 1;
         constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(textProxy, constraints);
+        add(trainArea, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(new JLabel("Retrain Policy"), constraints);
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        add(retrainArea, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(new JLabel("Result Selector"), constraints);
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        add(selectorArea, constraints);
 
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
         add(checkDownload, constraints);
-
         constraints.gridx = 1;
         constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
@@ -103,8 +137,41 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
-        buttonRetrain.setEnabled(false);
-        add(buttonRetrain, constraints);
+        add(new JLabel("Delphi Port"), constraints);
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        add(textPort, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(checkSsl, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(new JLabel("Truststore Path"), constraints);
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        add(textTruststore, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(checkOnlyUseBetterModels, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(checkColorByModelVersion, constraints);
+
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        buttonDownload.setEnabled(false);
+        add(buttonDownload, constraints);
 
         constraints.gridx = 1;
         constraints.weightx = 1;
@@ -116,24 +183,28 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         buttonSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent _arg) {
-                saveCallback.accept(
-                        checkProxy.isSelected() ? Optional.of(textProxy.getText()) : Optional.empty(),
-                        checkDownload.isSelected() ? Optional.of(textDownload.getText()) : Optional.empty());
+                Builder builder = ImmutableDelphiConfiguration.builder();
+                saveCallback.accept(builder.build());
             }
         });
 
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(new MessageListSerializer());
+
+        trainArea.setText(print(config.trainStrategy()));
+
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         pack();
-        setSize(500, 130);
+        setSize(500, 600);
         setLocationRelativeTo(null);
         setVisible(true);
 
-        checkProxy.setSelected(Boolean.parseBoolean(configProps.getProperty("useProxy")));
+        checkProxy.setSelected(Boolean.parseBoolean(config.getProperty("useProxy")));
         textProxy.setEnabled(checkProxy.isSelected());
-        textProxy.setText(configProps.getProperty("proxyIP"));
-        checkDownload.setSelected(Boolean.parseBoolean(configProps.getProperty("downloadResults")));
+        textProxy.setText(config.getProperty("proxyIP", ""));
+        checkDownload.setSelected(Boolean.parseBoolean(config.getProperty("downloadResults")));
         textDownload.setEnabled(checkDownload.isSelected());
-        textDownload.setText(configProps.getProperty("downloadDirectory"));
+        textDownload.setText(config.getProperty("downloadDirectory"));
 
         checkProxy.addItemListener(_ignore -> textProxy.setEnabled(checkProxy.isSelected()));
         checkDownload.addItemListener(_ignore -> textDownload.setEnabled(checkDownload.isSelected()));
@@ -141,7 +212,7 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent _event) {
-                searchListenable.removeListener(DiamondConfiguration.this);
+                searchListenable.removeListener(DelphiConfigFrame.this);
             }
         });
     }
@@ -154,10 +225,10 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         textDownload.setEnabled(false);
 
         // Remove old listeners
-        Arrays.stream(buttonRetrain.getActionListeners()).forEach(buttonRetrain::removeActionListener);
-        buttonRetrain.addActionListener(_ignore -> retrainCallback.run());
+        Arrays.stream(buttonDownload.getActionListeners()).forEach(buttonDownload::removeActionListener);
+        buttonDownload.addActionListener(_ignore -> retrainCallback.run());
 
-        buttonRetrain.setEnabled(true);
+        buttonDownload.setEnabled(true);
     }
 
     @Override
@@ -166,6 +237,24 @@ public class DiamondConfiguration extends JFrame implements SearchListener {
         textProxy.setEnabled(true);
         checkDownload.setEnabled(true);
         textDownload.setEnabled(true);
-        buttonRetrain.setEnabled(false);
+        buttonDownload.setEnabled(false);
+    }
+
+    private static JTextArea createTextField() {
+        JTextArea textArea = new JTextArea();
+        textArea.setColumns(20);
+        textArea.setLineWrap(true);
+        textArea.setRows(5);
+        textArea.setWrapStyleWord(true);
+        textArea.setEditable(false);
+        return textArea;
+    }
+
+    private static String print(MessageOrBuilder message) {
+        try {
+            return JsonFormat.printer().print(message);
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException("Failed to print message", e);
+        }
     }
 }

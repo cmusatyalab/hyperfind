@@ -124,7 +124,7 @@ public final class DiamondConnection implements Connection {
 
     @Override
     public void openConfigPanel(SearchListenable searchListenable) {
-        new DiamondConfiguration(searchListenable, configProps, this::saveProperties);
+        new DiamondConfigFrame(searchListenable, configProps, this::saveProperties);
     }
 
     private static List<File> splitDirs(String paths) {
@@ -135,7 +135,6 @@ public final class DiamondConnection implements Connection {
         Properties defaultProps = new Properties();
         // sets default properties
         defaultProps.setProperty("useProxy", "false");
-        defaultProps.setProperty("proxyIP", "");
         defaultProps.setProperty("downloadResults", "false");
         defaultProps.setProperty("downloadDirectory", System.getProperty("user.home"));
 

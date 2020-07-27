@@ -55,12 +55,9 @@ import edu.cmu.cs.delphi.api.DiamondDataset;
 import edu.cmu.cs.delphi.api.GetObjectsRequest;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
-import edu.cmu.cs.delphi.api.ModelConditionConfig;
-import edu.cmu.cs.delphi.api.RetrainPolicyConfig;
 import edu.cmu.cs.delphi.api.SearchConfig;
 import edu.cmu.cs.delphi.api.SearchId;
 import edu.cmu.cs.delphi.api.SearchRequest;
-import edu.cmu.cs.delphi.api.SelectorConfig;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -68,67 +65,45 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
+import edu.cmu.cs.diamond.hyperfind.grpc.Channels;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.opendiamond.Cookie;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import io.grpc.Channel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class DelphiSearchFactory implements SearchFactory {
 
-    private final List<ModelConditionConfig> trainStrategy;
-    private final RetrainPolicyConfig retrainPolicy;
-    private final SelectorConfig selector;
-    private final boolean onlyUseBetterModels;
-    private final Optional<Path> downloadPathRoot;
-
+    private final DelphiConfiguration config;
     private final List<edu.cmu.cs.delphi.api.Filter> filters;
-
     private final CookieMap cookieMap;
-    private final int delphiPort;
-    private final boolean colorByModelVersion;
 
     private final ListeningExecutorService resultExecutor;
     private final Map<String, LearningModuleServiceStub> learningModules;
 
     public DelphiSearchFactory(
-            List<ModelConditionConfig> trainStrategy,
-            RetrainPolicyConfig retrainPolicy,
-            SelectorConfig selector,
-            boolean onlyUseBetterModels,
-            Optional<Path> downloadPathRoot,
+            DelphiConfiguration config,
             List<Filter> filters,
             CookieMap cookieMap,
-            int delphiPort,
-            boolean colorByModelVersion,
-            ExecutorService resultExecutor,
-            Function<String, Channel> channelBuilder) {
-        this.trainStrategy = trainStrategy;
-        this.retrainPolicy = retrainPolicy;
-        this.selector = selector;
-        this.onlyUseBetterModels = onlyUseBetterModels;
-        this.downloadPathRoot = downloadPathRoot;
+            ExecutorService resultExecutor) {
+        this.config = config;
         this.filters = filters.stream().map(ToDelphi::convert).collect(Collectors.toList());
         this.cookieMap = cookieMap;
-        this.delphiPort = delphiPort;
-        this.colorByModelVersion = colorByModelVersion;
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
         this.learningModules = Arrays.stream(this.cookieMap.getHosts()).collect(Collectors.toMap(
                 h -> h,
-                h -> LearningModuleServiceGrpc.newStub(channelBuilder.apply(h))));
+                h -> LearningModuleServiceGrpc.newStub(createChannel(config, h))));
     }
 
     @Override
@@ -136,7 +111,7 @@ public final class DelphiSearchFactory implements SearchFactory {
         SearchId searchId = SearchId.newBuilder().setValue(UUID.randomUUID().toString()).build();
         String[] hosts = cookieMap.getHosts();
         List<String> nodes = Arrays.stream(hosts)
-                .map(h -> String.format("%s:%d", h, delphiPort))
+                .map(h -> String.format("%s:%d", h, config.port()))
                 .collect(Collectors.toList());
 
         for (int i = 0; i < hosts.length; i++) {
@@ -148,18 +123,21 @@ public final class DelphiSearchFactory implements SearchFactory {
                             .setSearchId(searchId)
                             .addAllNodes(nodes)
                             .setNodeIndex(i)
-                            .addAllTrainStrategy(trainStrategy)
-                            .setRetrainPolicy(retrainPolicy)
-                            .setOnlyUseBetterModels(onlyUseBetterModels)
+                            .addAllTrainStrategy(config.trainStrategy())
+                            .setRetrainPolicy(config.retrainPolicy())
+                            .setOnlyUseBetterModels(config.onlyUseBetterModels())
                             .setDataset(getDataset(hosts[i], attributes))
-                            .setSelector(selector)
+                            .setSelector(config.selector())
                             .build())
                     .build());
             observer.waitForFinish();
         }
 
-        return new DelphiSearch(learningModules, searchId, downloadPathRoot.map(p -> p.resolve(searchId.getValue())),
-                resultExecutor, colorByModelVersion);
+        return new DelphiSearch(learningModules,
+                searchId,
+                config.downloadPathRoot().map(p -> p.resolve(searchId.getValue())),
+                resultExecutor,
+                config.colorByModelVersion());
     }
 
     @Override
@@ -217,5 +195,14 @@ public final class DelphiSearchFactory implements SearchFactory {
                         .addAllAttributes(attributes)
                         .build())
                 .build();
+    }
+
+    private static Channel createChannel(DelphiConfiguration config, String host) {
+        return config.useSsl()
+                ? Channels.createSslChannel(host, config.port(), config.trustStorePath())
+                : ManagedChannelBuilder.forAddress(host, config.port())
+                        .maxInboundMessageSize(Integer.MAX_VALUE)
+                        .usePlaintext()
+                        .build();
     }
 }

@@ -50,6 +50,7 @@ import com.google.protobuf.Empty;
 import edu.cmu.cs.delphi.api.AddLabeledExampleIdsRequest;
 import edu.cmu.cs.delphi.api.InferResult;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
+import edu.cmu.cs.delphi.api.ModelArchive;
 import edu.cmu.cs.delphi.api.SearchId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -58,6 +59,8 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -189,6 +192,25 @@ public final class DelphiSearch implements Search {
     @Override
     public Optional<Path> getExportDir() {
         return exportDir;
+    }
+
+    public void downloadModel() {
+        LearningModuleServiceStub learningModule =
+                learningModules.get(learningModules.keySet().stream().sorted().findFirst().get());
+
+        UnaryStreamObserver<ModelArchive> observer = new UnaryStreamObserver<>();
+        learningModule.exportModel(searchId, observer);
+        ModelArchive archive = observer.value();
+        Path modelDir =
+                exportDir.orElseThrow(() -> new IllegalArgumentException("Export dir is disabled")).resolve("models");
+        modelDir.toFile().mkdirs();
+
+        Path modelPath = modelDir.resolve(String.format("model-%d.zip", archive.getVersion()));
+        try {
+            Files.write(modelPath, archive.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write model archive to path: " + modelPath);
+        }
     }
 
     private void queueResult(Optional<SearchResult> result) {

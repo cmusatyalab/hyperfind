@@ -40,6 +40,8 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableList;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
@@ -49,90 +51,41 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.diamond.FromDiamond;
-import edu.cmu.cs.diamond.hyperfind.grpc.Channels;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class DelphiConnection implements Connection {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+
+
+    private static final File CONFIG_FILE =
+            Paths.get(System.getProperty("user.home")).resolve(".diamond/hyperfind-delphi.properties").toFile();
+
     private final BundleFactory bundleFactory;
-    private final Function<String, Channel> channelBuilder;
     private final ExecutorService resultExecutor;
 
-    public DelphiConnection(String bundleDirs, String filterDirs) {
-        this(bundleDirs, filterDirs, OptionalInt.empty(), false, Optional.empty());
-    }
+    private DelphiConfiguration config = loadConfig();
 
-    public DelphiConnection(String bundleDirs, String filterDirs, String port) {
-        this(bundleDirs, filterDirs, OptionalInt.of(Integer.parseInt(port)), false, Optional.empty());
-    }
-
-    public DelphiConnection(String bundleDirs, String filterDirs, String port, String useSsl) {
-        this(bundleDirs, filterDirs, OptionalInt.of(Integer.parseInt(port)), Boolean.parseBoolean(useSsl),
-                Optional.empty());
-    }
-
-    public DelphiConnection(String bundleDirs, String filterDirs, String port, String useSsl, String trustStorePath) {
-        this(bundleDirs, filterDirs, OptionalInt.of(Integer.parseInt(port)), Boolean.parseBoolean(useSsl),
-                Optional.of(trustStorePath));
-    }
-
-    private DelphiConnection(
-            String bundleDirs,
-            String filterDirs,
-            OptionalInt port,
-            boolean useSsl,
-            Optional<String> trustStorePath) {
+    private DelphiConnection(String bundleDirs, String filterDirs) {
         this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
-        this.channelBuilder = useSsl
-                ? host -> Channels.createSslChannel(host, port.orElse(6177), trustStorePath)
-                : host -> ManagedChannelBuilder.forAddress(host, port.orElse(6177))
-                        .maxInboundMessageSize(Integer.MAX_VALUE)
-                        .usePlaintext()
-                        .build();
-
         this.resultExecutor = Executors.newCachedThreadPool();
     }
-
-    // List<ModelConditionConfig> trainStrategy,
-    // RetrainPolicyConfig retrainPolicy,
-    // SelectorConfig selector,
-    // boolean onlyUseBetterModels,
-    // List<Filter> filters,
-    // CookieMap cookieMap,
-    // int delphiPort,
-    // ExecutorService resultExecutor,
-    // Function<String, Channel> channelBuilder
 
     @Override
     public SearchFactory getSearchFactory(List<Filter> filters) {
         try {
             CookieMap cookieMap = CookieMap.createDefaultCookieMap();
-            return new DelphiSearchFactory(
-                    null,
-                    null,
-                    null,
-                    false,
-                    Optional.empty(),
-                    filters,
-                    cookieMap,
-                    -1,
-                    false,
-                    resultExecutor,
-                    channelBuilder);
+            return new DelphiSearchFactory(config, filters, cookieMap, resultExecutor);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create cookie map", e);
         }
@@ -172,6 +125,18 @@ public final class DelphiConnection implements Connection {
     @Override
     public void openConfigPanel(SearchListenable _searchListenable) {
 
+    }
+
+    private DelphiConfiguration loadConfig() {
+        if (CONFIG_FILE.exists()) {
+            try {
+                return OBJECT_MAPPER.reader().readValue(CONFIG_FILE);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load properties file", e);
+            }
+        } else {
+            return ImmutableDelphiConfiguration.builder().build();
+        }
     }
 
     private static List<File> splitDirs(String paths) {
