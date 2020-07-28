@@ -52,13 +52,6 @@ import edu.cmu.cs.delphi.api.SVMConfig;
 import edu.cmu.cs.delphi.api.SVMMode;
 import edu.cmu.cs.delphi.api.SelectorConfig;
 import edu.cmu.cs.delphi.api.TopKSelectorConfig;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.MessageListSerializer;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.MessageSerializer;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.ModelConditionConfigListDeserializer;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.RetrainPolicyConfigDeserializer;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.SelectorConfigDeserializer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -66,10 +59,10 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableDelphiConfiguration.class)
 @JsonDeserialize(as = ImmutableDelphiConfiguration.class)
+@Value.Style(jdkOnly = true)
 public interface DelphiConfiguration {
 
-    @JsonSerialize(using = MessageListSerializer.class)
-    @JsonDeserialize(using = ModelConditionConfigListDeserializer.class)
+    @Value.Default
     default List<ModelConditionConfig> trainStrategy() {
         return ImmutableList.of(ModelConditionConfig.newBuilder()
                 .setExamplesPerLabel(ExamplesPerLabelConditionConfig.newBuilder()
@@ -86,8 +79,7 @@ public interface DelphiConfiguration {
                 .build());
     }
 
-    @JsonSerialize(using = MessageSerializer.class)
-    @JsonDeserialize(using = RetrainPolicyConfigDeserializer.class)
+    @Value.Default
     default RetrainPolicyConfig retrainPolicy() {
         return RetrainPolicyConfig.newBuilder()
                 .setPercentage(PercentageThresholdPolicyConfig.newBuilder()
@@ -96,8 +88,7 @@ public interface DelphiConfiguration {
                 .build();
     }
 
-    @JsonSerialize(using = MessageSerializer.class)
-    @JsonDeserialize(using = SelectorConfigDeserializer.class)
+    @Value.Default
     default SelectorConfig selector() {
         return SelectorConfig.newBuilder()
                 .setTopk(TopKSelectorConfig.newBuilder()
@@ -106,24 +97,34 @@ public interface DelphiConfiguration {
                 .build();
     }
 
-    default Optional<Path> downloadPathRoot() {
-        return Optional.of(Paths.get(System.getProperty("user.home")));
+    @Value.Default
+    default boolean shouldDownload() {
+        return true;
     }
 
+    @Value.Default
+    default String downloadPathRoot() {
+        return System.getProperty("user.home");
+    }
+
+    @Value.Default
     default int port() {
         return 6177;
     }
 
+    @Value.Default
     default boolean useSsl() {
         return false;
     }
 
-    Optional<String> trustStorePath();
+    Optional<String> truststorePath();
 
+    @Value.Default
     default boolean onlyUseBetterModels() {
         return false;
     }
 
+    @Value.Default
     default boolean colorByModelVersion() {
         return false;
     }

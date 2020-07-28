@@ -68,8 +68,10 @@ import java.util.stream.Collectors;
 
 public final class DiamondConnection implements Connection {
 
-    private static final File CONFIG_FILE =
-            Paths.get(System.getProperty("user.home")).resolve(".diamond/hyperfind-diamond.properties").toFile();
+    private static final File CONFIG_FILE = Paths.get(System.getProperty("user.home"))
+            .resolve(".diamond")
+            .resolve("hyperfind-diamond.properties")
+            .toFile();
 
     private final BundleFactory bundleFactory;
     private final ExecutorService downloadExecutor;

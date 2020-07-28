@@ -2,6 +2,7 @@ commons-io:commons-io=2.7
 com.google.code.gson:gson=2.8.6
 com.google.guava:guava=29.0-jre
 com.google.protobuf:*=3.12.2
+com.hubspot.jackson:jackson-datatype-protobuf=0.9.12
 com.sun.xml.bind:jaxb-core=2.3.0.1
 com.sun.xml.bind:jaxb-impl=2.3.1
 edu.cmu.cs.delphi:delphi-api=0.0.1-2-ge01924c

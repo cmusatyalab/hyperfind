@@ -4,8 +4,10 @@ dependencies {
 
     compile 'com.fasterxml.jackson.core:jackson-databind'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
     compile 'com.google.guava:guava'
     compile 'com.google.protobuf:protobuf-java-util'
+    compile 'com.hubspot.jackson:jackson-datatype-protobuf'
     compile 'one.util:streamex'
     compile 'org.slf4j:slf4j-api'
 

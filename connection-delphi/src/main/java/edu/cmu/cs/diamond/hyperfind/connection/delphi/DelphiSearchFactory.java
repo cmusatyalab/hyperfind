@@ -72,10 +72,12 @@ import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,9 +135,12 @@ public final class DelphiSearchFactory implements SearchFactory {
             observer.waitForFinish();
         }
 
-        return new DelphiSearch(learningModules,
+        return new DelphiSearch(
+                learningModules,
                 searchId,
-                config.downloadPathRoot().map(p -> p.resolve(searchId.getValue())),
+                config.shouldDownload()
+                        ? Optional.of(Paths.get(config.downloadPathRoot()).resolve(searchId.getValue()))
+                        : Optional.empty(),
                 resultExecutor,
                 config.colorByModelVersion());
     }
@@ -199,7 +204,7 @@ public final class DelphiSearchFactory implements SearchFactory {
 
     private static Channel createChannel(DelphiConfiguration config, String host) {
         return config.useSsl()
-                ? Channels.createSslChannel(host, config.port(), config.trustStorePath())
+                ? Channels.createSslChannel(host, config.port(), config.truststorePath())
                 : ManagedChannelBuilder.forAddress(host, config.port())
                         .maxInboundMessageSize(Integer.MAX_VALUE)
                         .usePlaintext()

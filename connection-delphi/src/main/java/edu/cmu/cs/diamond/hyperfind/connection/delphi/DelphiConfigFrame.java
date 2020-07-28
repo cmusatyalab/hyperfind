@@ -42,16 +42,15 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.MessageOrBuilder;
-import com.google.protobuf.util.JsonFormat;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.ImmutableDelphiConfiguration.Builder;
-import edu.cmu.cs.diamond.hyperfind.connection.delphi.jackson.MessageListSerializer;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -60,19 +59,27 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class DelphiConfigFrame extends JFrame implements SearchListener {
 
-    private final JTextArea trainArea = createTextField();
-    private final JTextArea retrainArea = createTextField();
-    private final JTextArea selectorArea = createTextField();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
+            .registerModule(new Jdk8Module())
+            .registerModule(new ProtobufModule());
+
+    private final JTextArea areaTrain = createTextField();
+    private final JTextArea areaRetrain = createTextField();
+    private final JTextArea areaSelector = createTextField();
 
     private final JCheckBox checkDownload = new JCheckBox("Download results to directory: ");
     private final JTextField textDownload = new JTextField();
@@ -101,30 +108,34 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         constraints.insets = new Insets(10, 10, 5, 10);
         constraints.anchor = GridBagConstraints.WEST;
 
+        constraints.weighty = 20;
         add(new JLabel("Train Strategy"), constraints);
         constraints.gridx += 1;
         constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(trainArea, constraints);
+        constraints.fill = GridBagConstraints.BOTH;
+        add(new JScrollPane(areaTrain), constraints);
 
+        constraints.weighty = 8;
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
         add(new JLabel("Retrain Policy"), constraints);
         constraints.gridx = 1;
         constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(retrainArea, constraints);
+        constraints.fill = GridBagConstraints.BOTH;
+        add(new JScrollPane(areaRetrain), constraints);
 
+        constraints.weighty = 8;
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
         add(new JLabel("Result Selector"), constraints);
         constraints.gridx = 1;
         constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(selectorArea, constraints);
+        constraints.fill = GridBagConstraints.BOTH;
+        add(new JScrollPane(areaSelector), constraints);
 
+        constraints.weighty = 1;
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
@@ -183,31 +194,47 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         buttonSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent _arg) {
-                Builder builder = ImmutableDelphiConfiguration.builder();
+                ImmutableDelphiConfiguration.Builder builder = ImmutableDelphiConfiguration.builder();
+                builder.addAllTrainStrategy(fromString(areaTrain.getText(), new TypeReference<>() {}));
+                builder.retrainPolicy(fromString(areaRetrain.getText(), new TypeReference<>() {}));
+                builder.selector(fromString(areaSelector.getText(), new TypeReference<>() {}));
+                builder.shouldDownload(checkDownload.isSelected());
+                builder.downloadPathRoot(textDownload.getText());
+                builder.port(fromString(textPort.getText(), new TypeReference<>() {}));
+                builder.useSsl(checkSsl.isSelected());
+                builder.truststorePath(checkSsl.isSelected()
+                        ? Optional.of(textTruststore.getText()) : Optional.empty());
+                builder.onlyUseBetterModels(checkOnlyUseBetterModels.isSelected());
+                builder.colorByModelVersion(checkColorByModelVersion.isSelected());
+
                 saveCallback.accept(builder.build());
             }
         });
 
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(new MessageListSerializer());
+        areaTrain.setText(toString(config.trainStrategy()));
+        areaRetrain.setText(toString(config.retrainPolicy()));
+        areaSelector.setText(toString(config.selector()));
 
-        trainArea.setText(print(config.trainStrategy()));
+        checkDownload.setSelected(config.shouldDownload());
+        textDownload.setEnabled(config.shouldDownload());
+        textDownload.setText(config.downloadPathRoot());
+        checkDownload.addItemListener(_ignore -> textDownload.setEnabled(checkDownload.isSelected()));
+
+        textPort.setText(toString(config.port()));
+
+        checkSsl.setSelected(config.useSsl());
+        textTruststore.setEnabled(config.useSsl());
+        config.truststorePath().ifPresent(textTruststore::setText);
+        checkSsl.addItemListener(_ignore -> textTruststore.setEnabled(checkSsl.isSelected()));
+
+        checkOnlyUseBetterModels.setSelected(config.onlyUseBetterModels());
+        checkColorByModelVersion.setSelected(config.colorByModelVersion());
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         pack();
-        setSize(500, 600);
+        setSize(500, 650);
         setLocationRelativeTo(null);
         setVisible(true);
-
-        checkProxy.setSelected(Boolean.parseBoolean(config.getProperty("useProxy")));
-        textProxy.setEnabled(checkProxy.isSelected());
-        textProxy.setText(config.getProperty("proxyIP", ""));
-        checkDownload.setSelected(Boolean.parseBoolean(config.getProperty("downloadResults")));
-        textDownload.setEnabled(checkDownload.isSelected());
-        textDownload.setText(config.getProperty("downloadDirectory"));
-
-        checkProxy.addItemListener(_ignore -> textProxy.setEnabled(checkProxy.isSelected()));
-        checkDownload.addItemListener(_ignore -> textDownload.setEnabled(checkDownload.isSelected()));
 
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -218,26 +245,42 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
     }
 
     @Override
-    public void searchStarted(Search _search, Runnable retrainCallback) {
-        checkProxy.setEnabled(false);
-        textProxy.setEnabled(false);
-        checkDownload.setEnabled(false);
-        textDownload.setEnabled(false);
+    public void searchStarted(Search search, Runnable _retrainCallback) {
+        setConfigEnabled(false);
 
         // Remove old listeners
         Arrays.stream(buttonDownload.getActionListeners()).forEach(buttonDownload::removeActionListener);
-        buttonDownload.addActionListener(_ignore -> retrainCallback.run());
+        buttonDownload.addActionListener(_ignore -> ((DelphiSearch) search).downloadModel());
 
         buttonDownload.setEnabled(true);
     }
 
     @Override
     public void searchStopped() {
-        checkProxy.setEnabled(true);
-        textProxy.setEnabled(true);
-        checkDownload.setEnabled(true);
-        textDownload.setEnabled(true);
+        setConfigEnabled(true);
         buttonDownload.setEnabled(false);
+    }
+
+    private void setConfigEnabled(boolean enabled) {
+        areaTrain.setEnabled(enabled);
+        areaRetrain.setEnabled(enabled);
+        areaSelector.setEnabled(enabled);
+        checkDownload.setEnabled(enabled);
+        textDownload.setEnabled(enabled);
+        textPort.setEnabled(enabled);
+        checkSsl.setEnabled(enabled);
+        textTruststore.setEnabled(enabled);
+        checkOnlyUseBetterModels.setEnabled(enabled);
+        checkColorByModelVersion.setEnabled(enabled);
+    }
+
+    private <T> T fromString(String message, TypeReference<T> reference) {
+        try {
+            return OBJECT_MAPPER.readValue(message, reference);
+        } catch (JsonProcessingException e) {
+            JOptionPane.showMessageDialog(this, "Failed to parse message: " + message);
+            throw new RuntimeException("Failed to parse message: " + message, e);
+        }
     }
 
     private static JTextArea createTextField() {
@@ -246,14 +289,13 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         textArea.setLineWrap(true);
         textArea.setRows(5);
         textArea.setWrapStyleWord(true);
-        textArea.setEditable(false);
         return textArea;
     }
 
-    private static String print(MessageOrBuilder message) {
+    private static String toString(Object message) {
         try {
-            return JsonFormat.printer().print(message);
-        } catch (InvalidProtocolBufferException e) {
+            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(message);
+        } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to print message", e);
         }
     }

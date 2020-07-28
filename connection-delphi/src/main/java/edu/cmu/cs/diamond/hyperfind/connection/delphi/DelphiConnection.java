@@ -41,8 +41,11 @@
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
@@ -65,18 +68,22 @@ import java.util.stream.Collectors;
 
 public final class DelphiConnection implements Connection {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory())
+            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
+            .registerModule(new Jdk8Module())
+            .registerModule(new ProtobufModule());
 
-
-    private static final File CONFIG_FILE =
-            Paths.get(System.getProperty("user.home")).resolve(".diamond/hyperfind-delphi.properties").toFile();
+    private static final File CONFIG_FILE = Paths.get(System.getProperty("user.home"))
+            .resolve(".diamond")
+            .resolve("hyperfind-delphi.yml")
+            .toFile();
 
     private final BundleFactory bundleFactory;
     private final ExecutorService resultExecutor;
 
     private DelphiConfiguration config = loadConfig();
 
-    private DelphiConnection(String bundleDirs, String filterDirs) {
+    public DelphiConnection(String bundleDirs, String filterDirs) {
         this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
         this.resultExecutor = Executors.newCachedThreadPool();
     }
@@ -123,20 +130,30 @@ public final class DelphiConnection implements Connection {
     }
 
     @Override
-    public void openConfigPanel(SearchListenable _searchListenable) {
-
+    public void openConfigPanel(SearchListenable searchListenable) {
+        new DelphiConfigFrame(searchListenable, config, this::saveConfig);
     }
 
     private DelphiConfiguration loadConfig() {
         if (CONFIG_FILE.exists()) {
             try {
-                return OBJECT_MAPPER.reader().readValue(CONFIG_FILE);
+                return OBJECT_MAPPER.readValue(CONFIG_FILE, DelphiConfiguration.class);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to load properties file", e);
+                throw new RuntimeException("Failed to load config file", e);
             }
         } else {
             return ImmutableDelphiConfiguration.builder().build();
         }
+    }
+
+    private void saveConfig(DelphiConfiguration newConfig) {
+        try {
+            OBJECT_MAPPER.writeValue(CONFIG_FILE, newConfig);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save config file", e);
+        }
+
+        config = newConfig;
     }
 
     private static List<File> splitDirs(String paths) {
