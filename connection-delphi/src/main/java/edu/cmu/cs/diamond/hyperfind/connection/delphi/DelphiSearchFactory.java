@@ -42,6 +42,7 @@ package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.Futures;
@@ -100,7 +101,16 @@ public final class DelphiSearchFactory implements SearchFactory {
             CookieMap cookieMap,
             ExecutorService resultExecutor) {
         this.config = config;
-        this.filters = filters.stream().map(ToDelphi::convert).collect(Collectors.toList());
+
+        ImmutableList.Builder<edu.cmu.cs.delphi.api.Filter> filtersBuilder = ImmutableList.builder();
+        if (filters.size() > 2) {
+            // Then there are some filters besides RGB and Thumbnail. Remove thumbnail as Delphi can generate this
+            // independently
+            filtersBuilder.add(ToDelphi.convert(filters.get(0)));
+            filters.stream().skip(2).map(ToDelphi::convert).forEach(filtersBuilder::add);
+        }
+
+        this.filters = filtersBuilder.build();
         this.cookieMap = cookieMap;
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
         this.learningModules = Arrays.stream(this.cookieMap.getHosts()).collect(Collectors.toMap(

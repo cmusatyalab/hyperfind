@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import edu.cmu.cs.delphi.api.DelphiObject;
 import edu.cmu.cs.delphi.api.InferResult;
@@ -62,15 +63,19 @@ public final class FromDelphi {
         return new SearchResult(
                 ObjectId.of(value.getObjectId(), hostname, hostname),
                 EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
-                colorByModelVersion
+                colorByModelVersion && modelVersion != 0
                         ? Optional.of(Color.getHSBColor((float) ((0.1 * modelVersion + 1.5) % 1), 1, 1))
                         : Optional.empty());
     }
 
     public static SearchResult convert(DelphiObject value, String hostname) {
+        ImmutableMap.Builder<String, byte[]> attributes = ImmutableMap.builder();
+        value.getAttributesMap().forEach((key, val) -> attributes.put(key, val.toByteArray()));
+        attributes.put(SearchResult.DATA_ATTR, value.getContent().toByteArray());
+
         return new SearchResult(
                 ObjectId.of(value.getObjectId(), hostname, hostname),
-                EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
+                attributes.build(),
                 Optional.empty());
     }
 }

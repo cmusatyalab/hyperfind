@@ -46,7 +46,9 @@ import com.google.common.collect.ImmutableList;
 import edu.cmu.cs.delphi.api.ExamplesPerLabelConditionConfig;
 import edu.cmu.cs.delphi.api.ModelConditionConfig;
 import edu.cmu.cs.delphi.api.ModelConfig;
+import edu.cmu.cs.delphi.api.NoReexaminationStrategyConfig;
 import edu.cmu.cs.delphi.api.PercentageThresholdPolicyConfig;
+import edu.cmu.cs.delphi.api.ReexaminationStrategyConfig;
 import edu.cmu.cs.delphi.api.RetrainPolicyConfig;
 import edu.cmu.cs.delphi.api.SVMConfig;
 import edu.cmu.cs.delphi.api.SVMMode;
@@ -69,7 +71,7 @@ public interface DelphiConfiguration {
                         .setModel(ModelConfig.newBuilder()
                                 .setSvm(SVMConfig.newBuilder()
                                         .setMode(SVMMode.DISTRIBUTED)
-                                        .setFeatureExtractor("resnet_mpncov50")
+                                        .setFeatureExtractor("mpncov_resnet50")
                                         .setLinearOnly(true)
                                         .setProbability(false)
                                         .build())
@@ -93,7 +95,9 @@ public interface DelphiConfiguration {
         return SelectorConfig.newBuilder()
                 .setTopk(TopKSelectorConfig.newBuilder()
                         .setK(20)
-                        .setBatchSize(10000))
+                        .setBatchSize(10000)
+                        .setReexaminationStrategy(ReexaminationStrategyConfig.newBuilder()
+                                .setNone(NoReexaminationStrategyConfig.newBuilder())))
                 .build();
     }
 

@@ -12,7 +12,6 @@ dependencies {
     implementation 'org.swinglabs:swingx'
     implementation 'ch.qos.logback:logback-classic'
 
-
     runtime project(':connection-collaboration')
     runtime project(':connection-delphi')
     runtime project(':connection-diamond')

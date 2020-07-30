@@ -70,7 +70,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,6 +81,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -349,21 +349,26 @@ public class ThumbnailBox extends JPanel {
                 }
 
                 if (runningJobs.getAndUpdate(i -> Math.min(2, i + 1)) < 2) {
-                    labelExecutor.execute(() -> {
-                        try {
-                            Map<ObjectId, ResultType> toSend = ImmutableMap.copyOf(labelsToSend);
-                            Map<ObjectId, Integer> examples = EntryStream.of(toSend)
-                                    .mapValues(r -> r.equals(ResultType.Ignore) ? -1 : r.getValue())
-                                    .toMap();
+                    try {
+                        labelExecutor.execute(() -> {
+                            try {
+                                Map<ObjectId, ResultType> toSend = ImmutableMap.copyOf(labelsToSend);
+                                Map<ObjectId, Integer> examples = EntryStream.of(toSend)
+                                        .mapValues(r -> r.equals(ResultType.Ignore) ? -1 : r.getValue())
+                                        .toMap();
 
-                            search.labelExamples(examples);
-                            toSend.forEach(labelsToSend::remove);
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        } finally {
-                            runningJobs.decrementAndGet();
-                        }
-                    });
+                                search.labelExamples(examples);
+                                toSend.forEach(labelsToSend::remove);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            } finally {
+                                runningJobs.decrementAndGet();
+                            }
+                        });
+                    } catch (RejectedExecutionException _ignore) {
+                        // Search has stopped
+                        runningJobs.decrementAndGet();
+                    }
                 }
 
                 repaint();
@@ -530,180 +535,163 @@ public class ThumbnailBox extends JPanel {
             protected Object doInBackground() throws InterruptedException {
                 // non-AWT thread
                 try {
-                    try {
-                        while (true) {
-                            if (pauseState) {
-                                continue;
-                            }
-
-                            Optional<SearchResult> resultOpt = search.getNextResult();
-
-                            if (resultOpt.isEmpty()) {
-                                log.info("RESULT NULL");
-                                break;
-                            }
-
-                            SearchResult result = resultOpt.get();
-
-                            Optional<byte[]> modelExport = result.getBytes("_delphi.model_export");
-                            if (search.getExportDir().isPresent() && modelExport.isPresent()) {
-                                int version = result.getInt("_delphi.model_export_version.int").getAsInt();
-                                String filename = String.format("model-%d", version);
-                                log.info("Exporting model {}", search.getExportDir().get().resolve(filename));
-                                Files.write( search.getExportDir().get().resolve(filename), modelExport.get());
-                                log.info("Export finished");
-                            }
-
-                            OptionalInt testExamples = result.getInt("_delphi.test_examples.int");
-                            OptionalInt modelVersion = result.getInt("_delphi.model_version.int");
-                            if (testExamples.isPresent()) {
-                                DelphiModelStatistics latestStats = modelStats.get();
-                                if (latestStats == null
-                                        || latestStats.getLastModelVersion() < modelVersion.getAsInt()) {
-                                    modelStats.set(new DelphiModelStatistics(
-                                            modelVersion.getAsInt(),
-                                            testExamples.getAsInt(),
-                                            result.getDouble("_delphi.auc.double").getAsDouble(),
-                                            result.getDouble("_delphi.precision.double").getAsDouble(),
-                                            result.getDouble("_delphi.recall.double").getAsDouble(),
-                                            result.getDouble("_delphi.f1_score.double").getAsDouble()));
-                                }
-                            }
-
-                            int score = result.getInt("_score.string").orElse(0);
-
-                            if (resultsLeftBeforePause.getAndDecrement() == 0) {
-                                publish(PAUSE_RESULT);
-
-                                pauseSemaphore.acquire();
-                                continue;
-                            }
-
-                            HyperFindResult hr = new HyperFindResult(activePredicateSet, result);
-
-                            for (HyperFindSearchMonitor m : searchMonitors) {
-                                m.notify(hr);
-                            }
-
-                            Optional<byte[]> thumbData = result.getBytes("thumbnail.jpeg");
-                            BufferedImage thumb = null;
-                            if (thumbData.isPresent()) {
-                                ByteArrayInputStream in = new ByteArrayInputStream(thumbData.get());
-
-                                try {
-                                    thumb = ImageIO.read(in);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            if (thumb == null) {
-                                // cook up blank image
-                                thumb = new BufferedImage(200, 150, BufferedImage.TYPE_INT_RGB);
-                            }
-
-                            // draw heatmaps and patches
-                            ResultRegions regions = hr.getRegions();
-                            Graphics2D g = thumb.createGraphics();
-                            g.setRenderingHint(
-                                    RenderingHints.KEY_INTERPOLATION,
-                                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                            int origW = result.getInt("_cols.int").getAsInt();
-                            int origH = result.getInt("_rows.int").getAsInt();
-
-                            g.scale(
-                                    (double) thumb.getWidth() / (double) origW,
-                                    (double) thumb.getHeight() / (double) origH);
-
-                            for (BufferedImage heatmap : regions.getHeatmaps()) {
-                                drawHeatmap(g, heatmap);
-                            }
-
-                            g.setColor(Color.GREEN);
-
-                            for (BoundingBox box : regions.getPatches()) {
-                                drawPatch(g, box);
-                            }
-
-                            if (result.getBytes("_gt_label").isPresent()) {
-                                drawBorder(g, Color.RED, origW, origH, 80);
-                                if (score == 1) {
-                                    sampledFNCount += 1;
-                                } else {
-                                    sampledTPCount += 1;
-                                }
-                            } else if (result.getBorderColor().isPresent()) {
-                                drawBorder(
-                                        g,
-                                        result.getBorderColor().get(),
-                                        origW,
-                                        origH,
-                                        80);
-                            }
-
-                            g.dispose();
-
-                            // check setting from server
-                            ResultIconSetting d = ResultIconSetting.ICON_ONLY;
-                            Optional<String> settingOpt = result.getString("hyperfind.thumbnail-display");
-                            if (settingOpt.isPresent()) {
-                                String setting = settingOpt.get();
-                                if (setting.equals("icon")) {
-                                    d = ResultIconSetting.ICON_ONLY;
-                                } else if (setting.equals("label")) {
-                                    d = ResultIconSetting.LABEL_ONLY;
-                                } else if (setting.equals("icon-and-label")) {
-                                    d = ResultIconSetting.ICON_AND_LABEL;
-                                }
-                            }
-
-                            ResultIcon resultIcon =
-                                    new ResultIcon(hr, result.getName(), new ImageIcon(thumb), d, score);
-                            publish(resultIcon);
-                        }
-                    } finally {
-                        timer.stop();
-                        // update stats one more time, if possible
-                        updateStats();
-
-                        for (HyperFindSearchMonitor sm : searchMonitors) {
-                            sm.stopped();
+                    while (true) {
+                        if (pauseState) {
+                            continue;
                         }
 
-                        SwingUtilities.invokeLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (search != null) {
-                                    search.close();
-                                }
+                        Optional<SearchResult> resultOpt = search.getNextResult();
 
-                                if (timerExecutor != null) {
-                                    timerExecutor.shutdownNow();
-                                }
+                        if (resultOpt.isEmpty()) {
+                            log.info("RESULT NULL");
+                            break;
+                        }
 
-                                if (labelExecutor != null) {
-                                    labelExecutor.shutdownNow();
-                                    labelsToSend.clear();
-                                }
+                        SearchResult result = resultOpt.get();
 
-                                if (statsTimerFuture != null) {
-                                    statsTimerFuture.cancel(true);
-                                }
-
-                                searchListener.searchStopped();
-                                moreResultsButton.setVisible(false);
-                                stats.setDone();
+                        OptionalInt testExamples = result.getInt("_delphi.test_examples.int");
+                        OptionalInt modelVersion = result.getInt("_delphi.model_version.int");
+                        if (testExamples.isPresent()) {
+                            DelphiModelStatistics latestStats = modelStats.get();
+                            if (latestStats == null
+                                    || latestStats.getLastModelVersion() < modelVersion.getAsInt()) {
+                                modelStats.set(new DelphiModelStatistics(
+                                        modelVersion.getAsInt(),
+                                        testExamples.getAsInt(),
+                                        result.getDouble("_delphi.auc.double").getAsDouble(),
+                                        result.getDouble("_delphi.precision.double").getAsDouble(),
+                                        result.getDouble("_delphi.recall.double").getAsDouble(),
+                                        result.getDouble("_delphi.f1_score.double").getAsDouble()));
                             }
-                        });
+                        }
+
+                        int score = result.getInt("_score.string").orElse(0);
+
+                        if (resultsLeftBeforePause.getAndDecrement() == 0) {
+                            publish(PAUSE_RESULT);
+
+                            pauseSemaphore.acquire();
+                            continue;
+                        }
+
+                        HyperFindResult hr = new HyperFindResult(activePredicateSet, result);
+
+                        for (HyperFindSearchMonitor m : searchMonitors) {
+                            m.notify(hr);
+                        }
+
+                        Optional<byte[]> thumbData = result.getBytes("thumbnail.jpeg");
+                        BufferedImage thumb = null;
+                        if (thumbData.isPresent()) {
+                            ByteArrayInputStream in = new ByteArrayInputStream(thumbData.get());
+
+                            try {
+                                thumb = ImageIO.read(in);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        if (thumb == null) {
+                            // cook up blank image
+                            thumb = new BufferedImage(200, 150, BufferedImage.TYPE_INT_RGB);
+                        }
+
+                        // draw heatmaps and patches
+                        ResultRegions regions = hr.getRegions();
+                        Graphics2D g = thumb.createGraphics();
+                        g.setRenderingHint(
+                                RenderingHints.KEY_INTERPOLATION,
+                                RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                        int origW = result.getInt("_cols.int").getAsInt();
+                        int origH = result.getInt("_rows.int").getAsInt();
+
+                        g.scale(
+                                (double) thumb.getWidth() / (double) origW,
+                                (double) thumb.getHeight() / (double) origH);
+
+                        for (BufferedImage heatmap : regions.getHeatmaps()) {
+                            drawHeatmap(g, heatmap);
+                        }
+
+                        g.setColor(Color.GREEN);
+
+                        for (BoundingBox box : regions.getPatches()) {
+                            drawPatch(g, box);
+                        }
+
+                        if (result.getBytes("_gt_label").isPresent()) {
+                            drawBorder(g, Color.RED, origW, origH, 80);
+                            if (score == 1) {
+                                sampledFNCount += 1;
+                            } else {
+                                sampledTPCount += 1;
+                            }
+                        } else if (result.getBorderColor().isPresent()) {
+                            drawBorder(
+                                    g,
+                                    result.getBorderColor().get(),
+                                    origW,
+                                    origH,
+                                    80);
+                        }
+
+                        g.dispose();
+
+                        // check setting from server
+                        ResultIconSetting d = ResultIconSetting.ICON_ONLY;
+                        Optional<String> settingOpt = result.getString("hyperfind.thumbnail-display");
+                        if (settingOpt.isPresent()) {
+                            String setting = settingOpt.get();
+                            if (setting.equals("icon")) {
+                                d = ResultIconSetting.ICON_ONLY;
+                            } else if (setting.equals("label")) {
+                                d = ResultIconSetting.LABEL_ONLY;
+                            } else if (setting.equals("icon-and-label")) {
+                                d = ResultIconSetting.ICON_AND_LABEL;
+                            }
+                        }
+
+                        ResultIcon resultIcon =
+                                new ResultIcon(hr, result.getName(), new ImageIcon(thumb), d, score);
+                        publish(resultIcon);
                     }
-                } catch (final IOException e) {
+                } catch (RuntimeException e) {
+                    log.error("Ran into exception getting results", e);
+                } finally {
+                    timer.stop();
+                    // update stats one more time, if possible
+                    updateStats();
+
+                    for (HyperFindSearchMonitor sm : searchMonitors) {
+                        sm.stopped();
+                    }
+
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
-                            stats.showException(e.getCause() != null ? e.getCause() : e);
+                            if (search != null) {
+                                search.close();
+                            }
+
+                            if (timerExecutor != null) {
+                                timerExecutor.shutdownNow();
+                            }
+
+                            if (labelExecutor != null) {
+                                labelExecutor.shutdownNow();
+                                labelsToSend.clear();
+                            }
+
+                            if (statsTimerFuture != null) {
+                                statsTimerFuture.cancel(true);
+                            }
+
+                            searchListener.searchStopped();
+                            moreResultsButton.setVisible(false);
+                            stats.setDone();
                         }
                     });
-                    e.printStackTrace();
                 }
                 return null;
             }

@@ -163,9 +163,9 @@ public class DiamondConfigFrame extends JFrame implements SearchListener {
     @Override
     public void searchStopped() {
         checkProxy.setEnabled(true);
-        textProxy.setEnabled(true);
+        textProxy.setEnabled(checkProxy.isSelected());
         checkDownload.setEnabled(true);
-        textDownload.setEnabled(true);
+        textDownload.setEnabled(checkDownload.isSelected());
         buttonRetrain.setEnabled(false);
     }
 }

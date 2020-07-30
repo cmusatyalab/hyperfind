@@ -51,7 +51,7 @@ public final class ToDelphi {
     public static edu.cmu.cs.delphi.api.Filter convert(Filter value) {
         return edu.cmu.cs.delphi.api.Filter.newBuilder()
                 .setCode(ByteString.copyFrom(value.code()))
-                .addAllDependences(value.dependencies())
+                .addAllDependencies(value.dependencies())
                 .addAllArguments(value.arguments())
                 .setName(value.name())
                 .setMinScore(value.minScore())

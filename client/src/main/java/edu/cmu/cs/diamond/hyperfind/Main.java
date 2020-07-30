@@ -231,8 +231,7 @@ public final class Main {
 
         List<HyperFindPredicateFactory> examplePredicateFactories = new ArrayList<>();
         List<HyperFindPredicate> codecList = new ArrayList<>();
-        initPredicateFactories(factories, model, predicates,
-                examplePredicateFactories, codecList);
+        initPredicateFactories(factories, model, predicates, examplePredicateFactories, codecList);
 
         JComboBox<HyperFindPredicate> codecs = new JComboBox<>(codecList.toArray(HyperFindPredicate[]::new));
         Main m = new Main(frame, connection, results, model, examplePredicateFactories, codecs);
@@ -395,8 +394,7 @@ public final class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    HyperFindPredicate p = (HyperFindPredicate) codecs
-                            .getSelectedItem();
+                    HyperFindPredicate p = (HyperFindPredicate) codecs.getSelectedItem();
                     List<Filter> filters = new ArrayList<>(p.createFilters());
 
                     // give the ResultExportTransferHandler a different
@@ -421,21 +419,11 @@ public final class Main {
                     attributes.add("thumbnail.jpeg"); // thumbnail
                     attributes.add("_cols.int"); // original width
                     attributes.add("_rows.int"); // original height
-                    attributes.add("_score.int");
                     attributes.add("feature_vector.json");
                     attributes.add("Device-Name");
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
                     attributes.add("hyperfind.external-link");
-                    attributes.add("_delphi.should_discard.int");
-                    attributes.add("_delphi.model_version.int");
-                    attributes.add("_delphi.test_examples.int");
-                    attributes.add("_delphi.auc.double");
-                    attributes.add("_delphi.precision.double");
-                    attributes.add("_delphi.recall.double");
-                    attributes.add("_delphi.f1_score.double");
-                    attributes.add("_delphi.model_export");
-                    attributes.add("_delphi.model_export_version.int");
 
                     for (HyperFindSearchMonitor m : monitors) {
                         attributes.addAll(m.getPushAttributes());
@@ -698,7 +686,7 @@ public final class Main {
             List<HyperFindPredicateFactory> factories,
             final PredicateListModel model, final JPopupMenu predicates,
             final List<HyperFindPredicateFactory> examplePredicateFactories,
-            final List<HyperFindPredicate> codecList) throws IOException {
+            final List<HyperFindPredicate> codecList) {
         JMenuItem jm = new JMenuItem("Add search predicate:");
         jm.setEnabled(false);
         predicates.add(jm);

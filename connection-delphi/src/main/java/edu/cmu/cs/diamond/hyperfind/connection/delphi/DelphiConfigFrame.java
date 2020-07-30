@@ -266,10 +266,10 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         areaRetrain.setEnabled(enabled);
         areaSelector.setEnabled(enabled);
         checkDownload.setEnabled(enabled);
-        textDownload.setEnabled(enabled);
+        textDownload.setEnabled(enabled && checkDownload.isSelected());
         textPort.setEnabled(enabled);
         checkSsl.setEnabled(enabled);
-        textTruststore.setEnabled(enabled);
+        textTruststore.setEnabled(enabled && checkSsl.isSelected());
         checkOnlyUseBetterModels.setEnabled(enabled);
         checkColorByModelVersion.setEnabled(enabled);
     }
