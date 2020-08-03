@@ -49,7 +49,7 @@ public interface Search {
 
     Optional<SearchResult> getNextResult();
 
-    Map<String, SearchStats> getStats();
+    SearchStats getStats();
 
     void labelExamples(Map<ObjectId, Integer> examples);
 

@@ -400,12 +400,10 @@ public final class Main {
                     // give the ResultExportTransferHandler a different
                     // factory with just the codec, since it only needs the
                     // decoded image and not the filter output attributes
-                    for (int i = 0; i < m.results.NUM_PANELS; i++) {
-                        m.results.resultLists.get(i).setTransferHandler(
-                                new ResultExportTransferHandler(
-                                        connection.getSearchFactory(filters),
-                                        threadPoolExecutor));
-                    }
+                    m.results.resultList.setTransferHandler(
+                            new ResultExportTransferHandler(
+                                    connection.getSearchFactory(filters),
+                                    threadPoolExecutor));
 
                     filters.addAll(model.createFilters());
                     SearchFactory factory = connection.getSearchFactory(filters);
@@ -589,9 +587,7 @@ public final class Main {
             }
         };
 
-        for (int i = 0; i < m.results.NUM_PANELS; i++) {
-            m.results.resultLists.get(i).addMouseListener(displayClick);
-        }
+        m.results.resultList.addMouseListener(displayClick);
 
         // layout
 

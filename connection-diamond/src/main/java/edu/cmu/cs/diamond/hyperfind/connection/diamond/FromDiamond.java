@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 public final class FromDiamond {
@@ -87,8 +88,9 @@ public final class FromDiamond {
                 value.getServerStats().get(ServerStatistics.TOTAL_OBJECTS),
                 value.getServerStats().get(ServerStatistics.PROCESSED_OBJECTS),
                 value.getServerStats().get(ServerStatistics.DROPPED_OBJECTS),
-                value.getServerStats().get(ServerStatistics.TP_OBJECTS),
-                value.getServerStats().get(ServerStatistics.FN_OBJECTS));
+                OptionalLong.of(value.getServerStats().get("objs_passed")),
+                value.getServerStats().get(ServerStatistics.FN_OBJECTS),
+                Optional.empty());
     }
 
     public static Bundle convert(edu.cmu.cs.diamond.opendiamond.Bundle value) {

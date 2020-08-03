@@ -41,15 +41,13 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
-import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Timer;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -58,30 +56,27 @@ import javax.swing.ScrollPaneConstants;
 final class StatisticsArea extends JPanel {
 
     private static final int PREFERRED_WIDTH = 300;
-
     private static final int MINIMUM_HEIGHT = 200;
-
-    private final Box box = Box.createVerticalBox();
 
     private final JTextArea display = new JTextArea();
 
-    private static String currentString;
+    private String currentString;
 
-    private long prev_displayed = 0;
+    private long prevDisplayed = 0;
 
-    private long prev_tp = 0;
+    private long prevTp = 0;
 
-    private float prev_precision = 0;
+    private float prevPrecision = 0;
 
-    private long curr_displayed = 0;
+    private long currDisplayed = 0;
 
-    private long curr_tp = 0;
+    private long currDisplayedPositives = 0;
 
-    private float avg_precision = 0;
+    private float avgPrecision = 0;
 
-    private long diff_displayed = 0;
+    private long diffDisplayed = 0;
 
-    private long diff_tp = 0;
+    private long diffTp = 0;
 
     private boolean timerStart = false;
 
@@ -96,7 +91,8 @@ final class StatisticsArea extends JPanel {
         display.setFont(display.getFont().deriveFont(Font.BOLD, 16f));
         clear();
 
-        JScrollPane jsp = new JScrollPane(display,
+        JScrollPane jsp = new JScrollPane(
+                display,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jsp.setBorder(BorderFactory.createTitledBorder("Statistics"));
@@ -108,7 +104,7 @@ final class StatisticsArea extends JPanel {
         long period = 3 * 60 * 1000; // 3 min
 
         //Periodically update the average precision
-		Timer t = new java.util.Timer();
+        Timer t = new java.util.Timer();
         t.schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -116,103 +112,93 @@ final class StatisticsArea extends JPanel {
 
                         timerStart = true;
 
-                        diff_displayed = curr_displayed - prev_displayed;
-                        diff_tp = curr_tp - prev_tp;
-                        if(diff_displayed == 0) {
-                            avg_precision = prev_precision;
-                            diff_tp = prev_tp;
-                            diff_displayed = prev_displayed;
-                        }
-                        else {
-                            avg_precision = 100f * diff_tp / diff_displayed;
+                        diffDisplayed = currDisplayed - prevDisplayed;
+                        diffTp = currDisplayedPositives - prevTp;
+                        if (diffDisplayed == 0) {
+                            avgPrecision = prevPrecision;
+                            diffTp = prevTp;
+                            diffDisplayed = prevDisplayed;
+                        } else {
+                            avgPrecision = 100f * diffTp / diffDisplayed;
                         }
 
-                        prev_displayed = curr_displayed;
-                        prev_tp = curr_tp;
-                        prev_precision = avg_precision;
+                        prevDisplayed = currDisplayed;
+                        prevTp = currDisplayedPositives;
+                        prevPrecision = avgPrecision;
                         // t.cancel();
                     }
                 },
                 period,
                 period
         );
-
     }
 
     public void clear() {
-        setNumbers(0, 0, 0, 0, 0, 0, 0, Optional.empty());
+        update(SearchStats.of(0, 0, 0, OptionalLong.empty(), 0, Optional.empty()), 0, 0);
     }
 
     public String getStatistics() {
         return currentString;
     }
 
-    private void setNumbers(long total, long searched, long dropped, long displayed, long true_positives, long false_negatives, long false_display, Optional<DelphiModelStatistics> modelStatistics) {
-        long passed = searched - dropped;
-        curr_displayed = displayed;
-        curr_tp = true_positives;
-        StringBuilder str_display = new StringBuilder();
-        str_display.append(String.format("\n %0$-17s %d\n", "Total", total));
-        str_display.append(String.format("\n %0$-14s %d\n", "Searched", searched));
-        str_display.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f * dropped / searched));
-        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", passed, 100f * passed / searched));
-        str_display.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed, 100f * displayed / searched));
+    public void update(SearchStats stats, long displayed, long displayedPositives) {
+        currDisplayed = displayed;
+        currDisplayedPositives = displayedPositives;
 
-        if (true_positives > 0 || false_negatives > 0 || false_display > 0) {
-            str_display.append(String.format("\n x------- AUGMENTED --------x \n"));
-            long labeled_total = true_positives + false_negatives + false_display;
+        StringBuilder strDisplay = new StringBuilder();
+        strDisplay.append(String.format("\n %0$-17s %d\n", "Total", stats.totalObjects()));
 
-            float precision = ((float) true_positives) / displayed;
-            float recall = ((float) true_positives) / labeled_total;
+        long searched = stats.processedObjects();
+        strDisplay.append(String.format("\n %0$-14s %d\n", "Searched", searched));
 
-            if(!timerStart) {
-                diff_tp = true_positives;
-                diff_displayed = displayed;
-                avg_precision = 100f * precision;
+        long dropped = stats.droppedObjects();
+        strDisplay.append(String.format("\n %0$-14s %d (%.2f%%)\n", "Dropped", dropped, 100f * dropped / searched));
+
+        stats.passedObjects().ifPresent(p ->
+                strDisplay.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", p, 100f * p / searched)));
+
+        strDisplay.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed,
+                100f * displayed / searched));
+
+        if (displayedPositives > 0 || stats.falseNegatives() > 0) {
+            strDisplay.append(String.format("\n x------- AUGMENTED --------x \n"));
+            long labeledTotal = displayedPositives + stats.falseNegatives();
+
+            float precision = ((float) displayedPositives) / displayed;
+            float recall = ((float) displayedPositives) / labeledTotal;
+
+            if (!timerStart) {
+                diffTp = displayedPositives;
+                diffDisplayed = displayed;
+                avgPrecision = 100f * precision;
             }
-            str_display.append(String.format("\n %0$-18s %d \n", "True Positives", true_positives));
-            str_display.append(String.format("\n %0$-18s %d \n", "FN Displayed", false_display));
-            str_display.append(String.format("\n %0$-17s %d \n", "FN Dropped", false_negatives));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", true_positives, displayed, 100f * precision));
-            str_display.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Avg. Precision ", diff_tp, diff_displayed, avg_precision));
-            str_display.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Recall", true_positives, labeled_total, 100f * recall));
-            str_display.append(String.format("\n %0$-17s %.3f \n", "F1 Score", 2 * (precision * recall) / (precision + recall)));
+            strDisplay.append(String.format("\n %0$-18s %d \n", "True Positives", displayedPositives));
+            strDisplay.append(String.format("\n %0$-17s %d \n", "FN Dropped", stats.falseNegatives()));
+            strDisplay.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", displayedPositives,
+                    displayed, 100f * precision));
+            strDisplay.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Avg. Precision ",
+                    diffTp, diffDisplayed, avgPrecision));
+            strDisplay.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Recall", displayedPositives,
+                    labeledTotal, 100f * recall));
+            strDisplay.append(String.format("\n %0$-17s %.3f \n", "F1 Score",
+                    2 * (precision * recall) / (precision + recall)));
         }
 
-        if (modelStatistics.isPresent()) {
-            str_display.append(String.format("\n x------- MODEL STATISTICS --------x \n"));
-            str_display.append(String.format("\n %0$-18s %d \n", "Model Version", modelStatistics.get().getLastModelVersion()));
-            str_display.append(String.format("\n %0$-18s %d \n", "Test Set Size", modelStatistics.get().getTestExamples()));
-            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set AUC", modelStatistics.get().getAuc()));
-            str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", modelStatistics.get().getPrecision() * 100));
-            str_display.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", modelStatistics.get().getRecall() * 100));
-            str_display.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", modelStatistics.get().getF1Score()));
-        }
+        stats.model().ifPresent(model -> {
+            strDisplay.append(String.format("\n x------- MODEL STATISTICS --------x \n"));
+            strDisplay.append(String.format("\n %0$-18s %d \n", "Model Version", model.version()));
+            strDisplay.append(String.format("\n %0$-18s %d \n", "Test Set Size", model.textExamples()));
+            strDisplay.append(String.format("\n %0$-17s %.3f \n", "Test Set AUC", model.auc()));
+            strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", model.precision() * 100));
+            strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", model.recall() * 100));
+            strDisplay.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", model.f1Score()));
+        });
 
-        display.setText(str_display.toString());
-        currentString = str_display.toString();
-    }
-
-
-    public void update(Map<String, SearchStats> serverStats, long displayed, long sampledPositive, long sampledNegative,
-            Optional<DelphiModelStatistics> modelStatistics) {
-        long total = 0;
-        long processed = 0;
-        long dropped = 0;
-        long falseNegatives = 0;
-
-        for (SearchStats ss : serverStats.values()) {
-            total += ss.totalObjects();
-            processed += ss.processedObjects();
-            dropped += ss.droppedObjects();
-            falseNegatives += ss.falseNegatives();
-        }
-
-        setNumbers(total, processed, dropped, displayed, sampledPositive, falseNegatives, sampledNegative, modelStatistics);
+        display.setText(strDisplay.toString());
+        currentString = strDisplay.toString();
     }
 
     public void setDone() {
         clear();
     }
-
 }

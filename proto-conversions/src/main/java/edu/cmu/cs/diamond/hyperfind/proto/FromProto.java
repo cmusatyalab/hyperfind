@@ -191,13 +191,8 @@ public final class FromProto {
         return Choice.of(value.getDisplayName(), value.getValue(), value.getIsDefault());
     }
 
-    public static SearchStats convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats value) {
-        return SearchStats.of(
-                value.getTotalObjects(),
-                value.getProcessedObjects(),
-                value.getDroppedObjects(),
-                value.getTruePositives(),
-                value.getFalseNegatives());
+    public static SearchStats convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats _value) {
+        throw new UnsupportedOperationException();
     }
 
     public static FeedbackObject convert(edu.cmu.cs.diamond.hyperfind.collaboration.api.FeedbackObject value) {

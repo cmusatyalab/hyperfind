@@ -41,7 +41,7 @@
 package edu.cmu.cs.diamond.hyperfind;
 
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
-import java.util.Map;
+import java.util.OptionalLong;
 import javax.swing.JProgressBar;
 
 public class StatisticsBar extends JProgressBar {
@@ -51,31 +51,24 @@ public class StatisticsBar extends JProgressBar {
     }
 
     public void clear() {
-        setNumbers(0, 0, 0);
+        setNumbers(0, 0, 0, OptionalLong.empty());
     }
 
-    private void setNumbers(long total, long searched, long dropped) {
+    public void update(SearchStats stats) {
+        setNumbers(stats.totalObjects(), stats.processedObjects(), stats.droppedObjects(), stats.passedObjects());
+    }
+
+    private void setNumbers(long total, long searched, long dropped, OptionalLong passed) {
         setIndeterminate(false);
-        long passed = searched - dropped;
-        String str = String.format("Total %d, Searched %d, Dropped %d (%.2f%%), Passed %d (%.2f%%)",
-                total, searched, dropped, 100f * dropped / searched, passed, 100f * passed / searched);
-        setString(str);
-        setMaximum(total > Integer.MAX_VALUE ?
-                Integer.MAX_VALUE : (int) total);
-        setValue(searched > Integer.MAX_VALUE ?
-                Integer.MAX_VALUE : (int) searched);
-    }
 
-    public void update(Map<String, SearchStats> serverStats) {
-        long total = 0;
-        long processed = 0;
-        long dropped = 0;
-        for (SearchStats ss : serverStats.values()) {
-            total += ss.totalObjects();
-            processed += ss.processedObjects();
-            dropped += ss.droppedObjects();
-        }
-        setNumbers(total, processed, dropped);
+        StringBuilder builder = new StringBuilder(String.format("Total %d, Searched %d, Dropped %d (%.2f%%)",
+                total, searched, dropped, 100f * dropped / searched));
+
+        passed.ifPresent(p -> builder.append(String.format(", Passed %d (%.2f%%)", p, 100f * p / searched)));
+
+        setString(builder.toString());
+        setMaximum(total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total);
+        setValue(searched > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) searched);
     }
 
     public void setIndeterminateMessage(String message) {

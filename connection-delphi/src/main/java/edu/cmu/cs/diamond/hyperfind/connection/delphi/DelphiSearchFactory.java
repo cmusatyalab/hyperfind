@@ -43,17 +43,22 @@ package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import edu.cmu.cs.delphi.api.Dataset;
 import edu.cmu.cs.delphi.api.DelphiObject;
 import edu.cmu.cs.delphi.api.DiamondDataset;
+import edu.cmu.cs.delphi.api.ExampleSet;
+import edu.cmu.cs.delphi.api.ExampleSetWrapper;
 import edu.cmu.cs.delphi.api.GetObjectsRequest;
+import edu.cmu.cs.delphi.api.LabeledExample;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
 import edu.cmu.cs.delphi.api.SearchConfig;
@@ -73,6 +78,11 @@ import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -85,8 +95,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class DelphiSearchFactory implements SearchFactory {
+
+    private static final Logger log = LoggerFactory.getLogger(DelphiSearchFactory.class);
+
+    private static final ImmutableSet<String> VALID_LABELS = ImmutableSet.of("0", "1");
+    private static final ImmutableMap<String, ExampleSet> VALID_EXAMPLE_SETS = ImmutableMap.of(
+            "train", ExampleSet.TRAIN, "test", ExampleSet.TEST);
 
     private final DelphiConfiguration config;
     private final List<edu.cmu.cs.delphi.api.Filter> filters;
@@ -142,6 +161,17 @@ public final class DelphiSearchFactory implements SearchFactory {
                             .setSelector(config.selector())
                             .build())
                     .build());
+
+            if (config.shouldIncludeExamples()) {
+                try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
+                    paths.forEach(path -> addExamples(path, request, Optional.empty()));
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to list files in example directory: " + config.examplePath());
+                }
+            }
+
+            request.onCompleted();
+
             observer.waitForFinish();
         }
 
@@ -201,6 +231,58 @@ public final class DelphiSearchFactory implements SearchFactory {
         return results;
     }
 
+    private void addExamples(
+            Path exampleCandidate,
+            StreamObserver<SearchRequest> request,
+            Optional<ExampleSet> exampleSet) {
+        File exampleCandidateFile = exampleCandidate.toFile();
+        if (!exampleCandidateFile.isDirectory()) {
+            log.warn("Ignoring non-directory file {}", exampleCandidate);
+            return;
+        }
+
+        String label = exampleCandidateFile.getName();
+        if (exampleSet.isEmpty() && VALID_EXAMPLE_SETS.containsKey(label)) {
+            try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
+                paths.forEach(path -> addExamples(path, request, Optional.of(VALID_EXAMPLE_SETS.get(label))));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to list files in example directory: " + exampleCandidate);
+            }
+            return;
+        }
+
+        if (!VALID_LABELS.contains(label)) {
+            log.warn("Ignoring path corresponding to invalid label: {}", exampleCandidate);
+            return;
+        }
+
+        try (Stream<Path> paths = Files.list(exampleCandidate)) {
+            paths.forEach(path -> {
+                if (!path.toFile().isFile()) {
+                    log.warn("Ignoring directory file {} in example path {}", exampleCandidate, path);
+                }
+
+                try {
+                    LabeledExample.Builder exampleBuilder = LabeledExample.newBuilder()
+                            .setLabel(label)
+                            .setContent(ByteString.readFrom(new FileInputStream(path.toFile())));
+
+                    exampleSet.ifPresent(e -> exampleBuilder.setExampleSet(ExampleSetWrapper.newBuilder()
+                            .setValue(e)
+                            .build()));
+
+                    request.onNext(SearchRequest.newBuilder()
+                            .setExample(exampleBuilder)
+                            .build());
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to read content from file: " + path);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to list files in example directory: " + exampleCandidate);
+        }
+    }
+
     private Dataset getDataset(String host, Set<String> attributes) {
         return Dataset.newBuilder()
                 .setDiamond(DiamondDataset.newBuilder()
@@ -214,7 +296,10 @@ public final class DelphiSearchFactory implements SearchFactory {
 
     private static Channel createChannel(DelphiConfiguration config, String host) {
         return config.useSsl()
-                ? Channels.createSslChannel(host, config.port(), config.truststorePath())
+                ? Channels.createSslChannel(
+                host,
+                config.port(),
+                !config.truststorePath().isBlank() ? Optional.of(config.truststorePath()) : Optional.empty())
                 : ManagedChannelBuilder.forAddress(host, config.port())
                         .maxInboundMessageSize(Integer.MAX_VALUE)
                         .usePlaintext()

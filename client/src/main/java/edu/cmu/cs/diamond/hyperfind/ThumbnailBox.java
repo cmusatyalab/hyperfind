@@ -44,12 +44,12 @@ import com.google.common.collect.ImmutableMap;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultType;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ModelStats;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
-import edu.cmu.cs.diamond.hyperfind.delphi.DelphiModelStatistics;
 import java.awt.Adjustable;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -63,6 +63,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -76,7 +77,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -119,15 +119,13 @@ public class ThumbnailBox extends JPanel {
 
     private static final Logger log = LoggerFactory.getLogger(ThumbnailBox.class);
 
-    public static final int NUM_PANELS = 2;
-
     private static final long NANOSEC_PER_MILLI = (long) 1e6;
     private static final int PREFERRED_WIDTH = 750;
     private static final ResultIcon PAUSE_RESULT = new ResultIcon(null, null, null, null);
     private static final HeatmapOverlayConvertOp HEATMAP_OVERLAY_OP =
             new HeatmapOverlayConvertOp(new Color(0x8000ff00, true));
 
-    public final List<JList<ResultIcon>> resultLists;
+    public final JList<ResultIcon> resultList;
 
     private final StatisticsBar stats;
     private final StatisticsArea statsArea;
@@ -136,11 +134,12 @@ public class ThumbnailBox extends JPanel {
     private final JLabel timeLabel;
     private final JPopupMenu popupMenu;
     private final ConcurrentMap<ObjectId, ResultType> labelsToSend = new ConcurrentHashMap<>();
-    private final Map<Integer, JScrollPane> resultPanes = new HashMap<>();
     private final Map<String, FeedbackObject> feedbackItems = new HashMap<>();
-    private final AtomicReference<DelphiModelStatistics> modelStats = new AtomicReference<>();
+    private final AtomicReference<ModelStats> modelStats = new AtomicReference<>();
     private final AtomicInteger runningJobs = new AtomicInteger(0);
     private final int resultsPerScreen;
+
+    private final JScrollPane resultPane;
 
     private volatile boolean pauseState = false;
 
@@ -150,7 +149,6 @@ public class ThumbnailBox extends JPanel {
     private ScheduledFuture<?> statsTimerFuture;
 
     private long sampledTPCount = 0;
-    private long sampledFNCount = 0;
 
     private long startTime;
     private Timer timer;
@@ -172,11 +170,10 @@ public class ThumbnailBox extends JPanel {
         this.searchListener = searchListener;
         this.stats = stats;
         this.statsArea = statsArea;
-        this.resultLists = new ArrayList<>();
         this.resultsPerScreen = resultsPerScreen;
         this.popupMenu = new JPopupMenu();
 
-        setUpResultLists();
+        this.resultList = createResultList();
 
         setLayout(new BorderLayout());
 
@@ -187,34 +184,13 @@ public class ThumbnailBox extends JPanel {
         // Scrolling panel for results
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        
-        /*
-         * Creating two panels for result display
-         * ----------------------------------------
-         * leftPanel : Results for user labeling
-         * rightPanel: Results for user validation
-                        requiring user annotaion / AL displayed
-        */
 
         Box b = Box.createHorizontalBox();
-        JScrollPane leftPanel = new JScrollPane(resultLists.get(0));
-        JScrollPane rightPanel = new JScrollPane(resultLists.get(1));
 
-        resultPanes.put(0, leftPanel);
-        resultPanes.put(1, rightPanel);
-
-        //rightPanel Configurations
-        rightPanel.setPreferredSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        rightPanel.setMaximumSize(new Dimension(PREFERRED_WIDTH, Integer.MAX_VALUE));
-        rightPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        rightPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-        //leftPanel Configurations
-        leftPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        leftPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
-        b.add(leftPanel);
-        b.add(rightPanel);
+        this.resultPane = new JScrollPane(resultList);
+        resultPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        resultPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        b.add(resultPane);
         panel.add(b);
 
         // "Get Next xxx result" button
@@ -235,33 +211,30 @@ public class ThumbnailBox extends JPanel {
     }
 
     //Scroll the resultPane to bottom if no item selected
-    private void scrollPanesToBottom() {
-        for (Map.Entry<Integer, JScrollPane> entry : resultPanes.entrySet()) {
-            JScrollPane scrollPane = entry.getValue();
-            int id = entry.getKey();
-            JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
-            AdjustmentListener downScroller = new AdjustmentListener() {
-                @Override
-                public void adjustmentValueChanged(AdjustmentEvent e) {
-                    Adjustable adjustable = e.getAdjustable();
-                    adjustable.setValue(adjustable.getMaximum());
-                    verticalBar.removeAdjustmentListener(this);
-                }
-            };
-            if (resultLists.get(id).isSelectionEmpty()) {
-                verticalBar.addAdjustmentListener(downScroller);
+    private void scrollPaneToBottom() {
+        JScrollBar verticalBar = resultPane.getVerticalScrollBar();
+        AdjustmentListener downScroller = new AdjustmentListener() {
+            @Override
+            public void adjustmentValueChanged(AdjustmentEvent e) {
+                Adjustable adjustable = e.getAdjustable();
+                adjustable.setValue(adjustable.getMaximum());
+                verticalBar.removeAdjustmentListener(this);
             }
+        };
+
+        if (resultList.isSelectionEmpty()) {
+            verticalBar.addAdjustmentListener(downScroller);
         }
     }
 
-    // Setting Up result List this Listeners
-    private void setUpResultLists() {
+    // Set up result list and listeners
+    @SuppressWarnings("unchecked")
+    private JList<ResultIcon> createResultList() {
         // Add listeners to selection on the result list
         ListSelectionListener selectListener = new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                List<HyperFindResult> results = new
-                        ArrayList<HyperFindResult>();
+                List<HyperFindResult> results = new ArrayList<>();
                 JList<ResultIcon> list = (JList<ResultIcon>) e.getSource();
                 for (ResultIcon o : list.getSelectedValuesList()) {
                     results.add(o.getResult());
@@ -274,28 +247,20 @@ public class ThumbnailBox extends JPanel {
         };
 
         //Add listener Key-Esc to clear resultlist
-        KeyListener clearSelected = new KeyListener() {
+        KeyListener clearSelected = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                JList list = (JList) e.getSource();
+                JList<ResultIcon> list = (JList<ResultIcon>) e.getSource();
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                     list.clearSelection();
                 }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-            }
-
-            @Override
-            public void keyTyped(KeyEvent e) {
             }
         };
 
         //Add listener for right-click to display popUpMenu
         MouseAdapter popClick = new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                JList list = (JList) e.getSource();
+                JList<ResultIcon> list = (JList<ResultIcon>) e.getSource();
                 if (SwingUtilities.isRightMouseButton(e)    // if right mouse button clicked
                         && !list.isSelectionEmpty()) {      // and list selection is not empty
                     popupMenu.show(list, e.getX(), e.getY());
@@ -308,31 +273,24 @@ public class ThumbnailBox extends JPanel {
             }
         };
 
-        for (int l = 0; l < NUM_PANELS; l++) {
-            JList<ResultIcon> list = new JList<>();
-            list.setModel(new DefaultListModel<>());
-            list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-            list.setDragEnabled(true);
-            list.setCellRenderer(new SearchPanelCellRenderer());
-            list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-            list.setVisibleRowCount(0);
-            list.addListSelectionListener(selectListener);
-            list.addMouseListener(popClick);
-            list.addKeyListener(clearSelected);
-            resultLists.add(list);
-        }
+        JList<ResultIcon> list = new JList<>();
+        list.setModel(new DefaultListModel<>());
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        list.setDragEnabled(true);
+        list.setCellRenderer(new SearchPanelCellRenderer());
+        list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+        list.setVisibleRowCount(0);
+        list.addListSelectionListener(selectListener);
+        list.addMouseListener(popClick);
+        list.addKeyListener(clearSelected);
+        return list;
     }
 
     private void setPopUpMenu() {
         ActionListener popUpListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 ResultType cmd = ResultType.valueOf(e.getActionCommand());
-                List<ResultIcon> valuesSelected = new ArrayList<>();
-                for (int i = 0; i < NUM_PANELS; i++) {
-                    JList<ResultIcon> list = resultLists.get(i);
-                    valuesSelected.addAll(list.getSelectedValuesList());
-                }
-                for (ResultIcon icon : valuesSelected) {
+                for (ResultIcon icon : resultList.getSelectedValuesList()) {
                     icon.drawOverlay(cmd);
                     SearchResult r = icon.getResult().getResult();
                     Optional<byte[]> fv = r.getBytes("feature_vector.json");
@@ -403,7 +361,7 @@ public class ThumbnailBox extends JPanel {
                                 TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
 
                 timeLabel.setText(timeDisplay);
-                scrollPanesToBottom();
+                scrollPaneToBottom();
             }
         };
 
@@ -426,7 +384,6 @@ public class ThumbnailBox extends JPanel {
         }
         pauseState = true;
         sampledTPCount = 0;
-        sampledFNCount = 0;
         modelStats.set(null);
         searchListener.searchStopped();
         moreResultsButton.setVisible(false);
@@ -451,19 +408,15 @@ public class ThumbnailBox extends JPanel {
     public void retrainSearch() {
         retrainWorker = new SwingWorker<Object, Void>() {
             @Override
-            protected Object doInBackground() throws InterruptedException {
+            protected Object doInBackground() {
                 // non-AWT thread
                 try {
                     pauseState = true;
-                    sampledFNCount = 0;
                     sampledTPCount = 0;
                     moreResultsButton.doClick();
                     pauseState = true;
-                    for (int l = 0; l < resultLists.size(); l++) {
-                        DefaultListModel<ResultIcon> model =
-                                (DefaultListModel<ResultIcon>) resultLists.get(l).getModel();
-                        model.removeAllElements();
-                    }
+                    DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultList.getModel();
+                    model.removeAllElements();
                     moreResultsButton.setVisible(false);
                     stats.setIndeterminateMessage("Retraining in Progress...");
                     statsArea.setDone();
@@ -474,12 +427,7 @@ public class ThumbnailBox extends JPanel {
                     clearFeedBackItems();
                     pauseState = false;
                 } catch (RuntimeException e) {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            stats.showException(e.getCause());
-                        }
-                    });
+                    SwingUtilities.invokeLater(() -> stats.showException(e.getCause()));
                     e.printStackTrace();
                 }
                 return null;
@@ -498,7 +446,6 @@ public class ThumbnailBox extends JPanel {
 
         pauseState = false;
         sampledTPCount = 0;
-        sampledFNCount = 0;
         modelStats.set(null);
 
         startTime = System.nanoTime();
@@ -506,9 +453,7 @@ public class ThumbnailBox extends JPanel {
         startStatsTimer();
         labelExecutor = Executors.newSingleThreadExecutor();
 
-        for (int l = 0; l < resultLists.size(); l++) {
-            resultLists.get(l).setModel(new DefaultListModel<>());
-        }
+        resultList.setModel(new DefaultListModel<>());
 
         // the tricky pausing, try to make it better with local variables
         final AtomicInteger resultsLeftBeforePause = new AtomicInteger(resultsPerScreen);
@@ -548,24 +493,6 @@ public class ThumbnailBox extends JPanel {
                         }
 
                         SearchResult result = resultOpt.get();
-
-                        OptionalInt testExamples = result.getInt("_delphi.test_examples.int");
-                        OptionalInt modelVersion = result.getInt("_delphi.model_version.int");
-                        if (testExamples.isPresent()) {
-                            DelphiModelStatistics latestStats = modelStats.get();
-                            if (latestStats == null
-                                    || latestStats.getLastModelVersion() < modelVersion.getAsInt()) {
-                                modelStats.set(new DelphiModelStatistics(
-                                        modelVersion.getAsInt(),
-                                        testExamples.getAsInt(),
-                                        result.getDouble("_delphi.auc.double").getAsDouble(),
-                                        result.getDouble("_delphi.precision.double").getAsDouble(),
-                                        result.getDouble("_delphi.recall.double").getAsDouble(),
-                                        result.getDouble("_delphi.f1_score.double").getAsDouble()));
-                            }
-                        }
-
-                        int score = result.getInt("_score.string").orElse(0);
 
                         if (resultsLeftBeforePause.getAndDecrement() == 0) {
                             publish(PAUSE_RESULT);
@@ -622,11 +549,7 @@ public class ThumbnailBox extends JPanel {
 
                         if (result.getBytes("_gt_label").isPresent()) {
                             drawBorder(g, Color.RED, origW, origH, 80);
-                            if (score == 1) {
-                                sampledFNCount += 1;
-                            } else {
-                                sampledTPCount += 1;
-                            }
+                            sampledTPCount += 1;
                         } else if (result.getBorderColor().isPresent()) {
                             drawBorder(
                                     g,
@@ -652,8 +575,7 @@ public class ThumbnailBox extends JPanel {
                             }
                         }
 
-                        ResultIcon resultIcon =
-                                new ResultIcon(hr, result.getName(), new ImageIcon(thumb), d, score);
+                        ResultIcon resultIcon = new ResultIcon(hr, result.getName(), new ImageIcon(thumb), d);
                         publish(resultIcon);
                     }
                 } catch (RuntimeException e) {
@@ -712,10 +634,7 @@ public class ThumbnailBox extends JPanel {
                         repaint();  // Repaint this Thumbnail box
                     } else {
                         /* Add newly fetched search result to result list */
-                        int score = resultIcon.getScore(); //score in range 0-2
-                        score = (score == 2) ? 0 : score;
-                        DefaultListModel<ResultIcon> model =
-                                (DefaultListModel<ResultIcon>) resultLists.get(score).getModel();
+                        DefaultListModel<ResultIcon> model = (DefaultListModel<ResultIcon>) resultList.getModel();
                         model.addElement(resultIcon);
                     }
                 }
@@ -752,26 +671,14 @@ public class ThumbnailBox extends JPanel {
                 return;
             }
 
-            Map<String, SearchStats> serverStats = search.getStats();
-
-            boolean hasStats = false;
-            for (SearchStats s : serverStats.values()) {
-                if (s.totalObjects() != 0) {
-                    hasStats = true;
-                    break;
-                }
-            }
+            SearchStats searchStats = search.getStats();
+            boolean hasStats = searchStats.totalObjects() > 0;
 
             if (hasStats) {
                 SwingUtilities.invokeLater(() -> {
-                    long passed = resultLists.get(0).getModel().getSize();
-                    stats.update(serverStats);
-                    statsArea.update(
-                            serverStats,
-                            passed,
-                            sampledTPCount,
-                            sampledFNCount,
-                            Optional.ofNullable(modelStats.get()));
+                    long passed = resultList.getModel().getSize();
+                    stats.update(searchStats);
+                    statsArea.update(searchStats, passed, sampledTPCount);
                 });
             } else {
                 SwingUtilities.invokeLater(() -> stats.setIndeterminateMessage("Waiting for First Results"));

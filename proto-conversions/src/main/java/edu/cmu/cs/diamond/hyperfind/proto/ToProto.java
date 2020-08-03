@@ -127,7 +127,6 @@ public final class ToProto {
                 .setTotalObjects(value.totalObjects())
                 .setProcessedObjects(value.processedObjects())
                 .setDroppedObjects(value.droppedObjects())
-                .setTruePositives(value.truePositives())
                 .setFalseNegatives(value.falseNegatives())
                 .build();
     }

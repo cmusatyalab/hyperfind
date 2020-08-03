@@ -40,44 +40,35 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface SearchStats {
+public interface ModelStats {
 
     @Value.Parameter
-    long totalObjects();
+    long version();
 
     @Value.Parameter
-    long processedObjects();
+    long textExamples();
 
     @Value.Parameter
-    long droppedObjects();
+    double auc();
 
     @Value.Parameter
-    OptionalLong passedObjects();
+    double precision();
 
     @Value.Parameter
-    long falseNegatives();
+    double recall();
 
     @Value.Parameter
-    Optional<ModelStats> model();
+    double f1Score();
 
-    static SearchStats of(
-            long totalObjects,
-            long processedObjects,
-            long droppedObjects,
-            OptionalLong passedObjects,
-            long falseNegatives,
-            Optional<ModelStats> model) {
-        return ImmutableSearchStats.of(
-                totalObjects,
-                processedObjects,
-                droppedObjects,
-                passedObjects,
-                falseNegatives,
-                model);
+    static ModelStats of(long version,
+            long testExamples,
+            double auc,
+            double precision,
+            double recall,
+            double f1Score) {
+        return ImmutableModelStats.of(version, testExamples, auc, precision, recall, f1Score);
     }
 }

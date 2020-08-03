@@ -44,10 +44,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import edu.cmu.cs.delphi.api.DelphiObject;
 import edu.cmu.cs.delphi.api.InferResult;
+import edu.cmu.cs.diamond.hyperfind.connection.api.ModelStats;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
+import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import java.awt.Color;
 import java.util.Optional;
+import java.util.OptionalLong;
 import one.util.streamex.EntryStream;
 
 public final class FromDelphi {
@@ -77,5 +80,30 @@ public final class FromDelphi {
                 ObjectId.of(value.getObjectId(), hostname, hostname),
                 attributes.build(),
                 Optional.empty());
+    }
+
+    public static SearchStats convert(
+            edu.cmu.cs.delphi.api.SearchStats searchStats,
+            Optional<edu.cmu.cs.delphi.api.ModelStats> modelStats) {
+        return SearchStats.of(
+                searchStats.getTotalObjects(),
+                searchStats.getProcessedObjects(),
+                searchStats.getDroppedObjects(),
+                searchStats.hasPassedObjects()
+                        ? OptionalLong.of(searchStats.getPassedObjects().getValue())
+                        : OptionalLong.empty(),
+                searchStats.getFalseNegatives(),
+                modelStats.map(FromDelphi::convert)
+        );
+    }
+
+    private static ModelStats convert(edu.cmu.cs.delphi.api.ModelStats value) {
+        return ModelStats.of(
+                value.getVersion(),
+                value.getTestExamples(),
+                value.getAuc(),
+                value.getValidationMetrics().getPrecision(),
+                value.getValidationMetrics().getRecall(),
+                value.getValidationMetrics().getF1Score());
     }
 }

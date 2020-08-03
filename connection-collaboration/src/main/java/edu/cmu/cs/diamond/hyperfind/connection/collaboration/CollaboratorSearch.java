@@ -40,7 +40,6 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.collaboration;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -143,20 +142,8 @@ public final class CollaboratorSearch implements Search {
     }
 
     @Override
-    public Map<String, SearchStats> getStats() {
-        ImmutableMap.Builder<String, SearchStats> builder = ImmutableMap.builder();
-        BlockingStreamObserver<edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats> observer =
-                new BlockingStreamObserver<>() {
-                    @Override
-                    public void onNext(edu.cmu.cs.diamond.hyperfind.collaboration.api.SearchStats value) {
-                        builder.put(value.getServerName(), FromProto.convert(value));
-                    }
-                };
-
-        service.getSearchStats(searchId, observer);
-        observer.waitForFinish();
-
-        return builder.build();
+    public SearchStats getStats() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

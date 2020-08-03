@@ -55,7 +55,6 @@ import edu.cmu.cs.delphi.api.SVMMode;
 import edu.cmu.cs.delphi.api.SelectorConfig;
 import edu.cmu.cs.delphi.api.TopKSelectorConfig;
 import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -102,6 +101,16 @@ public interface DelphiConfiguration {
     }
 
     @Value.Default
+    default boolean shouldIncludeExamples() {
+        return false;
+    }
+
+    @Value.Default
+    default String examplePath() {
+        return "";
+    }
+
+    @Value.Default
     default boolean shouldDownload() {
         return true;
     }
@@ -121,7 +130,10 @@ public interface DelphiConfiguration {
         return false;
     }
 
-    Optional<String> truststorePath();
+    @Value.Default
+    default String truststorePath() {
+        return "";
+    }
 
     @Value.Default
     default boolean onlyUseBetterModels() {

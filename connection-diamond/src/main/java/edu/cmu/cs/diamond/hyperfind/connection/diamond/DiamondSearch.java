@@ -51,8 +51,8 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
-import one.util.streamex.EntryStream;
 
 public final class DiamondSearch implements Search {
 
@@ -74,9 +74,18 @@ public final class DiamondSearch implements Search {
     }
 
     @Override
-    public Map<String, SearchStats> getStats() {
+    public SearchStats getStats() {
         try {
-            return EntryStream.of(delegate.getStatistics()).mapValues(FromDiamond::convert).toMap();
+            return delegate.getStatistics().values().stream()
+                    .map(FromDiamond::convert)
+                    .reduce((left, right) -> SearchStats.of(
+                            left.totalObjects() + right.totalObjects(),
+                            left.processedObjects() + right.processedObjects(),
+                            left.droppedObjects() + right.droppedObjects(),
+                            OptionalLong.of(left.passedObjects().getAsLong() + right.passedObjects().getAsLong()),
+                            left.falseNegatives() + right.falseNegatives(),
+                            Optional.empty()
+                    )).get();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Failed to get search stats", e);
         }

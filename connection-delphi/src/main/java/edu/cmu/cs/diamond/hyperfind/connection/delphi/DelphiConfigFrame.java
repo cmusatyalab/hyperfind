@@ -51,6 +51,7 @@ import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
+import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -59,13 +60,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -81,18 +83,24 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
     private final JTextArea areaRetrain = createTextField();
     private final JTextArea areaSelector = createTextField();
 
-    private final JCheckBox checkDownload = new JCheckBox("Download results to directory: ");
-    private final JTextField textDownload = new JTextField();
+    private final JCheckBox checkExamples = new JCheckBox("Starting examples directory:");
+    private final JTextField textExamples = new JTextField();
+    private final JButton buttonExamples = new JButton("Browse");
+
+    private final JCheckBox checkDownloadPath = new JCheckBox("Download results to directory: ");
+    private final JTextField textDownloadPath = new JTextField();
+    private final JButton buttonDownloadPath = new JButton("Browse");
 
     private final JTextField textPort = new JTextField();
 
     private final JCheckBox checkSsl = new JCheckBox("Use SSL");
     private final JTextField textTruststore = new JTextField();
+    private final JButton buttonTruststore = new JButton("Browse");
 
     private final JCheckBox checkOnlyUseBetterModels = new JCheckBox("Only Deploy Better Models");
     private final JCheckBox checkColorByModelVersion = new JCheckBox("Color by Model Version");
 
-    private final JButton buttonDownload = new JButton("Download Model");
+    private final JButton buttonDownloadModel = new JButton("Download Model");
 
     public DelphiConfigFrame(
             SearchListenable searchListenable,
@@ -139,11 +147,27 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
-        add(checkDownload, constraints);
+        add(checkExamples, constraints);
         constraints.gridx = 1;
         constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(textDownload, constraints);
+        JPanel examplePanel = new JPanel(new BorderLayout(5, 0));
+        examplePanel.add(textExamples, BorderLayout.CENTER);
+        examplePanel.add(buttonExamples, BorderLayout.LINE_END);
+        add(examplePanel, constraints);
+
+        constraints.weighty = 1;
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+        constraints.weightx = 0;
+        add(checkDownloadPath, constraints);
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        JPanel downloadPanel = new JPanel(new BorderLayout(5, 0));
+        downloadPanel.add(textDownloadPath, BorderLayout.CENTER);
+        downloadPanel.add(buttonDownloadPath, BorderLayout.LINE_END);
+        add(downloadPanel, constraints);
 
         constraints.gridy += 1;
         constraints.gridx = 0;
@@ -166,7 +190,10 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         constraints.gridx = 1;
         constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
-        add(textTruststore, constraints);
+        JPanel truststorePanel = new JPanel(new BorderLayout(5, 0));
+        truststorePanel.add(textTruststore, BorderLayout.CENTER);
+        truststorePanel.add(buttonTruststore, BorderLayout.LINE_END);
+        add(truststorePanel, constraints);
 
         constraints.gridy += 1;
         constraints.gridx = 0;
@@ -181,8 +208,8 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         constraints.gridy += 1;
         constraints.gridx = 0;
         constraints.weightx = 0;
-        buttonDownload.setEnabled(false);
-        add(buttonDownload, constraints);
+        buttonDownloadModel.setEnabled(false);
+        add(buttonDownloadModel, constraints);
 
         constraints.gridx = 1;
         constraints.weightx = 1;
@@ -193,17 +220,18 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
 
         buttonSave.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent _arg) {
+            public void actionPerformed(ActionEvent _e) {
                 ImmutableDelphiConfiguration.Builder builder = ImmutableDelphiConfiguration.builder();
                 builder.addAllTrainStrategy(fromString(areaTrain.getText(), new TypeReference<>() {}));
                 builder.retrainPolicy(fromString(areaRetrain.getText(), new TypeReference<>() {}));
                 builder.selector(fromString(areaSelector.getText(), new TypeReference<>() {}));
-                builder.shouldDownload(checkDownload.isSelected());
-                builder.downloadPathRoot(textDownload.getText());
+                builder.shouldIncludeExamples(checkExamples.isSelected());
+                builder.examplePath(textExamples.getText());
+                builder.shouldDownload(checkDownloadPath.isSelected());
+                builder.downloadPathRoot(textDownloadPath.getText());
                 builder.port(fromString(textPort.getText(), new TypeReference<>() {}));
                 builder.useSsl(checkSsl.isSelected());
-                builder.truststorePath(checkSsl.isSelected()
-                        ? Optional.of(textTruststore.getText()) : Optional.empty());
+                builder.truststorePath(textTruststore.getText());
                 builder.onlyUseBetterModels(checkOnlyUseBetterModels.isSelected());
                 builder.colorByModelVersion(checkColorByModelVersion.isSelected());
 
@@ -211,21 +239,73 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
             }
         });
 
+        buttonExamples.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent _e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
+                if (option == JFileChooser.APPROVE_OPTION) {
+                    textExamples.setText(fileChooser.getSelectedFile().getAbsolutePath());
+                }
+            }
+        });
+
+        buttonDownloadPath.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent _e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
+                if (option == JFileChooser.APPROVE_OPTION) {
+                    textDownloadPath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+                }
+            }
+        });
+
+        buttonTruststore.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent _e) {
+                JFileChooser fileChooser = new JFileChooser();
+                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
+                if (option == JFileChooser.APPROVE_OPTION) {
+                    textTruststore.setText(fileChooser.getSelectedFile().getAbsolutePath());
+                }
+            }
+        });
+
         areaTrain.setText(toString(config.trainStrategy()));
         areaRetrain.setText(toString(config.retrainPolicy()));
         areaSelector.setText(toString(config.selector()));
 
-        checkDownload.setSelected(config.shouldDownload());
-        textDownload.setEnabled(config.shouldDownload());
-        textDownload.setText(config.downloadPathRoot());
-        checkDownload.addItemListener(_ignore -> textDownload.setEnabled(checkDownload.isSelected()));
+        checkExamples.setSelected(config.shouldIncludeExamples());
+        textExamples.setEnabled(config.shouldIncludeExamples());
+        textExamples.setText(config.examplePath());
+        buttonExamples.setEnabled(config.shouldIncludeExamples());
+        checkExamples.addItemListener(_ignore -> {
+            textExamples.setEnabled(checkExamples.isSelected());
+            buttonExamples.setEnabled(checkExamples.isSelected());
+        });
+
+        checkDownloadPath.setSelected(config.shouldDownload());
+        textDownloadPath.setEnabled(config.shouldDownload());
+        textDownloadPath.setText(config.downloadPathRoot());
+        buttonDownloadPath.setEnabled(config.shouldDownload());
+        checkDownloadPath.addItemListener(_ignore -> {
+            textDownloadPath.setEnabled(checkDownloadPath.isSelected());
+            buttonDownloadPath.setEnabled(checkDownloadPath.isSelected());
+        });
 
         textPort.setText(toString(config.port()));
 
         checkSsl.setSelected(config.useSsl());
         textTruststore.setEnabled(config.useSsl());
-        config.truststorePath().ifPresent(textTruststore::setText);
-        checkSsl.addItemListener(_ignore -> textTruststore.setEnabled(checkSsl.isSelected()));
+        textTruststore.setText(config.truststorePath());
+        buttonTruststore.setEnabled(config.useSsl());
+        checkSsl.addItemListener(_ignore -> {
+            textTruststore.setEnabled(checkSsl.isSelected());
+            buttonTruststore.setEnabled(checkSsl.isSelected());
+        });
 
         checkOnlyUseBetterModels.setSelected(config.onlyUseBetterModels());
         checkColorByModelVersion.setSelected(config.colorByModelVersion());
@@ -249,27 +329,32 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         setConfigEnabled(false);
 
         // Remove old listeners
-        Arrays.stream(buttonDownload.getActionListeners()).forEach(buttonDownload::removeActionListener);
-        buttonDownload.addActionListener(_ignore -> ((DelphiSearch) search).downloadModel());
+        Arrays.stream(buttonDownloadModel.getActionListeners()).forEach(buttonDownloadModel::removeActionListener);
+        buttonDownloadModel.addActionListener(_ignore -> ((DelphiSearch) search).downloadModel());
 
-        buttonDownload.setEnabled(true);
+        buttonDownloadModel.setEnabled(true);
     }
 
     @Override
     public void searchStopped() {
         setConfigEnabled(true);
-        buttonDownload.setEnabled(false);
+        buttonDownloadModel.setEnabled(false);
     }
 
     private void setConfigEnabled(boolean enabled) {
         areaTrain.setEnabled(enabled);
         areaRetrain.setEnabled(enabled);
         areaSelector.setEnabled(enabled);
-        checkDownload.setEnabled(enabled);
-        textDownload.setEnabled(enabled && checkDownload.isSelected());
+        checkExamples.setEnabled(enabled);
+        textExamples.setEnabled(enabled && checkExamples.isSelected());
+        buttonExamples.setEnabled(enabled && checkExamples.isSelected());
+        checkDownloadPath.setEnabled(enabled);
+        textDownloadPath.setEnabled(enabled && checkDownloadPath.isSelected());
+        buttonDownloadPath.setEnabled(enabled && checkDownloadPath.isSelected());
         textPort.setEnabled(enabled);
         checkSsl.setEnabled(enabled);
         textTruststore.setEnabled(enabled && checkSsl.isSelected());
+        buttonTruststore.setEnabled(enabled && checkSsl.isSelected());
         checkOnlyUseBetterModels.setEnabled(enabled);
         checkColorByModelVersion.setEnabled(enabled);
     }

@@ -68,8 +68,6 @@ class ResultIcon {
 
     private ImageIcon icon;
 
-    private int score;
-
     private int resultType;
 
     static {
@@ -125,12 +123,11 @@ class ResultIcon {
     }
 
     public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
-            ResultIconSetting displaySelection, int score, int resultType) {
+            ResultIconSetting displaySelection, int resultType) {
         this.result = result;
         this.name = name;
         this.icon = icon;
         this.displaySelection = displaySelection;
-        this.score = (score == 2) ? 0 : score;
         this.originalImage = (icon == null) ? null : setOriginal();
         //resize before displaying 
         if (icon != null) {
@@ -139,12 +136,8 @@ class ResultIcon {
     }
 
     public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
-            ResultIconSetting displaySelection, int score) {
-        this(result, name, icon, displaySelection, score, 2);
-    }
-    public ResultIcon(HyperFindResult result, String name, ImageIcon icon,
             ResultIconSetting displaySelection) {
-        this(result, name, icon, displaySelection, 2, 2);
+        this(result, name, icon, displaySelection, 2);
     }
 
     private BufferedImage copyImage(BufferedImage source, double scale){
@@ -204,14 +197,6 @@ class ResultIcon {
     public void getOriginal() {
         BufferedImage input = (BufferedImage) copyImage(this.originalImage);
         icon = new ImageIcon(input);
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
-    public int getScore() {
-        return score;
     }
 
     public String getName() {

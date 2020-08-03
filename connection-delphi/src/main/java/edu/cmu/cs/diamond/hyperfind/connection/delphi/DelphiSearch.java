@@ -40,18 +40,20 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Int64Value;
 import edu.cmu.cs.delphi.api.AddLabeledExampleIdsRequest;
 import edu.cmu.cs.delphi.api.InferResult;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
 import edu.cmu.cs.delphi.api.ModelArchive;
+import edu.cmu.cs.delphi.api.ModelStats;
 import edu.cmu.cs.delphi.api.SearchId;
+import edu.cmu.cs.delphi.api.SearchStats.Builder;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
@@ -68,6 +70,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -86,6 +89,7 @@ public final class DelphiSearch implements Search {
     private final LinkedBlockingQueue<Optional<SearchResult>> results = new LinkedBlockingQueue<>(1);
     private final AtomicReference<Throwable> downloadThrowable = new AtomicReference<>();
 
+    private final AtomicReference<ModelStats> latestModelStats = new AtomicReference<>();
     private int hostsFinished = 0;
 
     public DelphiSearch(
@@ -101,9 +105,14 @@ public final class DelphiSearch implements Search {
 
         learningModules.forEach((host, learningModule) -> {
             ListenableFuture<?> downloadFuture = this.resultExecutor.submit(() -> {
+                AtomicInteger lastObservedVersion = new AtomicInteger(0);
                 BlockingStreamObserver<InferResult> observer = new BlockingStreamObserver<>() {
                     @Override
                     public void onNext(InferResult value) {
+                        if (value.getModelVersion() > lastObservedVersion.get()) {
+                            lastObservedVersion.set(updateModelStats());
+                        }
+
                         queueResult(Optional.of(FromDelphi.convert(value, host, colorByModelVersion)));
                     }
                 };
@@ -152,9 +161,17 @@ public final class DelphiSearch implements Search {
     }
 
     @Override
-    public Map<String, SearchStats> getStats() {
-        //TODO(hturki): Figure this out
-        return ImmutableMap.of();
+    public SearchStats getStats() {
+        edu.cmu.cs.delphi.api.SearchStats searchStats = learningModules.values().stream()
+                .map(learningModule -> {
+                    UnaryStreamObserver<edu.cmu.cs.delphi.api.SearchStats> observer = new UnaryStreamObserver<>();
+                    learningModule.getSearchStats(searchId, observer);
+                    return observer.value();
+                })
+                .reduce(DelphiSearch::merge)
+                .get();
+
+        return FromDelphi.convert(searchStats, Optional.ofNullable(latestModelStats.get()));
     }
 
     @Override
@@ -213,6 +230,16 @@ public final class DelphiSearch implements Search {
         }
     }
 
+    private int updateModelStats() {
+        LearningModuleServiceStub learningModule =
+                learningModules.get(learningModules.keySet().stream().sorted().findFirst().get());
+        UnaryStreamObserver<ModelStats> observer = new UnaryStreamObserver<>();
+        learningModule.getModelStats(searchId, observer);
+        ModelStats stats = observer.value();
+        latestModelStats.set(stats);
+        return stats.getVersion();
+    }
+
     private void queueResult(Optional<SearchResult> result) {
         try {
             results.put(result);
@@ -220,4 +247,23 @@ public final class DelphiSearch implements Search {
             throw new RuntimeException("Interrupted while trying to put object in result queue", e);
         }
     }
+
+    private static edu.cmu.cs.delphi.api.SearchStats merge(
+            edu.cmu.cs.delphi.api.SearchStats left,
+            edu.cmu.cs.delphi.api.SearchStats right) {
+        edu.cmu.cs.delphi.api.SearchStats.Builder builder = edu.cmu.cs.delphi.api.SearchStats.newBuilder()
+                .setTotalObjects(left.getTotalObjects() + right.getTotalObjects())
+                .setProcessedObjects(left.getProcessedObjects() + right.getProcessedObjects())
+                .setDroppedObjects(left.getDroppedObjects() + right.getDroppedObjects())
+                .setFalseNegatives(left.getFalseNegatives() + right.getFalseNegatives());
+
+        if (left.hasPassedObjects()) {
+            builder.setPassedObjects(Int64Value.newBuilder()
+                    .setValue(left.getPassedObjects().getValue() + right.getPassedObjects().getValue())
+                    .build());
+        }
+
+        return builder.build();
+    }
+
 }

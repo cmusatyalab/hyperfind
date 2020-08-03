@@ -203,8 +203,8 @@ public final class CollaborationResource extends CollaborationServiceGrpc.Collab
             SearchMetadata search = searches.get(request);
             Preconditions.checkNotNull(search, "Search %s not found", request.getValue());
 
-            search.search.getStats().forEach(
-                    (serverName, stats) -> observer.onNext(ToProto.convert(serverName, stats)));
+            // search.search.getStats().forEach(
+            //         (serverName, stats) -> observer.onNext(ToProto.convert(serverName, stats)));
             observer.onCompleted();
         } catch (RuntimeException | Error e) {
             log.error("Failed to get search stats", e);
