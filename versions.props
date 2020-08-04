@@ -1,13 +1,12 @@
 ch.qos.logback:logback-classic=1.2.3
 commons-io:commons-io=2.7
 com.fasterxml.jackson.*:*=2.11.2
-com.google.code.gson:gson=2.8.6
 com.google.guava:guava=29.0-jre
 com.google.protobuf:*=3.12.2
 com.hubspot.jackson:jackson-datatype-protobuf=0.9.12
 com.sun.xml.bind:jaxb-core=2.3.0.1
 com.sun.xml.bind:jaxb-impl=2.3.1
-edu.cmu.cs.delphi:delphi-api=0.0.1-10-g201a8a5
+edu.cmu.cs.delphi:delphi-api=0.0.1-11-g3c9e6ba
 edu.cmu.cs.diamond.opendiamond:opendiamond-java=v8.1.1-11-ge036e50-SNAPSHOT
 io.grpc:*=1.30.2
 one.util:streamex=0.7.2

@@ -40,23 +40,13 @@
 
 package edu.cmu.cs.diamond.hyperfind;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import com.google.gson.reflect.TypeToken;
 import edu.cmu.cs.diamond.hyperfind.collaboration.SearchSelector;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
-import edu.cmu.cs.diamond.hyperfind.connection.api.GsonAdaptersHyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
@@ -67,7 +57,7 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleType;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.GsonAdaptersBundleState;
+import edu.cmu.cs.diamond.hyperfind.jackson.ObjectMappers;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -81,21 +71,13 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Formatter;
@@ -134,6 +116,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public final class Main {
 
+    private static final String SAVED_SEARCH_EXTENSION = "hyperfindsearch";
     private static final int IMAGE_DOWNLOAD_BATCH_SIZE = 50;
 
     private final ThumbnailBox results;
@@ -495,25 +478,11 @@ public final class Main {
             }
         });
 
-        configButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                m.connection.openConfigPanel(searchManager);
-            }
-        });
+        configButton.addActionListener(_e -> m.connection.openConfigPanel(searchManager));
 
-        // Export and import predicates
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter())
-                .registerTypeHierarchyAdapter(BufferedImage.class, new BufferedImageToByteArrayTypeAdaptor())
-                .registerTypeAdapterFactory(new GsonAdaptersHyperFindPredicateState())
-                .registerTypeAdapterFactory(new GsonAdaptersBundleState())
-                .create();
-        final String savedSearchExtension = "hyperfindsearch";
-        final JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(
-                new FileNameExtensionFilter("HyperFind Search Predicates", savedSearchExtension));
+                new FileNameExtensionFilter("HyperFind Search Predicates", SAVED_SEARCH_EXTENSION));
 
         exportPredicatesButton.addActionListener(new ActionListener() {
             @Override
@@ -525,19 +494,15 @@ public final class Main {
                     int retVal = chooser.showSaveDialog(m.frame);
                     if (JFileChooser.APPROVE_OPTION == retVal) {
                         String filename = chooser.getSelectedFile().getAbsolutePath();
-                        if (!filename.endsWith("." + savedSearchExtension)) {
-                            filename += "." + savedSearchExtension;
-                        }
-                        Writer writer = new FileWriter(filename);
-                        System.out.println("Saving predicates to " + filename);
-
-                        List<HyperFindPredicateState> states = new ArrayList<HyperFindPredicateState>();
-                        for (HyperFindPredicate pred : selectedPredicates) {
-                            states.add(pred.export());
+                        if (!filename.endsWith("." + SAVED_SEARCH_EXTENSION)) {
+                            filename += "." + SAVED_SEARCH_EXTENSION;
                         }
 
-                        writer.write(gson.toJson(states));
-                        writer.close();
+                        List<HyperFindPredicateState> predicateStates = selectedPredicates.stream()
+                                .map(HyperFindPredicate::export)
+                                .collect(Collectors.toList());
+
+                        ObjectMappers.MAPPER.writeValue(new File(filename), predicateStates);
                     }
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -552,15 +517,10 @@ public final class Main {
                     int retVal = chooser.showOpenDialog(m.frame);
 
                     if (JFileChooser.APPROVE_OPTION == retVal) {
+                        List<HyperFindPredicateState> restoredStates = ObjectMappers.MAPPER.readValue(
+                                chooser.getSelectedFile(), new TypeReference<>() {});
 
-                        System.out.println("Importing predicates from " + chooser.getSelectedFile().getCanonicalPath());
-                        Reader reader = new FileReader(chooser.getSelectedFile());
-                        List<HyperFindPredicateState> restored_states;
-                        Type type = new TypeToken<ArrayList<HyperFindPredicateState>>() {
-                        }.getType();
-                        restored_states = gson.fromJson(reader, type);
-
-                        for (HyperFindPredicateState state : restored_states) {
+                        for (HyperFindPredicateState state : restoredStates) {
                             model.addPredicate(HyperFindPredicate.restore(state, connection));
                         }
                     }
@@ -574,7 +534,7 @@ public final class Main {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    JList list = (JList) e.getSource();
+                    JList<?> list = (JList<?>) e.getSource();
                     int index = list.locationToIndex(e.getPoint());
                     if (index == -1) {
                         return;
@@ -660,7 +620,8 @@ public final class Main {
                     return;
                 }
 
-                int confirmed = JOptionPane.showConfirmDialog(null,
+                int confirmed = JOptionPane.showConfirmDialog(
+                        null,
                         "Do you wish to continue running your search after disconnecting the client?",
                         "Continue search",
                         JOptionPane.YES_NO_OPTION);
@@ -913,49 +874,5 @@ class SearchManager implements SearchListenable, SearchListener {
         startButton.setEnabled(true);
         stopButton.setEnabled(false);
         searchListeners.forEach(SearchListener::searchStopped);
-    }
-}
-
-// https://gist.github.com/orip/3635246
-class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
-    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-            throws JsonParseException {
-        return Base64.getDecoder().decode(json.getAsString());
-    }
-
-    public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-        return new JsonPrimitive(Base64.getEncoder().encodeToString(src));
-    }
-}
-
-class BufferedImageToByteArrayTypeAdaptor implements JsonSerializer<BufferedImage>, JsonDeserializer<BufferedImage> {
-
-    @Override
-    public BufferedImage deserialize(
-            JsonElement jsonElement,
-            Type type,
-            JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-        byte[] bytes = jsonDeserializationContext.deserialize(jsonElement, byte[].class);
-        BufferedImage bufferedImage = null;
-        try {
-            bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bufferedImage;
-    }
-
-    @Override
-    public JsonElement serialize(
-            BufferedImage bufferedImage,
-            Type type,
-            JsonSerializationContext jsonSerializationContext) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(bufferedImage, "jpg", baos);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return jsonSerializationContext.serialize(baos.toByteArray());
     }
 }

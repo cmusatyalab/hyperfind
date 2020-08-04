@@ -44,10 +44,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import java.util.Map;
-import org.immutables.gson.Gson;
 import org.immutables.value.Value;
 
-@Gson.TypeAdapters
 @Value.Immutable
 @JsonSerialize(as = ImmutableBundleState.class)
 @JsonDeserialize(as = ImmutableBundleState.class)

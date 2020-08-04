@@ -46,10 +46,8 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.immutables.gson.Gson;
 import org.immutables.value.Value;
 
-@Gson.TypeAdapters
 @Value.Immutable
 @JsonSerialize(as = ImmutableHyperFindPredicateState.class)
 @JsonDeserialize(as = ImmutableHyperFindPredicateState.class)
