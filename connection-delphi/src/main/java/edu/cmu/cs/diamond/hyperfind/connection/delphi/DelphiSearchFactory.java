@@ -40,6 +40,7 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -71,12 +72,10 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
-import edu.cmu.cs.diamond.hyperfind.grpc.Channels;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
 import edu.cmu.cs.diamond.opendiamond.Cookie;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import java.io.File;
 import java.io.FileInputStream;
@@ -94,6 +93,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -108,11 +108,11 @@ public final class DelphiSearchFactory implements SearchFactory {
             "train", ExampleSet.TRAIN, "test", ExampleSet.TEST);
 
     private final DelphiConfiguration config;
-    private final List<edu.cmu.cs.delphi.api.Filter> filters;
+    private final List<Filter> filters;
     private final CookieMap cookieMap;
 
     private final ListeningExecutorService resultExecutor;
-    private final Map<String, LearningModuleServiceStub> learningModules;
+    private final Supplier<Map<String, LearningModuleServiceStub>> learningModules;
 
     public DelphiSearchFactory(
             DelphiConfiguration config,
@@ -121,62 +121,66 @@ public final class DelphiSearchFactory implements SearchFactory {
             ExecutorService resultExecutor) {
         this.config = config;
 
-        ImmutableList.Builder<edu.cmu.cs.delphi.api.Filter> filtersBuilder = ImmutableList.builder();
-        if (filters.size() > 2) {
-            // Then there are some filters besides RGB and Thumbnail. Remove thumbnail as Delphi can generate this
-            // independently
-            filtersBuilder.add(ToDelphi.convert(filters.get(0)));
-            filters.stream().skip(2).map(ToDelphi::convert).forEach(filtersBuilder::add);
-        }
-
-        this.filters = filtersBuilder.build();
+        this.filters = filters;
         this.cookieMap = cookieMap;
         this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
-        this.learningModules = Arrays.stream(this.cookieMap.getHosts()).collect(Collectors.toMap(
+        this.learningModules = () -> Arrays.stream(cookieMap.getHosts()).collect(Collectors.toMap(
                 h -> h,
-                h -> LearningModuleServiceGrpc.newStub(createChannel(config, h))));
+                h -> LearningModuleServiceGrpc.newStub(Channels.create(config, h))));
     }
 
     @Override
-    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> _predicateState) {
+    public Search createSearch(Set<String> attributes, List<HyperFindPredicateState> predicateState) {
         SearchId searchId = SearchId.newBuilder().setValue(UUID.randomUUID().toString()).build();
         String[] hosts = cookieMap.getHosts();
         List<String> nodes = Arrays.stream(hosts)
                 .map(h -> String.format("%s:%d", h, config.port()))
                 .collect(Collectors.toList());
 
-        for (int i = 0; i < hosts.length; i++) {
-            UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
-            StreamObserver<SearchRequest> request = learningModules.get(hosts[i]).startSearch(observer);
+        String metadata = getMetadata(predicateState);
+        Map<String, LearningModuleServiceStub> modules = learningModules.get();
 
-            request.onNext(SearchRequest.newBuilder()
-                    .setConfig(SearchConfig.newBuilder()
-                            .setSearchId(searchId)
-                            .addAllNodes(nodes)
-                            .setNodeIndex(i)
-                            .addAllTrainStrategy(config.trainStrategy())
-                            .setRetrainPolicy(config.retrainPolicy())
-                            .setOnlyUseBetterModels(config.onlyUseBetterModels())
-                            .setDataset(getDataset(hosts[i], attributes))
-                            .setSelector(config.selector())
-                            .build())
-                    .build());
+        try {
+            for (int i = 0; i < hosts.length; i++) {
+                UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
+                StreamObserver<SearchRequest> request = modules.get(hosts[i]).startSearch(observer);
 
-            if (config.shouldIncludeExamples()) {
-                try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
-                    paths.forEach(path -> addExamples(path, request, Optional.empty()));
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to list files in example directory: " + config.examplePath());
+                request.onNext(SearchRequest.newBuilder()
+                        .setConfig(SearchConfig.newBuilder()
+                                .setSearchId(searchId)
+                                .addAllNodes(nodes)
+                                .setNodeIndex(i)
+                                .addAllTrainStrategy(config.trainStrategy())
+                                .setRetrainPolicy(config.retrainPolicy())
+                                .setOnlyUseBetterModels(config.onlyUseBetterModels())
+                                .setDataset(getDataset(hosts[i], attributes))
+                                .setSelector(config.selector())
+                                .setMetadata(metadata)
+                                .build())
+                        .build());
+
+                if (config.shouldIncludeExamples()) {
+                    try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
+                        paths.forEach(path -> addExamples(path, request, Optional.empty()));
+                    } catch (IOException e) {
+                        throw new RuntimeException(
+                                "Failed to list files in example directory: " + config.examplePath());
+                    }
                 }
+
+                request.onCompleted();
+
+                observer.waitForFinish();
             }
-
-            request.onCompleted();
-
-            observer.waitForFinish();
+        } finally {
+            modules.forEach((host, learningModule) -> {
+                ManagedChannel channel = (ManagedChannel) learningModule.getChannel();
+                Channels.shutdown(host, channel);
+            });
         }
 
         return new DelphiSearch(
-                learningModules,
+                learningModules.get(),
                 searchId,
                 config.shouldDownload()
                         ? Optional.of(Paths.get(config.downloadPathRoot()).resolve(searchId.getValue()))
@@ -203,29 +207,36 @@ public final class DelphiSearchFactory implements SearchFactory {
         objectIds.forEach(id -> resultsByHost.put(id.hostname(), id.objectId()));
 
         Map<ObjectId, SearchResult> results = new ConcurrentHashMap<>();
-        List<ListenableFuture<?>> downloadTasks = resultsByHost.asMap().entrySet().stream()
-                .map(e -> resultExecutor.submit(() -> {
-                    BlockingStreamObserver<DelphiObject> observer = new BlockingStreamObserver<>() {
-                        @Override
-                        public void onNext(DelphiObject value) {
-                            SearchResult converted = FromDelphi.convert(value, e.getKey());
-                            results.put(converted.getId(), converted);
-                        }
-                    };
-                    GetObjectsRequest request = GetObjectsRequest.newBuilder()
-                            .setDataset(getDataset(e.getKey(), attributes))
-                            .addAllObjectIds(e.getValue())
-                            .addAllAttributes(attributes)
-                            .build();
-                    learningModules.get(e.getKey()).getObjects(request, observer);
-                    observer.waitForFinish();
-                }))
-                .collect(Collectors.toList());
 
+        Map<String, LearningModuleServiceStub> modules = learningModules.get();
         try {
+            List<ListenableFuture<?>> downloadTasks = resultsByHost.asMap().entrySet().stream()
+                    .map(e -> resultExecutor.submit(() -> {
+                        BlockingStreamObserver<DelphiObject> observer = new BlockingStreamObserver<>() {
+                            @Override
+                            public void onNext(DelphiObject value) {
+                                SearchResult converted = FromDelphi.convert(value, e.getKey());
+                                results.put(converted.getId(), converted);
+                            }
+                        };
+                        GetObjectsRequest request = GetObjectsRequest.newBuilder()
+                                .setDataset(getDataset(e.getKey(), attributes))
+                                .addAllObjectIds(e.getValue())
+                                .addAllAttributes(attributes)
+                                .build();
+                        modules.get(e.getKey()).getObjects(request, observer);
+                        observer.waitForFinish();
+                    }))
+                    .collect(Collectors.toList());
+
             Futures.allAsList(downloadTasks).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Failed to get results", e);
+        } finally {
+            modules.forEach((host, learningModule) -> {
+                ManagedChannel channel = (ManagedChannel) learningModule.getChannel();
+                Channels.shutdown(host, channel);
+            });
         }
 
         return results;
@@ -286,7 +297,7 @@ public final class DelphiSearchFactory implements SearchFactory {
     private Dataset getDataset(String host, Set<String> attributes) {
         return Dataset.newBuilder()
                 .setDiamond(DiamondDataset.newBuilder()
-                        .addAllFilters(filters)
+                        .addAllFilters(convert(filters))
                         .addAllCookies(cookieMap.get(host).stream().map(Cookie::getCookie)
                                 .collect(Collectors.toList()))
                         .addAllAttributes(attributes)
@@ -294,15 +305,24 @@ public final class DelphiSearchFactory implements SearchFactory {
                 .build();
     }
 
-    private static Channel createChannel(DelphiConfiguration config, String host) {
-        return config.useSsl()
-                ? Channels.createSslChannel(
-                host,
-                config.port(),
-                !config.truststorePath().isBlank() ? Optional.of(config.truststorePath()) : Optional.empty())
-                : ManagedChannelBuilder.forAddress(host, config.port())
-                        .maxInboundMessageSize(Integer.MAX_VALUE)
-                        .usePlaintext()
-                        .build();
+    private String getMetadata(List<HyperFindPredicateState> predicateState) {
+        try {
+            return ObjectMappers.MAPPER.writeValueAsString(SearchMetadata.of(filters, predicateState,
+                    System.currentTimeMillis()));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize search metadata", e);
+        }
+    }
+
+    private static List<edu.cmu.cs.delphi.api.Filter> convert(List<Filter> filters) {
+        ImmutableList.Builder<edu.cmu.cs.delphi.api.Filter> filtersBuilder = ImmutableList.builder();
+        if (filters.size() > 2) {
+            // Then there are some filters besides RGB and Thumbnail. We can't remove RGB since filters might be
+            // relying on its output, but remove Thumbnail as Delphi can generate this independently
+            filtersBuilder.add(ToDelphi.convert(filters.get(0)));
+            filters.stream().skip(2).map(ToDelphi::convert).forEach(filtersBuilder::add);
+        }
+
+        return filtersBuilder.build();
     }
 }

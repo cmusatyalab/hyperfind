@@ -44,10 +44,6 @@ package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
@@ -73,11 +69,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class DelphiConfigFrame extends JFrame implements SearchListener {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
-            .registerModule(new Jdk8Module())
-            .registerModule(new ProtobufModule());
 
     private final JTextArea areaTrain = createTextField();
     private final JTextArea areaRetrain = createTextField();
@@ -361,7 +352,7 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
 
     private <T> T fromString(String message, TypeReference<T> reference) {
         try {
-            return OBJECT_MAPPER.readValue(message, reference);
+            return ObjectMappers.MAPPER.readValue(message, reference);
         } catch (JsonProcessingException e) {
             JOptionPane.showMessageDialog(this, "Failed to parse message: " + message);
             throw new RuntimeException("Failed to parse message: " + message, e);
@@ -379,7 +370,7 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
 
     private static String toString(Object message) {
         try {
-            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(message);
+            return ObjectMappers.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(message);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to print message", e);
         }

@@ -60,7 +60,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ImmutableDelphiConfiguration.class)
 @JsonDeserialize(as = ImmutableDelphiConfiguration.class)
-@Value.Style(jdkOnly = true)
 public interface DelphiConfiguration {
 
     @Value.Default

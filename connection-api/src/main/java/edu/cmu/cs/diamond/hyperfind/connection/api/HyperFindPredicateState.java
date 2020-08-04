@@ -40,6 +40,8 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,8 @@ import org.immutables.value.Value;
 
 @Gson.TypeAdapters
 @Value.Immutable
+@JsonSerialize(as = ImmutableHyperFindPredicateState.class)
+@JsonDeserialize(as = ImmutableHyperFindPredicateState.class)
 public interface HyperFindPredicateState {
 
     @Value.Parameter

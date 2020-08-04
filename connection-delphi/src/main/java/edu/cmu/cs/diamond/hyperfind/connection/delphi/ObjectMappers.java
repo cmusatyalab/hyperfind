@@ -38,27 +38,30 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.api;
+package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
-import java.io.InputStream;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 
-public interface Connection {
+public final class ObjectMappers {
 
-    SearchFactory getSearchFactory(List<Filter> filters);
+    public static final ObjectMapper MAPPER = new ObjectMapper()
+            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
+            .registerModule(new GuavaModule())
+            .registerModule(new Jdk8Module())
+            .registerModule(new ProtobufModule());
 
-    List<SearchInfo> getRunningSearches();
+    public static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
+            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
+            .registerModule(new GuavaModule())
+            .registerModule(new Jdk8Module())
+            .registerModule(new ProtobufModule());
 
-    List<Bundle> getBundles();
-
-    Bundle getBundle(InputStream inputStream);
-
-    Bundle restoreBundle(BundleState state);
-
-    void openConfigPanel(SearchListenable searchListenable);
-
-    boolean supportsOfflineSearch();
+    private ObjectMappers() {
+    }
 
 }

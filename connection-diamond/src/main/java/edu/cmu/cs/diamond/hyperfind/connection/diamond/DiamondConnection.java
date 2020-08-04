@@ -129,6 +129,11 @@ public final class DiamondConnection implements Connection {
         new DiamondConfigFrame(searchListenable, configProps, this::saveProperties);
     }
 
+    @Override
+    public boolean supportsOfflineSearch() {
+        return false;
+    }
+
     private static List<File> splitDirs(String paths) {
         return Arrays.stream(paths.split(":")).map(File::new).filter(File::isDirectory).collect(Collectors.toList());
     }

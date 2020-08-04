@@ -78,6 +78,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -649,6 +651,25 @@ public final class Main {
 
         frame.setMinimumSize(new Dimension(640, 480));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // Hack to check if search is running
+                if (startButton.isEnabled() || !connection.supportsOfflineSearch()) {
+                    return;
+                }
+
+                int confirmed = JOptionPane.showConfirmDialog(null,
+                        "Do you wish to continue running your search after disconnecting the client?",
+                        "Continue search",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (confirmed != JOptionPane.YES_OPTION) {
+                    m.search.close();
+                }
+            }
+        });
 
         runningSearch.ifPresent(search -> {
             search.predicateState()

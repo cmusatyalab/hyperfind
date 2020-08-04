@@ -1,4 +1,6 @@
 dependencies {
+    compile 'com.fasterxml.jackson.core:jackson-databind'
+
     annotationProcessor 'org.immutables:gson'
     compileOnly 'org.immutables:gson::annotations'
 

@@ -40,38 +40,41 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.google.common.collect.ImmutableList;
-import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.protobuf.Empty;
+import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc;
+import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
+import edu.cmu.cs.delphi.api.SearchId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.RunningSearch;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.hyperfind.connection.diamond.FromDiamond;
+import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
+import io.grpc.ManagedChannel;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public final class DelphiConnection implements Connection {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory())
-            .setPropertyNamingStrategy(PropertyNamingStrategy.LOWER_CAMEL_CASE)
-            .registerModule(new Jdk8Module())
-            .registerModule(new ProtobufModule());
 
     private static final File CONFIG_FILE = Paths.get(System.getProperty("user.home"))
             .resolve(".diamond")
@@ -79,28 +82,68 @@ public final class DelphiConnection implements Connection {
             .toFile();
 
     private final BundleFactory bundleFactory;
+    private final CookieMap cookieMap;
     private final ExecutorService resultExecutor;
 
     private DelphiConfiguration config = loadConfig();
 
     public DelphiConnection(String bundleDirs, String filterDirs) {
         this.bundleFactory = new BundleFactory(splitDirs(bundleDirs), splitDirs(filterDirs));
+        this.cookieMap = getCookieMap();
         this.resultExecutor = Executors.newCachedThreadPool();
     }
 
     @Override
     public SearchFactory getSearchFactory(List<Filter> filters) {
-        try {
-            CookieMap cookieMap = CookieMap.createDefaultCookieMap();
-            return new DelphiSearchFactory(config, filters, cookieMap, resultExecutor);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create cookie map", e);
-        }
+        return new DelphiSearchFactory(config, filters, cookieMap, resultExecutor);
     }
 
     @Override
     public List<SearchInfo> getRunningSearches() {
-        return ImmutableList.of();
+        Map<String, ManagedChannel> channels = new HashMap<>();
+        try {
+            Map<SearchId, edu.cmu.cs.delphi.api.SearchInfo> searchInfos = new HashMap<>();
+            Multimap<SearchId, String> searchHosts = HashMultimap.create();
+            for (String host : cookieMap.getHosts()) {
+                ManagedChannel channel = Channels.create(config, host);
+                channels.put(host, channel);
+                LearningModuleServiceStub learningModule = LearningModuleServiceGrpc.newStub(channel);
+                BlockingStreamObserver<edu.cmu.cs.delphi.api.SearchInfo> observer = new BlockingStreamObserver<>() {
+                    @Override
+                    public void onNext(edu.cmu.cs.delphi.api.SearchInfo value) {
+                        SearchId searchId = value.getSearchId();
+                        searchInfos.putIfAbsent(searchId, value);
+                        searchHosts.put(searchId, host);
+                    }
+                };
+
+                learningModule.getSearches(Empty.newBuilder().build(), observer);
+                observer.waitForFinish();
+            }
+
+            return searchInfos.entrySet().stream().map(e -> {
+                SearchMetadata metadata = parseMetadata(e.getValue().getMetadata());
+
+                return SearchInfo.of(() -> {
+                    SearchId searchId = e.getKey();
+
+                    DelphiSearch search = new DelphiSearch(
+                            searchHosts.get(searchId).stream().collect(Collectors.toMap(
+                                    h -> h,
+                                    h -> LearningModuleServiceGrpc.newStub(Channels.create(config, h)))),
+                            searchId,
+                            config.shouldDownload()
+                                    ? Optional.of(Paths.get(config.downloadPathRoot()).resolve(searchId.getValue()))
+                                    : Optional.empty(),
+                            resultExecutor,
+                            config.colorByModelVersion());
+
+                    return RunningSearch.of(search, metadata.filters(), metadata.predicateState());
+                }, Instant.ofEpochMilli(metadata.startTime()));
+            }).collect(Collectors.toList());
+        } finally {
+            channels.forEach(Channels::shutdown);
+        }
     }
 
     @Override
@@ -134,10 +177,15 @@ public final class DelphiConnection implements Connection {
         new DelphiConfigFrame(searchListenable, config, this::saveConfig);
     }
 
+    @Override
+    public boolean supportsOfflineSearch() {
+        return true;
+    }
+
     private DelphiConfiguration loadConfig() {
         if (CONFIG_FILE.exists()) {
             try {
-                return OBJECT_MAPPER.readValue(CONFIG_FILE, DelphiConfiguration.class);
+                return ObjectMappers.YAML_MAPPER.readValue(CONFIG_FILE, DelphiConfiguration.class);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to load config file", e);
             }
@@ -148,12 +196,28 @@ public final class DelphiConnection implements Connection {
 
     private void saveConfig(DelphiConfiguration newConfig) {
         try {
-            OBJECT_MAPPER.writeValue(CONFIG_FILE, newConfig);
+            ObjectMappers.YAML_MAPPER.writeValue(CONFIG_FILE, newConfig);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save config file", e);
         }
 
         config = newConfig;
+    }
+
+    private static SearchMetadata parseMetadata(String value) {
+        try {
+            return ObjectMappers.MAPPER.readValue(value, SearchMetadata.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse metadata", e);
+        }
+    }
+
+    private static CookieMap getCookieMap() {
+        try {
+            return CookieMap.createDefaultCookieMap();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create cookie map", e);
+        }
     }
 
     private static List<File> splitDirs(String paths) {

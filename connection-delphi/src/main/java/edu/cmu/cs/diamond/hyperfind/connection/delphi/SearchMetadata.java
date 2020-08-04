@@ -38,27 +38,37 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.api;
+package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
-import java.io.InputStream;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
+import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import java.util.List;
+import org.immutables.value.Value;
 
-public interface Connection {
+@Value.Immutable
+@JsonSerialize(as = ImmutableSearchMetadata.class)
+@JsonDeserialize(as = ImmutableSearchMetadata.class)
+public interface SearchMetadata {
 
-    SearchFactory getSearchFactory(List<Filter> filters);
+    /**
+     * Used to repopulate filter list in frontend.
+     */
+    @Value.Parameter
+    List<Filter> filters();
 
-    List<SearchInfo> getRunningSearches();
+    /**
+     * Used to repopulate filter list in frontend.
+     */
+    @Value.Parameter
+    List<HyperFindPredicateState> predicateState();
 
-    List<Bundle> getBundles();
+    @Value.Parameter
+    long startTime();
 
-    Bundle getBundle(InputStream inputStream);
-
-    Bundle restoreBundle(BundleState state);
-
-    void openConfigPanel(SearchListenable searchListenable);
-
-    boolean supportsOfflineSearch();
+    static SearchMetadata of(List<Filter> filters, List<HyperFindPredicateState> predicateState, long startTime) {
+        return ImmutableSearchMetadata.of(filters, predicateState, startTime);
+    }
 
 }

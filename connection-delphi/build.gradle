@@ -2,9 +2,9 @@ dependencies {
     compile project(':connection-diamond')
     compile project(':grpc-utils')
 
-    compile 'com.fasterxml.jackson.core:jackson-databind'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
     compile 'com.google.guava:guava'
     compile 'com.google.protobuf:protobuf-java-util'
     compile 'com.hubspot.jackson:jackson-datatype-protobuf'

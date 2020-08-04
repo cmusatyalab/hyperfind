@@ -196,6 +196,11 @@ public final class CollaborationConnection implements Connection {
 
     }
 
+    @Override
+    public boolean supportsOfflineSearch() {
+        return true;
+    }
+
     public void updateCookies(Optional<String> proxyIp) {
         UpdateCookiesRequest.Builder request = UpdateCookiesRequest.newBuilder();
         proxyIp.ifPresent(p -> request.setProxyIp(StringValue.newBuilder().setValue(p).build()));

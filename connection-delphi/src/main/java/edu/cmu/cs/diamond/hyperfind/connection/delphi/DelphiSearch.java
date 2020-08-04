@@ -53,7 +53,6 @@ import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub
 import edu.cmu.cs.delphi.api.ModelArchive;
 import edu.cmu.cs.delphi.api.ModelStats;
 import edu.cmu.cs.delphi.api.SearchId;
-import edu.cmu.cs.delphi.api.SearchStats.Builder;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
@@ -61,6 +60,7 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
 import edu.cmu.cs.diamond.hyperfind.grpc.BlockingStreamObserver;
 import edu.cmu.cs.diamond.hyperfind.grpc.UnaryStreamObserver;
+import io.grpc.ManagedChannel;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,7 +84,6 @@ public final class DelphiSearch implements Search {
 
     private final SearchId searchId;
     private final Optional<Path> exportDir;
-    private final ListeningExecutorService resultExecutor;
 
     private final LinkedBlockingQueue<Optional<SearchResult>> results = new LinkedBlockingQueue<>(1);
     private final AtomicReference<Throwable> downloadThrowable = new AtomicReference<>();
@@ -101,10 +100,10 @@ public final class DelphiSearch implements Search {
         this.learningModules = learningModules;
         this.searchId = searchId;
         this.exportDir = exportDir;
-        this.resultExecutor = MoreExecutors.listeningDecorator(resultExecutor);
+        ListeningExecutorService executor = MoreExecutors.listeningDecorator(resultExecutor);
 
         learningModules.forEach((host, learningModule) -> {
-            ListenableFuture<?> downloadFuture = this.resultExecutor.submit(() -> {
+            ListenableFuture<?> downloadFuture = executor.submit(() -> {
                 AtomicInteger lastObservedVersion = new AtomicInteger(0);
                 BlockingStreamObserver<InferResult> observer = new BlockingStreamObserver<>() {
                     @Override
@@ -199,10 +198,13 @@ public final class DelphiSearch implements Search {
 
     @Override
     public void close() {
-        learningModules.values().forEach(learningModule -> {
+        learningModules.forEach((host, learningModule) -> {
             UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
             learningModule.stopSearch(searchId, observer);
             observer.waitForFinish();
+
+            ManagedChannel channel = (ManagedChannel) learningModule.getChannel();
+            Channels.shutdown(host, channel);
         });
     }
 

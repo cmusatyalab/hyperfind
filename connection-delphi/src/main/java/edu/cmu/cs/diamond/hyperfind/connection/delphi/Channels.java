@@ -38,27 +38,49 @@
  * which carries forward this exception.
  */
 
-package edu.cmu.cs.diamond.hyperfind.connection.api;
+package edu.cmu.cs.diamond.hyperfind.connection.delphi;
 
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
-import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
-import java.io.InputStream;
-import java.util.List;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface Connection {
+public final class Channels {
 
-    SearchFactory getSearchFactory(List<Filter> filters);
+    private static final Logger log = LoggerFactory.getLogger(Channels.class);
 
-    List<SearchInfo> getRunningSearches();
+    private Channels() {
 
-    List<Bundle> getBundles();
+    }
 
-    Bundle getBundle(InputStream inputStream);
+    public static ManagedChannel create(DelphiConfiguration config, String host) {
+        return config.useSsl()
+                ? edu.cmu.cs.diamond.hyperfind.grpc.Channels.createSslChannel(
+                host,
+                config.port(),
+                !config.truststorePath().isBlank() ? Optional.of(config.truststorePath()) : Optional.empty())
+                : ManagedChannelBuilder.forAddress(host, config.port())
+                        .maxInboundMessageSize(Integer.MAX_VALUE)
+                        .usePlaintext()
+                        .build();
+    }
 
-    Bundle restoreBundle(BundleState state);
+    public static void shutdown(String host, ManagedChannel channel) {
+        channel.shutdown();
+        try {
+            channel.awaitTermination(5, TimeUnit.SECONDS);
+            return;
+        } catch (InterruptedException e) {
+            log.warn("Failed to shutdown channel to {} gracefully - attempting forced shutdown", host, e);
+        }
 
-    void openConfigPanel(SearchListenable searchListenable);
-
-    boolean supportsOfflineSearch();
-
+        channel.shutdownNow();
+        try {
+            channel.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Failed to force shutdown channel to {} gracefully", host, e);
+        }
+    }
 }

@@ -40,10 +40,14 @@
 
 package edu.cmu.cs.diamond.hyperfind.connection.api;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
+@JsonSerialize(as = ImmutableFilter.class)
+@JsonDeserialize(as = ImmutableFilter.class)
 public interface Filter {
 
     @Value.Parameter
