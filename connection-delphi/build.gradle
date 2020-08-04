@@ -1,13 +1,11 @@
 dependencies {
     compile project(':connection-diamond')
-    compile project(':grpc-utils')
+    compile project(':jackson-utils')
 
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
-    compile 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
+
     compile 'com.google.guava:guava'
     compile 'com.google.protobuf:protobuf-java-util'
-    compile 'com.hubspot.jackson:jackson-datatype-protobuf'
+    compile 'io.grpc:grpc-netty-shaded'
     compile 'one.util:streamex'
     compile 'org.slf4j:slf4j-api'
 

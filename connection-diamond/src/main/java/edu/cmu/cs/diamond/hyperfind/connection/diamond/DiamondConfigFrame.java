@@ -61,7 +61,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JTextField;
 
-public class DiamondConfigFrame extends JFrame implements SearchListener {
+public final class DiamondConfigFrame extends JFrame implements SearchListener {
 
     private final JCheckBox checkProxy = new JCheckBox("Use proxy IP: ");
     private final JTextField textProxy = new JTextField();

@@ -47,12 +47,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListener;
+import edu.cmu.cs.diamond.hyperfind.jackson.ObjectMappers;
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-public class DelphiConfigFrame extends JFrame implements SearchListener {
+public final class DelphiConfigFrame extends JFrame implements SearchListener {
 
     private final JTextArea areaTrain = createTextField();
     private final JTextArea areaRetrain = createTextField();
@@ -109,59 +108,33 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
 
         constraints.weighty = 20;
         add(new JLabel("Train Strategy"), constraints);
-        constraints.gridx += 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.BOTH;
-        add(new JScrollPane(areaTrain), constraints);
+        addScrollableArea(constraints, areaTrain);
 
         constraints.weighty = 8;
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(new JLabel("Retrain Policy"), constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.BOTH;
-        add(new JScrollPane(areaRetrain), constraints);
+        addScrollableArea(constraints, areaRetrain);
 
         constraints.weighty = 8;
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(new JLabel("Result Selector"), constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.BOTH;
-        add(new JScrollPane(areaSelector), constraints);
+        addScrollableArea(constraints, areaSelector);
 
         constraints.weighty = 1;
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(checkExamples, constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        JPanel examplePanel = new JPanel(new BorderLayout(5, 0));
-        examplePanel.add(textExamples, BorderLayout.CENTER);
-        examplePanel.add(buttonExamples, BorderLayout.LINE_END);
-        add(examplePanel, constraints);
+        addFileSearch(constraints, textExamples, buttonExamples);
 
         constraints.weighty = 1;
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(checkDownloadPath, constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        JPanel downloadPanel = new JPanel(new BorderLayout(5, 0));
-        downloadPanel.add(textDownloadPath, BorderLayout.CENTER);
-        downloadPanel.add(buttonDownloadPath, BorderLayout.LINE_END);
-        add(downloadPanel, constraints);
+        addFileSearch(constraints, textDownloadPath, buttonDownloadPath);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(new JLabel("Delphi Port"), constraints);
         constraints.gridx = 1;
@@ -169,35 +142,24 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         constraints.fill = GridBagConstraints.HORIZONTAL;
         add(textPort, constraints);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(checkSsl, constraints);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(new JLabel("Truststore Path"), constraints);
-        constraints.gridx = 1;
-        constraints.weightx = 1;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        JPanel truststorePanel = new JPanel(new BorderLayout(5, 0));
-        truststorePanel.add(textTruststore, BorderLayout.CENTER);
-        truststorePanel.add(buttonTruststore, BorderLayout.LINE_END);
-        add(truststorePanel, constraints);
+        addFileSearch(constraints, textTruststore, buttonTruststore);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(checkOnlyUseBetterModels, constraints);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         add(checkColorByModelVersion, constraints);
 
-        constraints.gridy += 1;
-        constraints.gridx = 0;
+        newRow(constraints);
         constraints.weightx = 0;
         buttonDownloadModel.setEnabled(false);
         add(buttonDownloadModel, constraints);
@@ -209,61 +171,29 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         JButton buttonSave = new JButton("Save Config");
         add(buttonSave, constraints);
 
-        buttonSave.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent _e) {
-                ImmutableDelphiConfiguration.Builder builder = ImmutableDelphiConfiguration.builder();
-                builder.addAllTrainStrategy(fromString(areaTrain.getText(), new TypeReference<>() {}));
-                builder.retrainPolicy(fromString(areaRetrain.getText(), new TypeReference<>() {}));
-                builder.selector(fromString(areaSelector.getText(), new TypeReference<>() {}));
-                builder.shouldIncludeExamples(checkExamples.isSelected());
-                builder.examplePath(textExamples.getText());
-                builder.shouldDownload(checkDownloadPath.isSelected());
-                builder.downloadPathRoot(textDownloadPath.getText());
-                builder.port(fromString(textPort.getText(), new TypeReference<>() {}));
-                builder.useSsl(checkSsl.isSelected());
-                builder.truststorePath(textTruststore.getText());
-                builder.onlyUseBetterModels(checkOnlyUseBetterModels.isSelected());
-                builder.colorByModelVersion(checkColorByModelVersion.isSelected());
+        buttonSave.addActionListener(_ignore -> {
+            ImmutableDelphiConfiguration.Builder builder = ImmutableDelphiConfiguration.builder();
+            builder.addAllTrainStrategy(fromString(areaTrain.getText(), new TypeReference<>() {}));
+            builder.retrainPolicy(fromString(areaRetrain.getText(), new TypeReference<>() {}));
+            builder.selector(fromString(areaSelector.getText(), new TypeReference<>() {}));
+            builder.shouldIncludeExamples(checkExamples.isSelected());
+            builder.examplePath(textExamples.getText());
+            builder.shouldDownload(checkDownloadPath.isSelected());
+            builder.downloadPathRoot(textDownloadPath.getText());
+            builder.port(fromString(textPort.getText(), new TypeReference<>() {}));
+            builder.useSsl(checkSsl.isSelected());
+            builder.truststorePath(textTruststore.getText());
+            builder.onlyUseBetterModels(checkOnlyUseBetterModels.isSelected());
+            builder.colorByModelVersion(checkColorByModelVersion.isSelected());
 
-                saveCallback.accept(builder.build());
-            }
+            saveCallback.accept(builder.build());
         });
 
-        buttonExamples.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent _e) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
-                if (option == JFileChooser.APPROVE_OPTION) {
-                    textExamples.setText(fileChooser.getSelectedFile().getAbsolutePath());
-                }
-            }
-        });
-
-        buttonDownloadPath.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent _e) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
-                if (option == JFileChooser.APPROVE_OPTION) {
-                    textDownloadPath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-                }
-            }
-        });
-
-        buttonTruststore.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent _e) {
-                JFileChooser fileChooser = new JFileChooser();
-                int option = fileChooser.showOpenDialog(DelphiConfigFrame.this);
-                if (option == JFileChooser.APPROVE_OPTION) {
-                    textTruststore.setText(fileChooser.getSelectedFile().getAbsolutePath());
-                }
-            }
-        });
+        buttonExamples.addActionListener(_e -> openFileChooser(JFileChooser.DIRECTORIES_ONLY, textExamples::setText));
+        buttonDownloadPath.addActionListener(_e -> openFileChooser(
+                JFileChooser.DIRECTORIES_ONLY,
+                textDownloadPath::setText));
+        buttonTruststore.addActionListener(_e -> openFileChooser(JFileChooser.FILES_ONLY, textTruststore::setText));
 
         areaTrain.setText(toString(config.trainStrategy()));
         areaRetrain.setText(toString(config.retrainPolicy()));
@@ -307,7 +237,7 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         setLocationRelativeTo(null);
         setVisible(true);
 
-        this.addWindowListener(new WindowAdapter() {
+        addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent _event) {
                 searchListenable.removeListener(DelphiConfigFrame.this);
@@ -348,6 +278,37 @@ public class DelphiConfigFrame extends JFrame implements SearchListener {
         buttonTruststore.setEnabled(enabled && checkSsl.isSelected());
         checkOnlyUseBetterModels.setEnabled(enabled);
         checkColorByModelVersion.setEnabled(enabled);
+    }
+
+    private void addScrollableArea(GridBagConstraints constraints, JTextArea area) {
+        constraints.gridx += 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.BOTH;
+        add(new JScrollPane(area), constraints);
+    }
+
+    private void addFileSearch(GridBagConstraints constraints, JTextField textField, JButton browseButton) {
+        constraints.gridx = 1;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        JPanel examplePanel = new JPanel(new BorderLayout(5, 0));
+        examplePanel.add(textField, BorderLayout.CENTER);
+        examplePanel.add(browseButton, BorderLayout.LINE_END);
+        add(examplePanel, constraints);
+    }
+
+    private void newRow(GridBagConstraints constraints) {
+        constraints.gridy += 1;
+        constraints.gridx = 0;
+    }
+
+    private void openFileChooser(int selectionMode, Consumer<String> selectionCallback) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(selectionMode);
+        int option = fileChooser.showOpenDialog(this);
+        if (option == JFileChooser.APPROVE_OPTION) {
+            selectionCallback.accept(fileChooser.getSelectedFile().getAbsolutePath());
+        }
     }
 
     private <T> T fromString(String message, TypeReference<T> reference) {

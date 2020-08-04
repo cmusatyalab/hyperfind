@@ -2,8 +2,8 @@ apply plugin: 'application'
 
 dependencies {
     implementation project(':connection-api')
+    implementation project(':jackson-utils')
 
-    implementation 'com.google.code.gson:gson'
     implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'com.sun.xml.bind:jaxb-core'
@@ -12,7 +12,6 @@ dependencies {
     implementation 'org.swinglabs:swingx'
     implementation 'ch.qos.logback:logback-classic'
 
-    runtime project(':connection-collaboration')
     runtime project(':connection-delphi')
     runtime project(':connection-diamond')
 }
@@ -33,15 +32,5 @@ task runDiamond(type: JavaExec) {
             "edu.cmu.cs.diamond.hyperfind.connection.diamond.DiamondConnection",
             "$System.env.HOME/.diamond/codecs:$System.env.HOME/.diamond/predicates:/usr/local/share/diamond/codecs:/usr/local/share/diamond/predicates:/usr/share/diamond/codecs:/usr/share/diamond/predicates",
             "$System.env.HOME/.diamond/filters:/usr/local/share/diamond/filters:/usr/share/diamond/filters"
-    ]
-}
-
-task runCollaboration(type: JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'edu.cmu.cs.diamond.hyperfind.Main'
-    args = [
-            "edu.cmu.cs.diamond.hyperfind.connection.collaboration.CollaborationConnection",
-            "localhost",
-            "7177"
     ]
 }

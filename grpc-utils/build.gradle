@@ -1,5 +1,0 @@
-dependencies {
-    compile 'com.google.guava:guava'
-    compile 'io.grpc:grpc-netty-shaded'
-    compile 'io.grpc:grpc-stub'
-}

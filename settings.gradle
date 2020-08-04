@@ -2,13 +2,8 @@ rootProject.name = 'hyperfind'
 
 include 'client'
 
-include 'collaboration-service'
-include 'collaboration-service-api'
-
 include 'connection-api'
-include 'connection-collaboration'
 include 'connection-delphi'
 include 'connection-diamond'
 
-include 'grpc-utils'
-include 'proto-conversions'
+include 'jackson-utils'

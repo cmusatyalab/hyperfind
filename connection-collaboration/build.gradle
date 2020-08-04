@@ -1,8 +1,0 @@
-dependencies {
-    compile project(':proto-conversions')
-    compile project(':grpc-utils')
-
-    compile 'com.google.protobuf:protobuf-java-util'
-    compile 'io.grpc:grpc-netty-shaded'
-    compile 'org.slf4j:slf4j-api'
-}
