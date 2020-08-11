@@ -45,7 +45,6 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Search;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchResult;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchStats;
-import edu.cmu.cs.diamond.opendiamond.LabeledExample;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -92,10 +91,7 @@ public final class DiamondSearch implements Search {
     }
 
     @Override
-    public void labelExamples(Map<ObjectId, Integer> examples) {
-        delegate.labelExamples(examples.entrySet().stream()
-                .map(e -> new LabeledExample(ToDiamond.convert(e.getKey()), e.getValue()))
-                .collect(Collectors.toSet()));
+    public void labelExamples(Map<ObjectId, Integer> _examples) {
     }
 
     @Override

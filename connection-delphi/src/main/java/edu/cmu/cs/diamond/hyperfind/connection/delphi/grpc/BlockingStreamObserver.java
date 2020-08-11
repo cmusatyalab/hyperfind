@@ -44,8 +44,14 @@ import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CountDownLatch;
 
 public abstract class BlockingStreamObserver<T> implements StreamObserver<T> {
+    private final String host;
     private final CountDownLatch doneSignal = new CountDownLatch(1);
+
     private Throwable throwable = null;
+
+    protected BlockingStreamObserver(String host) {
+        this.host = host;
+    }
 
     @Override
     public final void onError(Throwable th) {
@@ -66,7 +72,7 @@ public abstract class BlockingStreamObserver<T> implements StreamObserver<T> {
         }
 
         if (throwable != null) {
-            throw new RuntimeException("Observer ran into exception", throwable);
+            throw new RuntimeException(String.format("Observer for %s ran into exception", host), throwable);
         }
     }
 }

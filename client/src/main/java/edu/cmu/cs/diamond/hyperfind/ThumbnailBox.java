@@ -683,11 +683,8 @@ public class ThumbnailBox extends JPanel {
             } else {
                 SwingUtilities.invokeLater(() -> stats.setIndeterminateMessage("Waiting for First Results"));
             }
-        } catch (RuntimeException ignore) {
-            SwingUtilities.invokeLater(() -> {
-                stats.setDone();
-                statsArea.setDone();
-            });
+        } catch (RuntimeException e) {
+            log.error("Failed to update stats", e);
         }
     }
 }

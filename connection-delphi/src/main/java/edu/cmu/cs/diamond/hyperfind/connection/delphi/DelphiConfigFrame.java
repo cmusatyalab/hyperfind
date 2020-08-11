@@ -96,8 +96,6 @@ public final class DelphiConfigFrame extends JFrame implements SearchListener {
             SearchListenable searchListenable,
             DelphiConfiguration config,
             Consumer<DelphiConfiguration> saveCallback) {
-        searchListenable.addListener(this);
-
         setLayout(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
@@ -231,6 +229,7 @@ public final class DelphiConfigFrame extends JFrame implements SearchListener {
         checkOnlyUseBetterModels.setSelected(config.onlyUseBetterModels());
         checkColorByModelVersion.setSelected(config.colorByModelVersion());
 
+        searchListenable.addListener(this);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         pack();
         setSize(500, 650);

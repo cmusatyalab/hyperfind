@@ -60,14 +60,14 @@ public final class FromDelphi {
 
     public static SearchResult convert(InferResult value, String hostname, boolean colorByModelVersion) {
         int modelVersion = value.getModelVersion();
-        // Adding 1.5 to model version because otherwise the border is red which can
+        // Adding 0.1 to model version because otherwise the border is red which can
         // get confused with the ground truth borders
 
         return new SearchResult(
                 ObjectId.of(value.getObjectId(), hostname, hostname),
                 EntryStream.of(value.getAttributesMap()).mapValues(ByteString::toByteArray).toMap(),
                 colorByModelVersion && modelVersion != 0
-                        ? Optional.of(Color.getHSBColor((float) ((0.1 * modelVersion + 1.5) % 1), 1, 1))
+                        ? Optional.of(Color.getHSBColor((float) ((0.1 * modelVersion + 0.1) % 1), 1, 1))
                         : Optional.empty());
     }
 

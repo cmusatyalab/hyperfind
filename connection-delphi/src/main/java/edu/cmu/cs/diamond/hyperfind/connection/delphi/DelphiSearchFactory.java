@@ -53,6 +53,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
+import edu.cmu.cs.delphi.api.CreateSearchRequest;
 import edu.cmu.cs.delphi.api.Dataset;
 import edu.cmu.cs.delphi.api.DelphiObject;
 import edu.cmu.cs.delphi.api.DiamondDataset;
@@ -60,11 +61,10 @@ import edu.cmu.cs.delphi.api.ExampleSet;
 import edu.cmu.cs.delphi.api.ExampleSetWrapper;
 import edu.cmu.cs.delphi.api.GetObjectsRequest;
 import edu.cmu.cs.delphi.api.LabeledExample;
+import edu.cmu.cs.delphi.api.LabeledExampleRequest;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc;
 import edu.cmu.cs.delphi.api.LearningModuleServiceGrpc.LearningModuleServiceStub;
-import edu.cmu.cs.delphi.api.SearchConfig;
 import edu.cmu.cs.delphi.api.SearchId;
-import edu.cmu.cs.delphi.api.SearchRequest;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.HyperFindPredicateState;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -144,34 +144,41 @@ public final class DelphiSearchFactory implements SearchFactory {
 
         try {
             for (int i = 0; i < hosts.length; i++) {
-                UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
-                StreamObserver<SearchRequest> request = modules.get(hosts[i]).startSearch(observer);
+                UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>(hosts[i]);
+                modules.get(hosts[i]).createSearch(CreateSearchRequest.newBuilder()
+                        .setSearchId(searchId)
+                        .addAllNodes(nodes)
+                        .setNodeIndex(i)
+                        .addAllTrainStrategy(config.trainStrategy())
+                        .setRetrainPolicy(config.retrainPolicy())
+                        .setOnlyUseBetterModels(config.onlyUseBetterModels())
+                        .setDataset(getDataset(hosts[i], attributes))
+                        .setSelector(config.selector())
+                        .setHasInitialExamples(config.shouldIncludeExamples())
+                        .setMetadata(metadata)
+                        .build(), observer);
+                observer.waitForFinish();
+            }
 
-                request.onNext(SearchRequest.newBuilder()
-                        .setConfig(SearchConfig.newBuilder()
-                                .setSearchId(searchId)
-                                .addAllNodes(nodes)
-                                .setNodeIndex(i)
-                                .addAllTrainStrategy(config.trainStrategy())
-                                .setRetrainPolicy(config.retrainPolicy())
-                                .setOnlyUseBetterModels(config.onlyUseBetterModels())
-                                .setDataset(getDataset(hosts[i], attributes))
-                                .setSelector(config.selector())
-                                .setMetadata(metadata)
-                                .build())
-                        .build());
+            if (config.shouldIncludeExamples()) {
+                UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>(hosts[0]);
+                StreamObserver<LabeledExampleRequest> request = modules.get(hosts[0]).addLabeledExamples(observer);
+                request.onNext(LabeledExampleRequest.newBuilder().setSearchId(searchId).build());
 
-                if (config.shouldIncludeExamples()) {
-                    try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
-                        paths.forEach(path -> addExamples(path, request, Optional.empty()));
-                    } catch (IOException e) {
-                        throw new RuntimeException(
-                                "Failed to list files in example directory: " + config.examplePath());
-                    }
+                try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
+                    paths.forEach(path -> addExamples(path, request, Optional.empty()));
+                } catch (IOException e) {
+                    throw new RuntimeException(
+                            "Failed to list files in example directory: " + config.examplePath());
                 }
 
                 request.onCompleted();
+                observer.waitForFinish();
+            }
 
+            for (int i = 0; i < hosts.length; i++) {
+                UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>(hosts[i]);
+                modules.get(hosts[i]).startSearch(searchId, observer);
                 observer.waitForFinish();
             }
         } finally {
@@ -214,7 +221,7 @@ public final class DelphiSearchFactory implements SearchFactory {
         try {
             List<ListenableFuture<?>> downloadTasks = resultsByHost.asMap().entrySet().stream()
                     .map(e -> resultExecutor.submit(() -> {
-                        BlockingStreamObserver<DelphiObject> observer = new BlockingStreamObserver<>() {
+                        BlockingStreamObserver<DelphiObject> observer = new BlockingStreamObserver<>(e.getKey()) {
                             @Override
                             public void onNext(DelphiObject value) {
                                 SearchResult converted = FromDelphi.convert(value, e.getKey());
@@ -246,7 +253,7 @@ public final class DelphiSearchFactory implements SearchFactory {
 
     private void addExamples(
             Path exampleCandidate,
-            StreamObserver<SearchRequest> request,
+            StreamObserver<LabeledExampleRequest> request,
             Optional<ExampleSet> exampleSet) {
         File exampleCandidateFile = exampleCandidate.toFile();
         if (!exampleCandidateFile.isDirectory()) {
@@ -256,7 +263,7 @@ public final class DelphiSearchFactory implements SearchFactory {
 
         String label = exampleCandidateFile.getName();
         if (exampleSet.isEmpty() && VALID_EXAMPLE_SETS.containsKey(label)) {
-            try (Stream<Path> paths = Files.list(Paths.get(config.examplePath()))) {
+            try (Stream<Path> paths = Files.list(exampleCandidate)) {
                 paths.forEach(path -> addExamples(path, request, Optional.of(VALID_EXAMPLE_SETS.get(label))));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to list files in example directory: " + exampleCandidate);
@@ -284,7 +291,7 @@ public final class DelphiSearchFactory implements SearchFactory {
                             .setValue(e)
                             .build()));
 
-                    request.onNext(SearchRequest.newBuilder()
+                    request.onNext(LabeledExampleRequest.newBuilder()
                             .setExample(exampleBuilder)
                             .build());
                 } catch (IOException e) {
@@ -300,8 +307,8 @@ public final class DelphiSearchFactory implements SearchFactory {
         return Dataset.newBuilder()
                 .setDiamond(DiamondDataset.newBuilder()
                         .addAllFilters(convert(filters))
-                        .addAllCookies(cookieMap.get(host).stream().map(Cookie::getCookie)
-                                .collect(Collectors.toList()))
+                        .addHosts(host)
+                        .addAllCookies(cookieMap.get(host).stream().map(Cookie::getCookie).collect(Collectors.toList()))
                         .addAllAttributes(attributes)
                         .build())
                 .build();

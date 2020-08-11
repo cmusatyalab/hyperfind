@@ -75,7 +75,6 @@ public final class DiamondConfigFrame extends JFrame implements SearchListener {
             SearchListenable searchListenable,
             Properties configProps,
             BiConsumer<Optional<String>, Optional<String>> saveCallback) {
-        searchListenable.addListener(this);
         setLayout(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
@@ -122,6 +121,7 @@ public final class DiamondConfigFrame extends JFrame implements SearchListener {
             }
         });
 
+        searchListenable.addListener(this);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         pack();
         setSize(500, 130);

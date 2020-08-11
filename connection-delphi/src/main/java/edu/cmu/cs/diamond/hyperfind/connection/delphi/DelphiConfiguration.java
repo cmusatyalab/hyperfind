@@ -54,6 +54,7 @@ import edu.cmu.cs.delphi.api.SVMConfig;
 import edu.cmu.cs.delphi.api.SVMMode;
 import edu.cmu.cs.delphi.api.SelectorConfig;
 import edu.cmu.cs.delphi.api.TopKSelectorConfig;
+import java.nio.file.Paths;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -116,7 +117,7 @@ public interface DelphiConfiguration {
 
     @Value.Default
     default String downloadPathRoot() {
-        return System.getProperty("user.home");
+        return Paths.get(System.getProperty("user.home")).resolve("hyperfind-downloads").toString();
     }
 
     @Value.Default

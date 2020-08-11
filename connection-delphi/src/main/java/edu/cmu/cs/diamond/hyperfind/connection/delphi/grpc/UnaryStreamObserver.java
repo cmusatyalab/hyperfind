@@ -47,6 +47,10 @@ public final class UnaryStreamObserver<T> extends BlockingStreamObserver<T> {
     private T result = null;
     private boolean valueSet = false;
 
+    public UnaryStreamObserver(String host) {
+        super(host);
+    }
+
     @Override
     public void onNext(T value) {
         Preconditions.checkArgument(!valueSet, "Value already set to %s, now encountering %s", result, value);

@@ -110,7 +110,7 @@ public final class DelphiConnection implements Connection {
                 ManagedChannel channel = Channels.create(config, host);
                 channels.put(host, channel);
                 LearningModuleServiceStub learningModule = LearningModuleServiceGrpc.newStub(channel);
-                BlockingStreamObserver<edu.cmu.cs.delphi.api.SearchInfo> observer = new BlockingStreamObserver<>() {
+                BlockingStreamObserver<edu.cmu.cs.delphi.api.SearchInfo> observer = new BlockingStreamObserver<>(host) {
                     @Override
                     public void onNext(edu.cmu.cs.delphi.api.SearchInfo value) {
                         SearchId searchId = value.getSearchId();

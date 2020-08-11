@@ -106,7 +106,7 @@ public final class DelphiSearch implements Search {
         learningModules.forEach((host, learningModule) -> {
             ListenableFuture<?> downloadFuture = executor.submit(() -> {
                 AtomicInteger lastObservedVersion = new AtomicInteger(0);
-                BlockingStreamObserver<InferResult> observer = new BlockingStreamObserver<>() {
+                BlockingStreamObserver<InferResult> observer = new BlockingStreamObserver<>(host) {
                     @Override
                     public void onNext(InferResult value) {
                         if (value.getModelVersion() > lastObservedVersion.get()) {
@@ -162,10 +162,11 @@ public final class DelphiSearch implements Search {
 
     @Override
     public SearchStats getStats() {
-        edu.cmu.cs.delphi.api.SearchStats searchStats = learningModules.values().stream()
-                .map(learningModule -> {
-                    UnaryStreamObserver<edu.cmu.cs.delphi.api.SearchStats> observer = new UnaryStreamObserver<>();
-                    learningModule.getSearchStats(searchId, observer);
+        edu.cmu.cs.delphi.api.SearchStats searchStats = learningModules.entrySet().stream()
+                .map(e -> {
+                    UnaryStreamObserver<edu.cmu.cs.delphi.api.SearchStats> observer =
+                            new UnaryStreamObserver<>(e.getKey());
+                    e.getValue().getSearchStats(searchId, observer);
                     return observer.value();
                 })
                 .reduce(DelphiSearch::merge)
@@ -183,7 +184,7 @@ public final class DelphiSearch implements Search {
         });
 
         examplesByHost.forEach((host, hostExamples) -> {
-            UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
+            UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>(host);
             learningModules.get(host).addLabeledExampleIds(AddLabeledExampleIdsRequest.newBuilder()
                     .setSearchId(searchId)
                     .putAllExamples(hostExamples)
@@ -200,7 +201,7 @@ public final class DelphiSearch implements Search {
     @Override
     public void close() {
         learningModules.forEach((host, learningModule) -> {
-            UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>();
+            UnaryStreamObserver<Empty> observer = new UnaryStreamObserver<>(host);
             learningModule.stopSearch(searchId, observer);
             observer.waitForFinish();
 
@@ -215,10 +216,10 @@ public final class DelphiSearch implements Search {
     }
 
     public void downloadModel() {
-        LearningModuleServiceStub learningModule =
-                learningModules.get(learningModules.keySet().stream().sorted().findFirst().get());
+        String host = learningModules.keySet().stream().sorted().findFirst().get();
+        LearningModuleServiceStub learningModule = learningModules.get(host);
 
-        UnaryStreamObserver<ModelArchive> observer = new UnaryStreamObserver<>();
+        UnaryStreamObserver<ModelArchive> observer = new UnaryStreamObserver<>(host);
         learningModule.exportModel(searchId, observer);
         ModelArchive archive = observer.value();
         Path modelDir =
@@ -234,9 +235,9 @@ public final class DelphiSearch implements Search {
     }
 
     private int updateModelStats() {
-        LearningModuleServiceStub learningModule =
-                learningModules.get(learningModules.keySet().stream().sorted().findFirst().get());
-        UnaryStreamObserver<ModelStats> observer = new UnaryStreamObserver<>();
+        String host = learningModules.keySet().stream().sorted().findFirst().get();
+        LearningModuleServiceStub learningModule = learningModules.get(host);
+        UnaryStreamObserver<ModelStats> observer = new UnaryStreamObserver<>(host);
         learningModule.getModelStats(searchId, observer);
         ModelStats stats = observer.value();
         latestModelStats.set(stats);
@@ -268,5 +269,4 @@ public final class DelphiSearch implements Search {
 
         return builder.build();
     }
-
 }
