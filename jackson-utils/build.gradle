@@ -1,0 +1,6 @@
+dependencies {
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
+    compile 'com.hubspot.jackson:jackson-datatype-protobuf'
+}

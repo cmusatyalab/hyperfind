@@ -1,0 +1,16 @@
+dependencies {
+    compile project(':connection-diamond')
+    compile project(':jackson-utils')
+
+
+    compile 'com.google.guava:guava'
+    compile 'com.google.protobuf:protobuf-java-util'
+    compile 'io.grpc:grpc-netty-shaded'
+    compile 'one.util:streamex'
+    compile 'org.slf4j:slf4j-api'
+
+    compile 'edu.cmu.cs.delphi:delphi-api'
+
+    annotationProcessor 'org.immutables:value'
+    compileOnly 'org.immutables:value::annotations'
+}
