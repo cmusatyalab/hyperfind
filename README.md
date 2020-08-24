@@ -74,14 +74,10 @@ To do so, you should enable X11 forwarding in your SSH connection and install a 
 (e.g., Xming on Windows, Xquartz on MacOS).
 
 ### Hyperfind Configuration Settings
-The OpenDiamond and Delphi connectors expose different configuration settings that can be accessed by clicking the
-`Config` button in the UI. These configuration settings are persisted locally to
+The OpenDiamond and Delphi connectors expose different configuration settings and connector-specific commands that can
+be accessed by clicking the `Config` button in the UI. These configuration settings are persisted locally to
 $HOME/.diamond/hyperfind-diamond.properties for the OpenDiamond connector and $HOME/.diamond/hyperfind-delphi.yml for
 the Delphi connection.
-
-proxyIP=172.xx.xx.xxx :arrow_right: IP Address of Proxy Server  
-downloadResults=true :arrow_right: Will enable download of user-marked images to directory `downloadDirectory` 
-downloadDirectory=/\<download-path\> :arrow_right: Path to download images. If empty images are stores in `$HOME`   
 
 ### Depending on a local build of OpenDiamond-Java (or Delphi)
 
