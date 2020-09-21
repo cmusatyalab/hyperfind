@@ -107,6 +107,7 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.border.EmptyBorder;
 import one.util.streamex.EntryStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,9 +149,11 @@ public class ThumbnailBox extends JPanel {
     private ExecutorService labelExecutor;
     private ScheduledFuture<?> statsTimerFuture;
 
-    private long sampledTPCount = 0;
-
     private long startTime;
+    private long sampledTPCount = 0;
+    private long positiveCount = 0;
+    private long negativeCount = 0;
+
     private Timer timer;
     private SwingWorker<?, ?> workerFuture;
     private SwingWorker<?, ?> retrainWorker;
@@ -178,7 +181,11 @@ public class ThumbnailBox extends JPanel {
         setLayout(new BorderLayout());
 
         //adding Label for timer
-        timeLabel = new JLabel();
+        String labelDisplay = "00:00:00" + " ".repeat(10);
+        labelDisplay += "Positive: 0" + " ".repeat(3);
+        labelDisplay += "Negative: 0";
+        timeLabel = new JLabel(labelDisplay);
+
         add(timeLabel, BorderLayout.NORTH);
 
         // Scrolling panel for results
@@ -291,6 +298,21 @@ public class ThumbnailBox extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 ResultType cmd = ResultType.valueOf(e.getActionCommand());
                 for (ResultIcon icon : resultList.getSelectedValuesList()) {
+
+                    // Counting the user feedback
+                    ResultType prevType = icon.getType();
+                    if (prevType != cmd) {
+                        if (prevType == ResultType.Positive)
+                            positiveCount--;
+                        else if (prevType == ResultType.Negative)
+                            negativeCount--;
+
+                        if (cmd == ResultType.Positive)
+                            positiveCount++;
+                        else if (cmd == ResultType.Negative)
+                            negativeCount++;
+                    }
+
                     icon.drawOverlay(cmd);
                     SearchResult r = icon.getResult().getResult();
                     Optional<byte[]> fv = r.getBytes("feature_vector.json");
@@ -352,7 +374,7 @@ public class ThumbnailBox extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 long nowTime = System.nanoTime();
                 long timeElapsed = (nowTime - startTime) / NANOSEC_PER_MILLI;
-                String timeDisplay = String.format(
+                String labelDisplay = String.format(
                         "%02d:%02d:%02d",
                         TimeUnit.MILLISECONDS.toHours(timeElapsed),
                         TimeUnit.MILLISECONDS.toMinutes(timeElapsed) -
@@ -360,7 +382,11 @@ public class ThumbnailBox extends JPanel {
                         TimeUnit.MILLISECONDS.toSeconds(timeElapsed) -
                                 TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
 
-                timeLabel.setText(timeDisplay);
+                labelDisplay += " ".repeat(10) + "Positive: " + positiveCount;
+                labelDisplay += " ".repeat(3) + "Negative: " + negativeCount;
+
+                timeLabel.setText(labelDisplay);
+
                 scrollPaneToBottom();
             }
         };

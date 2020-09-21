@@ -20,7 +20,7 @@
  *  making a combined work based on HyperFind. Thus, the terms and
  *  conditions of the GNU General Public License cover the whole
  *  combination.
- * 
+ *
  *  In addition, as a special exception, the copyright holders of
  *  HyperFind give you permission to combine HyperFind with free software
  *  programs or libraries that are released under the GNU LGPL, the
@@ -57,7 +57,7 @@ class ResultIcon {
     private final String name;
 
     private final ResultIconSetting displaySelection;
-    
+
     private final BufferedImage originalImage;
 
     private static final BufferedImage checkMarkImage;
@@ -68,7 +68,7 @@ class ResultIcon {
 
     private ImageIcon icon;
 
-    private int resultType;
+    private ResultType type;
 
     static {
         BufferedImage check = null;
@@ -129,9 +129,10 @@ class ResultIcon {
         this.icon = icon;
         this.displaySelection = displaySelection;
         this.originalImage = (icon == null) ? null : setOriginal();
-        //resize before displaying 
+        this.type = ResultType.getType(resultType);
+        //resize before displaying
         if (icon != null) {
-            drawOverlay(ResultType.getType(resultType)); 
+            drawOverlay(type);
         }
     }
 
@@ -163,18 +164,21 @@ class ResultIcon {
     }
 
     public void drawOverlay(ResultType r) {
-        switch(r) 
+        switch(r)
         {
             case Positive:
+                type = ResultType.Positive;
                 drawOverlay(checkMarkImage);
                 break;
             case Negative:
+                type = ResultType.Negative;
                 drawOverlay(crossMarkImage);
                 break;
             case Query:
                 drawOverlay(questionMarkImage);
                 break;
             default:
+                type = ResultType.Ignore;
                 getOriginal();
         }
     }
@@ -209,6 +213,10 @@ class ResultIcon {
 
     public Icon getIcon() {
         return icon;
+    }
+
+    public ResultType getType() {
+        return type;
     }
 
     public ResultIconSetting getDisplaySelection() {
