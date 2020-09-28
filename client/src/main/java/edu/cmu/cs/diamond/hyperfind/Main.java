@@ -72,6 +72,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -475,6 +477,26 @@ public final class Main {
                     });
                 }
                 m.results.clearFeedBackItems();
+                Map<String, List<String>>  csvResults = m.results.getStats();
+
+                File baseDir = new File(
+                        System.getProperty("user.home"),
+                        "hyperfind-logs");
+                baseDir.mkdir();
+                String timeNow = new Formatter().format("%1$tF-%1$tT.%1$tL.csv", new Date()).toString();
+                csvResults.forEach((key, statsList) -> {
+                    String filename = key + "-" + timeNow;
+                    try{
+                        PrintWriter writer = new PrintWriter(new File(baseDir, filename));
+                        for (String stats : statsList) {
+                            writer.write(stats);
+                        }
+                        writer.close();
+                    } catch (FileNotFoundException e1) {
+                        e1.printStackTrace();
+                    }
+                });
+
             }
         });
 

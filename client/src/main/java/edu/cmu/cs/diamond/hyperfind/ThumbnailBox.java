@@ -43,6 +43,7 @@ package edu.cmu.cs.diamond.hyperfind;
 import com.google.common.collect.ImmutableMap;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultIconSetting;
 import edu.cmu.cs.diamond.hyperfind.ResultIcon.ResultType;
+import edu.cmu.cs.diamond.hyperfind.StatisticsArea.DisplayStats;
 import edu.cmu.cs.diamond.hyperfind.connection.api.FeedbackObject;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ModelStats;
 import edu.cmu.cs.diamond.hyperfind.connection.api.ObjectId;
@@ -153,6 +154,7 @@ public class ThumbnailBox extends JPanel {
     private long sampledTPCount = 0;
     private long positiveCount = 0;
     private long negativeCount = 0;
+    private String timeDisplay = null;
 
     private Timer timer;
     private SwingWorker<?, ?> workerFuture;
@@ -382,12 +384,14 @@ public class ThumbnailBox extends JPanel {
                         TimeUnit.MILLISECONDS.toSeconds(timeElapsed) -
                                 TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeElapsed)));
 
+                timeDisplay = labelDisplay;
+
                 labelDisplay += " ".repeat(10) + "Positive: " + positiveCount;
                 labelDisplay += " ".repeat(3) + "Negative: " + negativeCount;
 
                 timeLabel.setText(labelDisplay);
 
-                scrollPaneToBottom();
+                // scrollPaneToBottom();
             }
         };
 
@@ -691,6 +695,10 @@ public class ThumbnailBox extends JPanel {
         g.setStroke(currentStroke);
     }
 
+    public Map<String, List<String>>  getStats() {
+        return statsArea.getCSVStatistics();
+    }
+
     private void updateStats() {
         try {
             if (pauseState) {
@@ -704,7 +712,12 @@ public class ThumbnailBox extends JPanel {
                 SwingUtilities.invokeLater(() -> {
                     long passed = resultList.getModel().getSize();
                     stats.update(searchStats);
-                    statsArea.update(searchStats, passed, sampledTPCount);
+                    StatisticsArea.DisplayStats display = statsArea.new DisplayStats(passed,
+                                                sampledTPCount,
+                                                positiveCount,
+                                                negativeCount,
+                                                timeDisplay);
+                    statsArea.update(searchStats, display);
                 });
             } else {
                 SwingUtilities.invokeLater(() -> stats.setIndeterminateMessage("Waiting for First Results"));

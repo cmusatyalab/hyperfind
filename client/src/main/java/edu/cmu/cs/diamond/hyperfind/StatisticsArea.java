@@ -47,6 +47,11 @@ import java.awt.Font;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Timer;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -60,13 +65,23 @@ final class StatisticsArea extends JPanel {
 
     private final JTextArea display = new JTextArea();
 
+    private SearchStats prevStats = null;
+
+    private DisplayStats prevDisplayStats = null;
+
     private String currentString;
+
+    private List<String> csvStats;
+
+    private List<String> timeStats;
 
     private long prevDisplayed = 0;
 
     private long prevTp = 0;
 
     private float prevPrecision = 0;
+
+    private long prevVersion = 0;
 
     private long currDisplayed = 0;
 
@@ -79,6 +94,23 @@ final class StatisticsArea extends JPanel {
     private long diffTp = 0;
 
     private boolean timerStart = false;
+
+    public class DisplayStats
+    {
+        public long displayed;
+        public long displayedPositives;
+        public long userPositives;
+        public long userNegatives;
+        public String timeElapsed;
+
+        public DisplayStats(long displayed, long tp, long pos, long neg, String time) {
+            this.displayed = displayed;
+            this.displayedPositives = tp;
+            this.userPositives = pos;
+            this.userNegatives = neg;
+            this.timeElapsed = time;
+        }
+    };
 
     public StatisticsArea() {
         super();
@@ -101,31 +133,49 @@ final class StatisticsArea extends JPanel {
 
         add(jsp);
 
-        long period = 3 * 60 * 1000; // 3 min
+        long period = 5 * 60 * 1000; // 5 min
 
-        //Periodically update the average precision
-        Timer t = new java.util.Timer();
-        t.schedule(
+        // **** Block to Periodically update the average precision
+        // Timer t = new java.util.Timer();
+        // t.schedule(
+        //         new java.util.TimerTask() {
+        //             @Override
+        //             public void run() {
+
+        //                 timerStart = true;
+
+        //                 diffDisplayed = currDisplayed - prevDisplayed;
+        //                 diffTp = currDisplayedPositives - prevTp;
+        //                 if (diffDisplayed == 0) {
+        //                     avgPrecision = prevPrecision;
+        //                     diffTp = prevTp;
+        //                     diffDisplayed = prevDisplayed;
+        //                 } else {
+        //                     avgPrecision = 100f * diffTp / diffDisplayed;
+        //                 }
+
+        //                 prevDisplayed = currDisplayed;
+        //                 prevTp = currDisplayedPositives;
+        //                 prevPrecision = avgPrecision;
+        //             }
+        //         },
+        //         period,
+        //         period
+        // );
+        // **** End of Block
+
+        // Periodically log statistics
+        Timer t_log = new java.util.Timer();
+        t_log.schedule(
                 new java.util.TimerTask() {
                     @Override
                     public void run() {
-
-                        timerStart = true;
-
-                        diffDisplayed = currDisplayed - prevDisplayed;
-                        diffTp = currDisplayedPositives - prevTp;
-                        if (diffDisplayed == 0) {
-                            avgPrecision = prevPrecision;
-                            diffTp = prevTp;
-                            diffDisplayed = prevDisplayed;
-                        } else {
-                            avgPrecision = 100f * diffTp / diffDisplayed;
+                        if (prevStats == null) {
+                            update(SearchStats.of(0, 0, 0, OptionalLong.empty(), 0, Optional.empty()),
+                                new DisplayStats(0, 0, 0, 0, "0"));
                         }
 
-                        prevDisplayed = currDisplayed;
-                        prevTp = currDisplayedPositives;
-                        prevPrecision = avgPrecision;
-                        // t.cancel();
+                        timeStats.add(getCsvString(prevStats, prevDisplayStats));
                     }
                 },
                 period,
@@ -133,17 +183,33 @@ final class StatisticsArea extends JPanel {
         );
     }
 
+    private List<String> initCSVStats() {
+        List<String> csvList = new ArrayList<String>();
+        csvList.add("version,auc,precision,recall,searched,displayed,positives,negatives,time\n");
+        return csvList;
+    }
+
     public void clear() {
-        update(SearchStats.of(0, 0, 0, OptionalLong.empty(), 0, Optional.empty()), 0, 0);
+        update(SearchStats.of(0, 0, 0, OptionalLong.empty(), 0, Optional.empty()), new DisplayStats(0, 0, 0, 0, "0"));
+        csvStats = initCSVStats();
+        timeStats = initCSVStats();
     }
 
     public String getStatistics() {
         return currentString;
     }
+    public Map getCSVStatistics() {
+        Map<String, List<String>> csv_dict = new HashMap<>();
+        csv_dict.put("model", csvStats);
+        csv_dict.put("time", timeStats);
+        return csv_dict;
+    }
 
-    public void update(SearchStats stats, long displayed, long displayedPositives) {
-        currDisplayed = displayed;
-        currDisplayedPositives = displayedPositives;
+    public void update(SearchStats stats, DisplayStats displayStats) {
+        prevStats = stats;
+        prevDisplayStats = displayStats;
+        currDisplayed = displayStats.displayed;
+        currDisplayedPositives = displayStats.displayedPositives;
 
         StringBuilder strDisplay = new StringBuilder();
         strDisplay.append(String.format("\n %0$-17s %d\n", "Total", stats.totalObjects()));
@@ -157,28 +223,28 @@ final class StatisticsArea extends JPanel {
         stats.passedObjects().ifPresent(p ->
                 strDisplay.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Passed", p, 100f * p / searched)));
 
-        strDisplay.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", displayed,
-                100f * displayed / searched));
+        strDisplay.append(String.format("\n %0$-15s %d (%.2f%%)\n", "Displayed", currDisplayed,
+                100f * currDisplayed / searched));
 
-        if (displayedPositives > 0 || stats.falseNegatives() > 0) {
+        if (currDisplayedPositives > 0 || stats.falseNegatives() > 0) {
             strDisplay.append(String.format("\n x------- AUGMENTED --------x \n"));
-            long labeledTotal = displayedPositives + stats.falseNegatives();
+            long labeledTotal = currDisplayedPositives + stats.falseNegatives();
 
-            float precision = ((float) displayedPositives) / displayed;
-            float recall = ((float) displayedPositives) / labeledTotal;
+            float precision = ((float) currDisplayedPositives) / currDisplayed;
+            float recall = ((float) currDisplayedPositives) / labeledTotal;
 
             if (!timerStart) {
-                diffTp = displayedPositives;
-                diffDisplayed = displayed;
+                diffTp = currDisplayedPositives;
+                diffDisplayed = currDisplayed;
                 avgPrecision = 100f * precision;
             }
-            strDisplay.append(String.format("\n %0$-18s %d \n", "True Positives", displayedPositives));
+            strDisplay.append(String.format("\n %0$-18s %d \n", "True Positives", currDisplayedPositives));
             strDisplay.append(String.format("\n %0$-17s %d \n", "FN Dropped", stats.falseNegatives()));
-            strDisplay.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", displayedPositives,
-                    displayed, 100f * precision));
+            strDisplay.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Precision ", currDisplayedPositives,
+                    currDisplayed, 100f * precision));
             strDisplay.append(String.format("\n %0$-11s (%d/%d) = %.1f%% \n", "Avg. Precision ",
                     diffTp, diffDisplayed, avgPrecision));
-            strDisplay.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Recall", displayedPositives,
+            strDisplay.append(String.format("\n %0$-14s (%d/%d) = %.1f%% \n", "Recall", currDisplayedPositives,
                     labeledTotal, 100f * recall));
             strDisplay.append(String.format("\n %0$-17s %.3f \n", "F1 Score",
                     2 * (precision * recall) / (precision + recall)));
@@ -192,10 +258,32 @@ final class StatisticsArea extends JPanel {
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", model.precision() * 100));
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", model.recall() * 100));
             strDisplay.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", model.f1Score()));
+
+            if(model.version() != prevVersion) {
+                csvStats.add(getCsvString(stats, displayStats));
+                prevVersion = model.version();
+            }
         });
 
         display.setText(strDisplay.toString());
         currentString = strDisplay.toString();
+    }
+
+    private String getCsvString(SearchStats stats, DisplayStats displayStats) {
+        // building String "version,auc,precision,recall,searched,displayed,positives,negatives"
+        StringBuilder csvString = new StringBuilder();
+        stats.model().ifPresent(model -> {
+            csvString.append(String.format("%d,", model.version())); // model version
+            csvString.append(String.format("%.3f,", model.auc())); // model AUC
+            csvString.append(String.format("%.3f,", model.precision())); // model precision
+            csvString.append(String.format("%.3f,", model.recall())); // model recall
+        });
+        csvString.append(String.format("%d,", stats.processedObjects()));
+        csvString.append(String.format("%d,", displayStats.displayed));
+        csvString.append(String.format("%d,", displayStats.userPositives));
+        csvString.append(String.format("%d,", displayStats.userNegatives));
+        csvString.append(String.format("%s\n", displayStats.timeElapsed));
+        return csvString.toString();
     }
 
     public void setDone() {
