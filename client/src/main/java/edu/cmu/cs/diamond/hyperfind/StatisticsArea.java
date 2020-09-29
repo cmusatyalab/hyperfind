@@ -111,14 +111,6 @@ final class StatisticsArea extends JPanel {
             this.userNegatives = neg;
             this.timeElapsed = time;
         }
-
-        public void setDone() {
-            this.statsDone = true;
-        }
-
-        public Boolean isDone() {
-            return this.statsDone;
-        }
     };
 
     public StatisticsArea() {
@@ -209,7 +201,7 @@ final class StatisticsArea extends JPanel {
     }
     public Map getCSVStatistics() {
         //TODO Change: Temp hack to record last stats
-        csvStats.add(currentString);
+        csvStats.add(getCsvString(prevStats, prevDisplayStats));
         Map<String, List<String>> csv_dict = new HashMap<>();
         csv_dict.put("model", csvStats);
         csv_dict.put("time", timeStats);
@@ -269,9 +261,7 @@ final class StatisticsArea extends JPanel {
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", model.precision() * 100));
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", model.recall() * 100));
             strDisplay.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", model.f1Score()));
-            if(model.version() != prevVersion || displayStats.isDone()) {
-                System.out.println("Version "+(model.version() != prevVersion)+" done ? "+displayStats.isDone());
-                System.out.println("Positives " + displayStats.userPositives);
+            if(model.version() != prevVersion) {
                 csvStats.add(getCsvString(stats, displayStats));
                 prevVersion = model.version();
             }

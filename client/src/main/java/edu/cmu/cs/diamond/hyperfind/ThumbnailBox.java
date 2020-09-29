@@ -613,7 +613,7 @@ public class ThumbnailBox extends JPanel {
                 } finally {
                     timer.stop();
                     // update stats one more time, if possible
-                    updateStats(true);
+                    updateStats();
 
                     for (HyperFindSearchMonitor sm : searchMonitors) {
                         sm.stopped();
@@ -696,15 +696,11 @@ public class ThumbnailBox extends JPanel {
     }
 
     public Map<String, List<String>>  getStats() {
-        updateStats(true);
+        updateStats();
         return statsArea.getCSVStatistics();
     }
 
-    private void updateStats() {
-        updateStats(false);
-    }
-
-    public void updateStats(Boolean done) {
+    public void updateStats() {
         try {
 
             if (pauseState) {
@@ -723,9 +719,6 @@ public class ThumbnailBox extends JPanel {
                                                 positiveCount,
                                                 negativeCount,
                                                 timeDisplay);
-                    if (done) {
-                        display.setDone();
-                    }
                     statsArea.update(searchStats, display);
                 });
             } else {

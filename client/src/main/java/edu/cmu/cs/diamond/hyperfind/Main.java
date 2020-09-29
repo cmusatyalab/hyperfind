@@ -446,8 +446,6 @@ public final class Main {
         stopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                m.results.updateStats(true);
-
                 Map<String, List<String>>  csvResults = m.results.getStats();
 
                 File baseDir = new File(
