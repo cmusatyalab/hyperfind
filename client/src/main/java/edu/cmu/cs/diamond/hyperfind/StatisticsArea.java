@@ -97,6 +97,7 @@ final class StatisticsArea extends JPanel {
 
     public class DisplayStats
     {
+        private Boolean statsDone = false;
         public long displayed;
         public long displayedPositives;
         public long userPositives;
@@ -109,6 +110,14 @@ final class StatisticsArea extends JPanel {
             this.userPositives = pos;
             this.userNegatives = neg;
             this.timeElapsed = time;
+        }
+
+        public void setDone() {
+            this.statsDone = true;
+        }
+
+        public Boolean isDone() {
+            return this.statsDone;
         }
     };
 
@@ -133,7 +142,7 @@ final class StatisticsArea extends JPanel {
 
         add(jsp);
 
-        long period = 5 * 60 * 1000; // 5 min
+        long period = 3 * 60 * 1000; // 3 min
 
         // **** Block to Periodically update the average precision
         // Timer t = new java.util.Timer();
@@ -199,6 +208,8 @@ final class StatisticsArea extends JPanel {
         return currentString;
     }
     public Map getCSVStatistics() {
+        //TODO Change: Temp hack to record last stats
+        csvStats.add(currentString);
         Map<String, List<String>> csv_dict = new HashMap<>();
         csv_dict.put("model", csvStats);
         csv_dict.put("time", timeStats);
@@ -258,8 +269,9 @@ final class StatisticsArea extends JPanel {
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Precision", model.precision() * 100));
             strDisplay.append(String.format("\n %0$-17s %.1f%% \n", "Test Set Recall", model.recall() * 100));
             strDisplay.append(String.format("\n %0$-17s %.3f \n", "Test Set F1 Score", model.f1Score()));
-
-            if(model.version() != prevVersion) {
+            if(model.version() != prevVersion || displayStats.isDone()) {
+                System.out.println("Version "+(model.version() != prevVersion)+" done ? "+displayStats.isDone());
+                System.out.println("Positives " + displayStats.userPositives);
                 csvStats.add(getCsvString(stats, displayStats));
                 prevVersion = model.version();
             }
