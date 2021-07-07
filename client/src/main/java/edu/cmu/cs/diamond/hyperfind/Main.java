@@ -401,6 +401,7 @@ public final class Main {
 
                     // push attributes
                     Set<String> attributes = new HashSet<>();
+                    attributes.add("_rgb_image.rgbimage"); // RGB
                     attributes.add("thumbnail.jpeg"); // thumbnail
                     attributes.add("_cols.int"); // original width
                     attributes.add("_rows.int"); // original height
@@ -753,11 +754,15 @@ public final class Main {
         ActivePredicateSet ps = result.getActivePredicateSet();
         SearchFactory factory = ps.getSearchFactory();
         Cursor oldCursor = frame.getCursor();
+        // try to render popup using the existing result.
+        // if unsuccessful, try making a connection to Diamond via reexecution
         try {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            popup(result, Optional.ofNullable(prevResult));
+        } catch (Exception e) {
             popup(
-                    new HyperFindResult(ps, factory.getResult(id, Collections.emptySet())),
-                    Optional.ofNullable(prevResult));
+                new HyperFindResult(ps, factory.getResult(id, Collections.emptySet())),
+                Optional.ofNullable(prevResult));
         } finally {
             frame.setCursor(oldCursor);
         }
