@@ -409,7 +409,9 @@ public final class Main {
                     attributes.add("Device-Name");
                     attributes.add("Display-Name");
                     attributes.add("hyperfind.thumbnail-display");
-                    attributes.add("hyperfind.external-link");
+                    attributes.add("hyperfind.external-link");  // an external URL for downloaind the orignal object
+                    attributes.add("hyperfind.save-ext"); // a custom file extension to save the object
+                    attributes.add("");
 
                     for (HyperFindSearchMonitor m : monitors) {
                         attributes.addAll(m.getPushAttributes());

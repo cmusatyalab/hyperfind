@@ -124,7 +124,7 @@ public class ResultExportTransferHandler extends TransferHandler {
             List<ObjectId> toReexecute = new ArrayList<>();
 
             for (ResultIcon icon : resultIcons) {
-                // if the attribute "hyperfind.external-link" is returned, use it as download link
+                // if the attribute "hyperfind.external-link" is present, use it as download link
                 SearchResult result = icon.getResult().getResult();
                 Optional<String> externalLink = result.getString("hyperfind.external-link");
                 if (externalLink.isPresent()) {
@@ -138,7 +138,18 @@ public class ResultExportTransferHandler extends TransferHandler {
                         FileUtils.copyURLToFile(url, file);
                         return file;
                     }));
-                } else {
+                } else if (result.getBytes(SearchResult.DATA_ATTR).isPresent()) {
+                    // save to disk without re-execute if the '' attr is present
+                    externalDownloadFutures.add(executor.submit( () -> {
+                        String ext = result.getString("hyperfind.save-ext").orElse("jpg");
+                        System.out.println("Skip re-execution. Saving the '' attr to disk using ext: " + ext);
+                        File file = File.createTempFile("hyperfind-export-", "."+ext);
+                        file.deleteOnExit();
+                        Files.write(result.getData(), file);
+                        return file;
+                    }));
+                }
+                 else {
                     toReexecute.add(result.getId());
                 }
             }
