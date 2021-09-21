@@ -1,22 +1,24 @@
 Source: hyperfind
 Priority: optional
-Maintainer: Ziqiang Feng <zf@cs.cmu.edu>
+Maintainer: Jan Harkes <jaharkes@cs.cmu.edu>
 Section: java
 Build-Depends: 
     ant,
-    debhelper (>=9),
+    debhelper (>=12),
     openjdk-8-jdk,
-    javahelper
-Standards-Version: 3.9.6
+    javahelper,
+    libcommons-io-java,
+    libgoogle-gson-java,
+    libswingx-java,
+    opendiamond-java
+Standards-Version: 4.5.0
 Homepage: http://diamond.cs.cmu.edu
 Vcs-Git: https://github.com/cmusatyalab/hyperfind.git
-#Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/hyperfind.git
 
 Package: hyperfind
 Architecture: all
 Section: java
-Depends: 
-    openjdk-8-jre,
-    opendiamond-java
+Depends: ${misc:Depends}, ${java:Depends}
 Description: Generic image search application for OpenDiamond.
- A generic image search GUI front-end that works with an OpenDiamond/Eureka backend.
+ A generic image search GUI front-end that works with an
+ OpenDiamond/Eureka backend.

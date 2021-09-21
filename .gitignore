@@ -1,4 +1,10 @@
-/bin
+/.idea/
+/.pc/
+/bin/
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/hyperfind.substvars
+/debian/hyperfind/
 *~
 *.jar
-.idea

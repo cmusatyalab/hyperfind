@@ -1,3 +1,9 @@
+hyperfind (1.9.0-1) UNRELEASED; urgency=medium
+
+  * Repackage
+
+ -- Jan Harkes <jaharkes@cs.cmu.edu>  Wed, 15 Sep 2021 11:00:00 -0400
+
 hyperfind (1.8.2-1ubuntu1-dev) UNRELEASED; urgency=medium
 
   * 

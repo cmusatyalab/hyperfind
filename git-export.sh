@@ -9,5 +9,7 @@ fi
 
 b="hyperfind"
 
-git archive --format tar "v$1" "--prefix=$b-$1/" -o "$b-$1.tar"
-gzip -9f "$b-$1.tar"
+tag="v$1"
+
+git archive --format tar "$tag" "--prefix=$b-$1/" -o "${b}_$1.orig.tar"
+gzip -9f "${b}_$1.orig.tar"
