@@ -4,14 +4,14 @@ Maintainer: Jan Harkes <jaharkes@cs.cmu.edu>
 Section: java
 Build-Depends: 
     ant,
-    debhelper (>=12),
+    debhelper (>=11),
     openjdk-8-jdk,
     javahelper,
     libcommons-io-java,
     libgoogle-gson-java,
     libswingx-java,
     opendiamond-java
-Standards-Version: 4.5.0
+Standards-Version: 4.1.4
 Homepage: http://diamond.cs.cmu.edu
 Vcs-Git: https://github.com/cmusatyalab/hyperfind.git
 
