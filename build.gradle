@@ -2,7 +2,7 @@ buildscript {
     repositories {
         jcenter()
         gradlePluginPortal()
-        maven { url 'http://palantir.bintray.com/releases' }
+        maven { url 'https://palantir.bintray.com/releases' }
     }
 
     dependencies {
@@ -32,7 +32,7 @@ allprojects {
             url 'https://oss.sonatype.org/content/repositories/snapshots'
         }
         maven {
-            url 'http://palantir.bintray.com/releases'
+            url 'https://palantir.bintray.com/releases'
         }
         // mavenLocal()
     }

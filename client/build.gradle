@@ -12,7 +12,7 @@ dependencies {
     implementation 'org.swinglabs:swingx'
     implementation 'ch.qos.logback:logback-classic'
 
-    runtime project(':connection-diamond')
+    runtimeOnly project(':connection-diamond')
 }
 
 run {
