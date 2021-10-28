@@ -60,8 +60,6 @@ configure(subprojects.findAll { it.name != 'client' }) {
     apply plugin: 'com.palantir.baseline-release-compatibility'
     apply plugin: 'com.palantir.baseline-testing'
 
-    apply plugin: 'org.inferred.processors'  // installs the 'processor' configuration needed for baseline-error-prone
-
     tasks.withType(JavaCompile).configureEach {
         options.errorprone.errorproneArgs.addAll(
                 '-Xep:PreferSafeLoggableExceptions:OFF',

@@ -1,6 +1,6 @@
 # HyperFind
 
-HyperFind is a GUI client application for performing interactive searches on non-indexed data in the [OpenDiamond](http://diamond.cs.cmu.edu/) and Delphi systems. It is primarily designed to search images but can also be used for other data types.
+HyperFind is a GUI client application for performing interactive searches on non-indexed data in the [OpenDiamond](http://diamond.cs.cmu.edu/) system. It is primarily designed to search images but can also be used for other data types.
 
 ## Compile from Source
 
@@ -13,12 +13,7 @@ git clone https://github.com/cmusatyalab/hyperfind.git
 cd hyperfind
 ```
 
-To run a search against OpenDiamond:
-```bash
-./gradlew runDiamond
-```
-
-To run a search against Delphi:
+To run a search:
 ```bash
 ./gradlew run
 ```
@@ -74,12 +69,11 @@ To do so, you should enable X11 forwarding in your SSH connection and install a 
 (e.g., Xming on Windows, Xquartz on MacOS).
 
 ### Hyperfind Configuration Settings
-The OpenDiamond and Delphi connectors expose different configuration settings and connector-specific commands that can
+The OpenDiamond connector exposes different configuration settings and connector-specific commands that can
 be accessed by clicking the `Config` button in the UI. These configuration settings are persisted locally to
-$HOME/.diamond/hyperfind-diamond.properties for the OpenDiamond connector and $HOME/.diamond/hyperfind-delphi.yml for
-the Delphi connection.
+$HOME/.diamond/hyperfind-diamond.properties.
 
-### Depending on a local build of OpenDiamond-Java (or Delphi)
+### Depending on a local build of OpenDiamond-Java
 
 Option 1: Use Local Maven
 
