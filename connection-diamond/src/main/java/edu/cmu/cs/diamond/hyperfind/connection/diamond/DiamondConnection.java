@@ -130,6 +130,11 @@ public final class DiamondConnection implements Connection {
     }
 
     @Override
+    public void defineScope() {
+        updateCookies(Optional.ofNullable(configProps.getProperty("proxyIP")));
+    }
+
+    @Override
     public boolean supportsOfflineSearch() {
         return false;
     }

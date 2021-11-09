@@ -187,7 +187,7 @@ public final class Main {
 
         JButton startButton = new JButton("Start");
         JButton stopButton = new JButton("Stop");
-        JButton configButton = new JButton("Set Config");
+        JButton scopeButton = new JButton("Define Scope");
         JButton exportPredicatesButton = new JButton("Export");
         JButton importPredicatesButton = new JButton("Import");
         StatisticsBar stats = new StatisticsBar();
@@ -503,7 +503,7 @@ public final class Main {
             }
         });
 
-        configButton.addActionListener(_e -> m.connection.openConfigPanel(searchManager));
+        scopeButton.addActionListener(_e -> m.connection.defineScope());
 
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(
@@ -611,7 +611,7 @@ public final class Main {
         stopButton.setEnabled(false);
         r1.add(stopButton);
         r1.add(Box.createHorizontalStrut(20));
-        r1.add(configButton);
+        r1.add(scopeButton);
         v1.add(r1);
         v1.add(Box.createVerticalStrut(4));
 

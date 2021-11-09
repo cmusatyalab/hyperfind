@@ -59,6 +59,8 @@ public interface Connection {
 
     void openConfigPanel(SearchListenable searchListenable);
 
+    void defineScope();
+
     boolean supportsOfflineSearch();
 
 }
