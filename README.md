@@ -42,21 +42,27 @@ Typically, codecs/predicates/filters come in a bundle developed separately.
 ## Tips
 
 ### Viewing ScopeCookie
-[Recommended] If you have OpenDiamond installed locally:
+[Recommended] Install opendiamond-scope locally with pipx:
+
 ```bash
-python -m opendiamond.scope $HOME/.diamond/NEWSCOPE
+pip install --user pipx             # not needed if pipx is already installed
+export PATH=$HOME/.local/bin:$PATH  # make sure to add this to .bashrc as well
+pipx install opendiamond-scope
 ```
 
-The ScopeCookie is a base64-encoded string containing the authorized search servers, data sources and expiration time.
+You can then view the contents of the scope cookie with
 
-Alternative:
 ```bash
-cat $HOME/.diamond/NEWSCOPE | grep -v \- | base64 -d
+opendiamond-scope verify $HOME/.diamond/NEWSCOPE
 ```
 
 ### Auto placing ScopeCookie (Linux Only)
-Installing OpenDiamond on your computer will also install a system hook that automatically renames and places
+Install opendiamond-scope on your computer to install system hooks that automatically rename and place
 the ScopeCookie properly when you double-click the downloaded file from the browser.
+
+```bash
+opendiamond-scope install
+```
 
 ### Obtaining filters
 The common type of downloadable filters (short for saying codecs/predicates/filters) is
@@ -69,9 +75,15 @@ To do so, you should enable X11 forwarding in your SSH connection and install a 
 (e.g., Xming on Windows, Xquartz on MacOS).
 
 ### Hyperfind Configuration Settings
-The OpenDiamond connector exposes different configuration settings and connector-specific commands that can
-be accessed by clicking the `Config` button in the UI. These configuration settings are persisted locally to
-$HOME/.diamond/hyperfind-diamond.properties.
+The OpenDiamond connector specific configuration settings are stored locally in `$HOME/.diamond/hyperfind-diamond.properties`.
+
+```
+#hyperfind settings for diamond connector
+useProxy=false          # doesn't actually seem to get used...
+downloadResults=false   # doesn't actually seem to get used either...
+# proxyIP=              # if defined used when creating a new search scope
+# downloadDirectory=    # defaults to user.home system property
+```
 
 ### Depending on a local build of OpenDiamond-Java
 
@@ -79,9 +91,9 @@ Option 1: Use Local Maven
 
 - Publish your local copy to by running `./gradlew publishToMavenLocal` in the opendiamond-java repo
 - Uncomment the `mavenLocal()` line in build.gradle in this repository
-- Update the version of `edu.cmu.cs.diamond.opendiamond:opendiamond-java` dependency in the build.gradle file in this repository to that of your local copy
+- Update the version of the `edu.cmu.cs.diamond.opendiamond:opendiamond-java` dependency in the version.props file in this repository to that of your local copy
 
 Option 2: Directly use build directory
 
 - Build your local copy to by running `./gradlew build` in the opendiamond-java repo
-- Uncomment the last two lines in the dependency block in hyperfind's build.gradle
+- Uncomment the last two lines in the dependency block in connection-diamond/build.gradle
