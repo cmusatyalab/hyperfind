@@ -45,17 +45,14 @@ import edu.cmu.cs.diamond.hyperfind.connection.api.Connection;
 import edu.cmu.cs.diamond.hyperfind.connection.api.Filter;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchFactory;
 import edu.cmu.cs.diamond.hyperfind.connection.api.SearchInfo;
-import edu.cmu.cs.diamond.hyperfind.connection.api.SearchListenable;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.Bundle;
 import edu.cmu.cs.diamond.hyperfind.connection.api.bundle.BundleState;
 import edu.cmu.cs.diamond.opendiamond.BundleFactory;
 import edu.cmu.cs.diamond.opendiamond.CookieMap;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -125,11 +122,6 @@ public final class DiamondConnection implements Connection {
     }
 
     @Override
-    public void openConfigPanel(SearchListenable searchListenable) {
-        new DiamondConfigFrame(searchListenable, configProps, this::saveProperties);
-    }
-
-    @Override
     public void defineScope() {
         updateCookies(Optional.ofNullable(configProps.getProperty("proxyIP")));
     }
@@ -162,22 +154,6 @@ public final class DiamondConnection implements Connection {
         }
 
         return props;
-    }
-
-    private void saveProperties(Optional<String> proxyIp, Optional<String> downloadPath) {
-        configProps.setProperty("useProxy", Boolean.toString(proxyIp.isPresent()));
-        proxyIp.ifPresent(p -> configProps.setProperty("proxyIP", p));
-        configProps.setProperty("downloadResults", Boolean.toString(downloadPath.isPresent()));
-        downloadPath.ifPresent(d -> configProps.setProperty("downloadDirectory", d));
-
-        updateCookies(proxyIp);
-        downloadPathRoot = downloadPath.map(Paths::get);
-
-        try (OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
-            configProps.store(outputStream, "hyperfind settings for diamond connector");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save properties file", e);
-        }
     }
 
     private void updateCookies(Optional<String> proxyIp) {

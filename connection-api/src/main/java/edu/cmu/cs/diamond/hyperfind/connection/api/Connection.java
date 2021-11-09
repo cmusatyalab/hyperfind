@@ -57,8 +57,6 @@ public interface Connection {
 
     Bundle restoreBundle(BundleState state);
 
-    void openConfigPanel(SearchListenable searchListenable);
-
     void defineScope();
 
     boolean supportsOfflineSearch();
