@@ -1,0 +1,43 @@
+apply plugin: 'application'
+
+dependencies {
+    implementation project(':connection-api')
+    implementation project(':jackson-utils')
+
+    implementation 'com.google.guava:guava'
+    implementation 'commons-io:commons-io'
+    implementation 'com.sun.xml.bind:jaxb-core'
+    implementation 'com.sun.xml.bind:jaxb-impl'
+    implementation 'one.util:streamex'
+    implementation 'org.swinglabs:swingx'
+    implementation 'ch.qos.logback:logback-classic'
+
+    // additional imageio plugins for extra and extended format support
+    implementation 'com.twelvemonkeys.imageio:imageio-bmp'
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg'
+    implementation 'com.twelvemonkeys.imageio:imageio-pnm'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff'
+    implementation 'com.twelvemonkeys.imageio:imageio-webp'
+    //implementation 'com.twelvemonkeys.imageio.imageio-batik'
+    //implementation 'com.twelvemonkeys.imageio:imageio-hdr'
+    //implementation 'com.twelvemonkeys.imageio:imageio-icns'
+    //implementation 'com.twelvemonkeys.imageio:imageio-iff'
+    //implementation 'com.twelvemonkeys.imageio:imageio-pcx'
+    //implementation 'com.twelvemonkeys.imageio:imageio-pict'
+    //implementation 'com.twelvemonkeys.imageio:imageio-psd'
+    //implementation 'com.twelvemonkeys.imageio:imageio-sgi'
+    //implementation 'com.twelvemonkeys.imageio:imageio-tga'
+    //implementation 'com.twelvemonkeys.imageio:imageio-thumbsdb'
+    //implementation 'com.twelvemonkeys.imageio:imageio-xwd'
+
+    runtimeOnly project(':connection-diamond')
+}
+
+run {
+    mainClassName = 'edu.cmu.cs.diamond.hyperfind.Main'
+    args = [
+            "edu.cmu.cs.diamond.hyperfind.connection.diamond.DiamondConnection",
+            "$System.env.HOME/.diamond/codecs:$System.env.HOME/.diamond/predicates:/usr/local/share/diamond/codecs:/usr/local/share/diamond/predicates:/usr/share/diamond/codecs:/usr/share/diamond/predicates",
+            "$System.env.HOME/.diamond/filters:/usr/local/share/diamond/filters:/usr/share/diamond/filters"
+    ]
+}

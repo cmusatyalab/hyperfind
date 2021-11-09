@@ -2,15 +2,18 @@ Source: hyperfind
 Priority: optional
 Maintainer: Jan Harkes <jaharkes@cs.cmu.edu>
 Section: java
-Build-Depends: 
-    ant,
+Build-Depends:
     debhelper (>=11),
-    openjdk-8-jdk,
-    javahelper,
-    libcommons-io-java,
-    libgoogle-gson-java,
-    libswingx-java,
-    opendiamond-java
+    gradle-debian-helper,
+#    openjdk-8-jdk,
+#    javahelper,
+#    libcommons-io-java,
+#    libguava-java,
+#    liblogback-java,
+#    libjaxb-java,
+#    libswingx-java,
+#    libtwelvemonkeys-java,
+#    opendiamond-java
 Standards-Version: 4.1.4
 Homepage: http://diamond.cs.cmu.edu
 Vcs-Git: https://github.com/cmusatyalab/hyperfind.git

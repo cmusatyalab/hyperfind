@@ -1,9 +1,19 @@
 #!/usr/bin/make -f
 # See debhelper(7) (uncomment to enable)
 # output every command that modifies files on the build system.
-#export DH_VERBOSE = 1
-
-export CLASSPATH=/usr/share/java/commons-io.jar:/usr/share/java/gson.jar:/usr/share/java/jai_imageio.jar:/usr/share/java/swingx.jar
+export DH_VERBOSE = 1
 
 %:
-	dh $@ --with javahelper 
+	dh $@ --buildsystem=gradle
+
+override_dh_auto_build:
+	#./gradlew --info --console plain --stacktrace --no-daemon --build-cache --gradle-user-home .gradle -Duser.home=. -Duser.name=debian -Ddebian.package=hyperfind -Dfile.encoding=UTF-8 --parallel --max-workers=8 hyperfind:distTar
+	./gradlew --info --console plain --stacktrace --no-daemon --build-cache -Duser.name=debian -Ddebian.package=hyperfind -Dfile.encoding=UTF-8 --parallel --max-workers=8 client:distTar
+
+INSTALL_PATH=debian/hyperfind/usr/share/hyperfind
+override_dh_auto_install:
+	mkdir -p ${INSTALL_PATH}
+	tar --strip-components=1 -C ${INSTALL_PATH} -xf client/build/distributions/client-*.tar
+	rm -f ${INSTALL_PATH}/bin/client.bat
+
+override_dh_auto_test:

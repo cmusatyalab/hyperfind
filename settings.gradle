@@ -1,0 +1,8 @@
+rootProject.name = 'hyperfind'
+
+include 'client'
+
+include 'connection-api'
+include 'connection-diamond'
+
+include 'jackson-utils'

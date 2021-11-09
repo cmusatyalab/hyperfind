@@ -1,0 +1,45 @@
+buildscript {
+    repositories {
+        jcenter()
+        gradlePluginPortal()
+    }
+
+    dependencies {
+        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:1.24.0'
+        classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.12.3'
+    }
+}
+
+apply plugin: 'com.palantir.consistent-versions'
+apply plugin: 'com.palantir.git-version'
+
+allprojects {
+    group 'edu.cmu.cs.diamond.hyperfind'
+    version gitVersion()
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        // mavenLocal()
+    }
+
+    apply plugin: 'java'
+
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+// Excluding client from linting for legacy purposes
+configure(subprojects.findAll { it.name != 'client' }) {
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += [
+                '-Werror',
+                '-Xlint:deprecation',
+                '-Xlint:unchecked',
+        ]
+    }
+}

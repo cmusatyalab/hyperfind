@@ -1,1 +1,1 @@
-hyperfind usr/bin
+debian/bin/hyperfind usr/bin
