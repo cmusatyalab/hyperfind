@@ -2,6 +2,37 @@
 
 HyperFind is a GUI client application for performing interactive searches on non-indexed data in the [OpenDiamond](http://diamond.cs.cmu.edu/) system. It is primarily designed to search images but can also be used for other data types.
 
+## Installing pre-built packages for Ubuntu 18.04
+
+Add GPG key used to sign packages and OpenDiamond APT repository.
+
+```bash
+wget -qO- http://coda.cs.cmu.edu/jaharkes.asc | sudo apt-key add -
+```
+
+```bash
+cat > /etc/apt/sources.list.d/opendiamond.list << EOF
+deb http://diamond.cs.cmu.edu/packages bionic main
+EOF
+```
+
+Install Hyperfind, a basic set of search filters.
+
+```bash
+sudo apt-get update
+sudo apt-get install hyperfind diamond-new-filters
+mkdir -p $HOME/.diamond  # directory to hold search scope and hyperfind configuration
+```
+
+See further down for the instructions to install `opendiamond-scope` to manipulate
+OpenDiamond search scopes, install mime-type handlers and such.
+
+After that you should be able to run hyperfind.
+
+```bash
+hyperfind
+```
+
 ## Compile from Source
 
 Clone and compile:
@@ -45,7 +76,8 @@ Typically, codecs/predicates/filters come in a bundle developed separately.
 [Recommended] Install opendiamond-scope locally with pipx:
 
 ```bash
-pip install --user pipx             # not needed if pipx is already installed
+apt-get install python3-pip python3-venv
+pip3 install --user pipx            # not needed if pipx is already installed
 export PATH=$HOME/.local/bin:$PATH  # make sure to add this to .bashrc as well
 pipx install opendiamond-scope
 ```
@@ -57,6 +89,7 @@ opendiamond-scope verify $HOME/.diamond/NEWSCOPE
 ```
 
 ### Auto placing ScopeCookie (Linux Only)
+
 Install opendiamond-scope on your computer to install system hooks that automatically rename and place
 the ScopeCookie properly when you double-click the downloaded file from the browser.
 
